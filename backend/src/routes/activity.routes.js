@@ -6,7 +6,7 @@ const auth = require('../middlewares/auth.middleware');
 const role = require('../middlewares/role.middleware');
 const permit = require('../middlewares/permission.middleware');
 // Quản lý hoạt động
-router.get('/', auth, activityController.getAllActivities); // Danh sách hoạt động
+router.get('/', activityController.getAllActivities); // Danh sách hoạt động
 router.get('/:id', auth, activityController.getActivityById); // Chi tiết hoạt động
 router.post('/', auth, role(['ctsv', 'doantruong', 'hoisv', 'khoa', 'clb', 'admin']), permit('activity:create'), activityController.createActivity); // Tạo hoạt động
 router.put('/:id', auth, role(['ctsv', 'doantruong', 'hoisv', 'khoa', 'clb', 'admin']), permit('activity:update'), activityController.updateActivity); // Sửa hoạt động
