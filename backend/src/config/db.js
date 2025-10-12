@@ -1,25 +1,48 @@
 const mongoose = require('mongoose');
 
+// Cache the connection
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
 const connectDB = async () => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-    const dbName = process.env.MONGODB_NAME || 'pbl6';
-    
-    let connectionString;
-    if (mongoUri.includes('mongodb+srv://') || mongoUri.includes('mongodb://')) {
-      // For MongoDB Atlas or full connection strings, use dbName as option
-      connectionString = mongoUri;
-      await mongoose.connect(connectionString, { dbName });
-    } else {
-      // For local MongoDB, append dbName to URI
-      connectionString = `${mongoUri}/${dbName}`;
-      await mongoose.connect(connectionString);
+    // If already connected, return the existing connection
+    if (cached.conn) {
+      return cached.conn;
     }
-    
-    console.log(`Kết nối MongoDB thành công! Database: ${mongoose.connection.name}`);
+
+    // If there's no connection promise, create one
+    if (!cached.promise) {
+      const mongoUri = process.env.MONGODB_URI;
+      const dbName = process.env.MONGODB_NAME || 'pbl6';
+      
+      if (!mongoUri) {
+        throw new Error('MONGODB_URI environment variable is not set');
+      }
+
+      const options = {
+        dbName,
+        maxPoolSize: 10, // Maintain up to 10 socket connections
+        serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
+        socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+        bufferMaxEntries: 0, // Disable mongoose buffering
+        bufferCommands: false, // Disable mongoose buffering
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      };
+
+      cached.promise = mongoose.connect(mongoUri, options);
+    }
+
+    cached.conn = await cached.promise;
+    console.log(`✅ MongoDB connected! Database: ${cached.conn.connection.name}`);
+    return cached.conn;
   } catch (error) {
-    console.error('Kết nối MongoDB thất bại:', error);
-    process.exit(1);
+    console.error('❌ MongoDB connection failed:', error);
+    throw error;
   }
 };
 

@@ -3,6 +3,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
 const errorMiddleware = require('./middlewares/error.middleware');
+const ensureDBConnection = require('./middlewares/db.middleware');
 
 const app = express();
 
@@ -12,6 +13,9 @@ app.use(morgan('dev'));
 
 // Serve static files (for test UI)
 app.use(express.static(path.join(__dirname, '../public')));
+
+// Ensure database connection for all API routes (important for Vercel serverless)
+app.use('/api', ensureDBConnection);
 
 // Import routes
 app.get('/', (req, res) => {
