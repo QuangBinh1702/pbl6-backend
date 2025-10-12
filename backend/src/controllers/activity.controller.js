@@ -6,7 +6,7 @@ const User = require('../models/user.model');
 module.exports = {
   async getAllActivities(req, res) {
     try {
-      const activities = [];
+      const activities = await Activity.find();
       res.json(activities);
     } catch (err) {
       res.status(500).json({ message: err.message });
