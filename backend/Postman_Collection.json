@@ -1,0 +1,85 @@
+{
+  "info": {
+    "name": "PBL6 API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Login (student)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": { "raw": "http://localhost:3000/api/auth/login", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api","auth","login"] },
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"102220095@stu.ptit.edu.vn\",\n  \"password\": \"123456\"\n}" }
+      },
+      "response": []
+    },
+    {
+      "name": "Auth - Login (admin)",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "url": { "raw": "http://localhost:3000/api/auth/login", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api","auth","login"] },
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@pbl6.local\",\n  \"password\": \"123456\"\n}" }
+      },
+      "response": []
+    },
+    {
+      "name": "Activities - List",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "url": { "raw": "http://localhost:3000/api/activities", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api","activities"] }
+      },
+      "response": []
+    },
+    {
+      "name": "Activities - Create (admin/ctsv/khoa/clb/doan)",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "url": { "raw": "http://localhost:3000/api/activities", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api","activities"] },
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Hoạt động thử Postman\",\n  \"description\": \"tạo bởi postman\",\n  \"type\": \"faculty\",\n  \"time\": \"{{now}}\",\n  \"location\": \"P101\",\n  \"points\": 5\n}" }
+      },
+      "response": []
+    },
+    {
+      "name": "Activities - Register (student)",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "url": { "raw": "http://localhost:3000/api/activities/{{activityId}}/register", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api","activities","{{activityId}}","register"] }
+      },
+      "response": []
+    },
+    {
+      "name": "Activities - Attendance (ctsv/doan/khoa/admin)",
+      "request": {
+        "method": "PUT",
+        "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "url": { "raw": "http://localhost:3000/api/activities/{{activityId}}/attendance", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api","activities","{{activityId}}","attendance"] },
+        "body": { "mode": "raw", "raw": "{\n  \"userId\": \"{{userId}}\"\n}" }
+      },
+      "response": []
+    },
+    {
+      "name": "Activities - Approve (admin/ctsv/doan)",
+      "request": {
+        "method": "PUT",
+        "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+        "url": { "raw": "http://localhost:3000/api/activities/{{activityId}}/approve", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api","activities","{{activityId}}","approve"] }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    { "key": "token", "value": "" },
+    { "key": "activityId", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "now", "value": "2025-10-07T00:00:00.000Z" }
+  ]
+}
+
+

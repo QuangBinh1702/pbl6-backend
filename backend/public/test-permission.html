@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Hệ Thống Phân Quyền</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .result.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        .user-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .user-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .permission-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin: 3px;
+        }
+        
+        .action-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            margin: 2px;
+        }
+        
+        .action-badge.allowed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .action-badge.denied {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .config {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .config strong {
+            color: #856404;
+        }
+        
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ Test Hệ Thống Phân Quyền</h1>
+            <p>Kiểm tra và test Permission System</p>
+        </div>
+        
+        <div class="content">
+            <!-- API Configuration -->
+            <div class="config">
+                <strong>📍 API URL:</strong> <span id="apiUrl">http://localhost:5000</span>
+                <button onclick="changeApiUrl()" style="margin-left: 10px; padding: 5px 10px; font-size: 12px;">Thay đổi</button>
+            </div>
+            
+            <!-- Login Section -->
+            <div class="section">
+                <div class="section-title">
+                    🔐 Bước 1: Đăng Nhập
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="loginEmail" value="admin@test.com" placeholder="admin@test.com">
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="loginPassword" value="password123" placeholder="password123">
+                </div>
+                <button onclick="login()">Đăng Nhập</button>
+                <div id="loginResult" class="result"></div>
+                
+                <div style="margin-top: 15px; padding: 10px; background: #e7f3ff; border-radius: 5px;">
+                    <strong>Test Users:</strong><br>
+                    - admin@test.com / password123<br>
+                    - student@test.com / password123<br>
+                    - teacher@test.com / password123
+                </div>
+            </div>
+            
+            <!-- Get Permissions -->
+            <div class="section">
+                <div class="section-title">
+                    📋 Bước 2: Lấy Danh Sách Permissions
+                </div>
+                <button onclick="getPermissions()">Lấy Permissions</button>
+                <div id="permissionsResult" class="result"></div>
+            </div>
+            
+            <!-- Get User Permissions -->
+            <div class="section">
+                <div class="section-title">
+                    👤 Bước 3: Xem Permissions của User
+                </div>
+                <button onclick="getUserPermissions()">Xem Permissions của Tôi</button>
+                <div id="userPermissionsResult" class="result"></div>
+            </div>
+            
+            <!-- Test Permission Check -->
+            <div class="section">
+                <div class="section-title">
+                    ✅ Bước 4: Kiểm Tra Permission Cụ Thể
+                </div>
+                <div class="form-group">
+                    <label>Permission ID:</label>
+                    <input type="text" id="checkPermissionId" placeholder="Copy từ danh sách permissions">
+                </div>
+                <button onclick="checkPermission()">Kiểm Tra</button>
+                <div id="checkResult" class="result"></div>
+            </div>
+            
+            <!-- Grant Permission -->
+            <div class="section">
+                <div class="section-title">
+                    🎁 Bước 5: Gán Permission (Admin Only)
+                </div>
+                <div class="form-group">
+                    <label>User ID:</label>
+                    <input type="text" id="grantUserId" placeholder="ID của user nhận permission">
+                </div>
+                <div class="form-group">
+                    <label>Permission ID:</label>
+                    <input type="text" id="grantPermissionId" placeholder="ID của permission">
+                </div>
+                <button onclick="grantPermission()">Gán Permission</button>
+                <div id="grantResult" class="result"></div>
+            </div>
+            
+            <!-- Statistics -->
+            <div class="section">
+                <div class="section-title">
+                    📊 Thống Kê Hệ Thống
+                </div>
+                <button onclick="getStatistics()">Xem Thống Kê</button>
+                <div id="statsResult" class="result"></div>
+            </div>
+            
+            <!-- Test Protected Route -->
+            <div class="section">
+                <div class="section-title">
+                    🔒 Bước 6: Test Protected Route
+                </div>
+                <p style="margin-bottom: 10px;">Test gọi API có middleware checkPermission</p>
+                <button onclick="testProtectedRoute()">Test Create Activity</button>
+                <div id="protectedResult" class="result"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let apiUrl = 'http://localhost:5000';
+        let token = localStorage.getItem('token');
+        let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+        
+        function changeApiUrl() {
+            const newUrl = prompt('Nhập API URL:', apiUrl);
+            if (newUrl) {
+                apiUrl = newUrl.replace(/\/$/, '');
+                document.getElementById('apiUrl').textContent = apiUrl;
+                localStorage.setItem('apiUrl', apiUrl);
+            }
+        }
+        
+        // Load saved API URL
+        const savedUrl = localStorage.getItem('apiUrl');
+        if (savedUrl) {
+            apiUrl = savedUrl;
+            document.getElementById('apiUrl').textContent = apiUrl;
+        }
+        
+        function showResult(elementId, message, type = 'info', data = null) {
+            const el = document.getElementById(elementId);
+            el.className = `result ${type}`;
+            
+            let html = message;
+            
+            if (data) {
+                html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
+            
+            el.innerHTML = html;
+            el.style.display = 'block';
+        }
+        
+        function showLoading(elementId) {
+            const el = document.getElementById(elementId);
+            el.className = 'result info';
+            el.innerHTML = 'Đang xử lý... <span class="loading"></span>';
+            el.style.display = 'block';
+        }
+        
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showResult('loginResult', '❌ Vui lòng nhập email và password', 'error');
+                return;
+            }
+            
+            showLoading('loginResult');
+            
+            try {
+                const response = await fetch(`${apiUrl}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.token) {
+                    token = data.token;
+                    currentUser = data.user;
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    
+                    showResult('loginResult', 
+                        `✅ Đăng nhập thành công!<br><strong>User:</strong> ${currentUser.name || currentUser.email}<br><strong>Role:</strong> ${currentUser.role}`,
+                        'success'
+                    );
+                } else {
+                    showResult('loginResult', `❌ ${data.message || 'Đăng nhập thất bại'}`, 'error', data);
+                }
+            } catch (error) {
+                showResult('loginResult', `❌ Lỗi: ${error.message}`, 'error');
+            }
+        }
+        
+        async function getPermissions() {
+            if (!token) {
+                showResult('permissionsResult', '❌ Vui lòng đăng nhập trước', 'error');
+                return;
+            }
+            
+            showLoading('permissionsResult');
+            
+            try {
+                const response = await fetch(`${apiUrl}/api/permissions`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    let html = `<strong>✅ Tìm thấy ${data.count} permissions:</strong><br><br>`;
+                    
+                    data.data.forEach(perm => {
+                        html += `<div class="user-card">`;
+                        html += `<h4>${perm.name_per}</h4>`;
+                        html += `<p>${perm.description || 'Không có mô tả'}</p>`;
+                        html += `<p style="margin-top: 10px;"><strong>ID:</strong> <code>${perm._id}</code></p>`;
+                        html += `<p><strong>Actions:</strong></p>`;
+                        
+                        if (perm.details && perm.details.length > 0) {
+                            perm.details.forEach(detail => {
+                                const badgeClass = detail.check_action ? 'allowed' : 'denied';
+                                html += `<span class="action-badge ${badgeClass}">${detail.action_code}: ${detail.check_action ? '✅' : '❌'}</span>`;
+                            });
+                        }
+                        
+                        html += `</div>`;
+                    });
+                    
+                    showResult('permissionsResult', html, 'success');
+                } else {
+                    showResult('permissionsResult', `❌ ${data.message || 'Lỗi'}`, 'error', data);
+                }
+            } catch (error) {
+                showResult('permissionsResult', `❌ Lỗi: ${error.message}`, 'error');
+            }
+        }
+        
+        async function getUserPermissions() {
+            if (!token || !currentUser) {
+                showResult('userPermissionsResult', '❌ Vui lòng đăng nhập trước', 'error');
+                return;
+            }
+            
+            showLoading('userPermissionsResult');
+            
+            try {
+                const response = await fetch(`${apiUrl}/api/permissions/users/${currentUser._id || currentUser.id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    if (data.count === 0) {
+                        showResult('userPermissionsResult', '⚠️ User chưa có permission nào', 'info');
+                        return;
+                    }
+                    
+                    let html = `<strong>✅ User có ${data.count} permissions:</strong><br><br>`;
+                    
+                    data.data.forEach(up => {
+                        html += `<div class="user-card">`;
+                        html += `<h4>${up.id_per.name_per}</h4>`;
+                        html += `<p>${up.id_per.description || ''}</p>`;
+                        html += `<p style="margin-top: 10px;">`;
+                        html += `<strong>Licensed:</strong> ${up.licensed ? '✅ Yes' : '❌ No'}<br>`;
+                        html += `<strong>Granted:</strong> ${new Date(up.granted_at).toLocaleString()}<br>`;
+                        html += `<strong>Expires:</strong> ${up.expires_at ? new Date(up.expires_at).toLocaleString() : 'Vĩnh viễn'}`;
+                        html += `</p>`;
+                        
+                        if (up.id_per.details && up.id_per.details.length > 0) {
+                            html += `<p><strong>Actions:</strong></p>`;
+                            up.id_per.details.forEach(detail => {
+                                const badgeClass = detail.check_action ? 'allowed' : 'denied';
+                                html += `<span class="action-badge ${badgeClass}">${detail.action_code}</span>`;
+                            });
+                        }
+                        
+                        html += `</div>`;
+                    });
+                    
+                    showResult('userPermissionsResult', html, 'success');
+                } else {
+                    showResult('userPermissionsResult', `❌ ${data.message || 'Lỗi'}`, 'error', data);
+                }
+            } catch (error) {
+                showResult('userPermissionsResult', `❌ Lỗi: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkPermission() {
+            if (!token || !currentUser) {
+                showResult('checkResult', '❌ Vui lòng đăng nhập trước', 'error');
+                return;
+            }
+            
+            const permissionId = document.getElementById('checkPermissionId').value;
+            
+            if (!permissionId) {
+                showResult('checkResult', '❌ Vui lòng nhập Permission ID', 'error');
+                return;
+            }
+            
+            showLoading('checkResult');
+            
+            try {
+                const response = await fetch(
+                    `${apiUrl}/api/permissions/users/${currentUser._id || currentUser.id}/check/${permissionId}`,
+                    { headers: { 'Authorization': `Bearer ${token}` } }
+                );
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const message = data.has_permission 
+                        ? '✅ User CÓ permission này!' 
+                        : '❌ User KHÔNG CÓ permission này!';
+                    const type = data.has_permission ? 'success' : 'error';
+                    
+                    showResult('checkResult', message, type, data);
+                } else {
+                    showResult('checkResult', `❌ ${data.message || 'Lỗi'}`, 'error', data);
+                }
+            } catch (error) {
+                showResult('checkResult', `❌ Lỗi: ${error.message}`, 'error');
+            }
+        }
+        
+        async function grantPermission() {
+            if (!token) {
+                showResult('grantResult', '❌ Vui lòng đăng nhập trước', 'error');
+                return;
+            }
+            
+            const userId = document.getElementById('grantUserId').value;
+            const permissionId = document.getElementById('grantPermissionId').value;
+            
+            if (!userId || !permissionId) {
+                showResult('grantResult', '❌ Vui lòng nhập đầy đủ thông tin', 'error');
+                return;
+            }
+            
+            showLoading('grantResult');
+            
+            try {
+                const response = await fetch(
+                    `${apiUrl}/api/permissions/users/${userId}/grant/${permissionId}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({})
+                    }
+                );
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('grantResult', '✅ Gán permission thành công!', 'success', data);
+                } else {
+                    showResult('grantResult', `❌ ${data.message || 'Lỗi'}`, 'error', data);
+                }
+            } catch (error) {
+                showResult('grantResult', `❌ Lỗi: ${error.message}`, 'error');
+            }
+        }
+        
+        async function getStatistics() {
+            if (!token) {
+                showResult('statsResult', '❌ Vui lòng đăng nhập trước', 'error');
+                return;
+            }
+            
+            showLoading('statsResult');
+            
+            try {
+                // Get all permissions
+                const permsResponse = await fetch(`${apiUrl}/api/permissions`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const permsData = await permsResponse.json();
+                
+                // Get current user permissions
+                const userPermsResponse = await fetch(
+                    `${apiUrl}/api/permissions/users/${currentUser._id || currentUser.id}`,
+                    { headers: { 'Authorization': `Bearer ${token}` } }
+                );
+                const userPermsData = await userPermsResponse.json();
+                
+                let html = `<div class="stats">`;
+                html += `<div class="stat-card">`;
+                html += `<div class="stat-number">${permsData.count || 0}</div>`;
+                html += `<div class="stat-label">Total Permissions</div>`;
+                html += `</div>`;
+                
+                html += `<div class="stat-card">`;
+                html += `<div class="stat-number">${userPermsData.count || 0}</div>`;
+                html += `<div class="stat-label">Your Permissions</div>`;
+                html += `</div>`;
+                
+                const totalActions = permsData.data ? permsData.data.reduce((sum, p) => sum + (p.details?.length || 0), 0) : 0;
+                html += `<div class="stat-card">`;
+                html += `<div class="stat-number">${totalActions}</div>`;
+                html += `<div class="stat-label">Total Actions</div>`;
+                html += `</div>`;
+                
+                html += `</div>`;
+                
+                showResult('statsResult', html, 'success');
+            } catch (error) {
+                showResult('statsResult', `❌ Lỗi: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testProtectedRoute() {
+            if (!token) {
+                showResult('protectedResult', '❌ Vui lòng đăng nhập trước', 'error');
+                return;
+            }
+            
+            showLoading('protectedResult');
+            
+            try {
+                // Test create activity - requires ACTIVITY_MANAGEMENT permission
+                const response = await fetch(`${apiUrl}/api/activities`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: 'Test Activity from Permission Test',
+                        description: 'This is a test',
+                        start_time: new Date().toISOString()
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('protectedResult', 
+                        '✅ SUCCESS! Bạn CÓ QUYỀN tạo activity!', 
+                        'success', 
+                        data
+                    );
+                } else if (response.status === 403) {
+                    showResult('protectedResult', 
+                        '❌ FORBIDDEN! Bạn KHÔNG CÓ QUYỀN tạo activity!<br>Middleware đang hoạt động đúng!', 
+                        'error', 
+                        data
+                    );
+                } else {
+                    showResult('protectedResult', 
+                        `⚠️ Response: ${response.status}`, 
+                        'info', 
+                        data
+                    );
+                }
+            } catch (error) {
+                showResult('protectedResult', `❌ Lỗi: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto login if token exists
+        if (token && currentUser) {
+            document.getElementById('loginEmail').value = currentUser.email;
+            showResult('loginResult', 
+                `✅ Đã đăng nhập<br><strong>User:</strong> ${currentUser.name || currentUser.email}<br><strong>Role:</strong> ${currentUser.role}`,
+                'success'
+            );
+        }
+    </script>
+</body>
+</html>
+
+
