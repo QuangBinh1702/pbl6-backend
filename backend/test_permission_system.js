@@ -63,6 +63,13 @@ async function test2_createTestUsers() {
   
   const testUsers = [
     {
+      name: 'Teacher Test',
+      email: '102220095@gmail.com',
+      username: '102220095',
+      password: await bcrypt.hash('12345678', 10),
+      role: 'student'
+    },
+    {
       name: 'Admin Test',
       email: 'admin@test.com',
       password: await bcrypt.hash('password123', 10),

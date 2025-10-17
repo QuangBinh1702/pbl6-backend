@@ -1,5 +1,5 @@
 // Cấu hình app
 module.exports = {
-  jwtSecret: process.env.JWT_SECRET || 'your_jwt_secret',
+  jwtSecret: process.env.JWT_SECRET || 'PL0K',
   // ...other config...
 };

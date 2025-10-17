@@ -60,36 +60,108 @@ npm run dev
 ```
 backend/
 ├── src/
-│   ├── models/               # Mongoose models
-│   │   ├── permission.model.js          # ⭐ Permission với details
-│   │   ├── user_permission.model.js     # ⭐ User-Permission mapping
-│   │   ├── user.model.js
-│   │   ├── activity.model.js
+│   ├── models/               # Mongoose models (24 models)
+│   │   ├── user.model.js                    # User
+│   │   ├── student_profile.model.js         # Student profile
+│   │   ├── staff_profile.model.js           # Staff profile
+│   │   ├── student_cohort.model.js          # Student-cohort mapping
+│   │   ├── pvcd_record.model.js             # PVCD records
+│   │   ├── activity.model.js                # Activity
+│   │   ├── registration.model.js            # Activity registration
+│   │   ├── attendance.model.js              # Attendance
+│   │   ├── class.model.js                   # Class
+│   │   ├── cohort.model.js                  # Cohort
+│   │   ├── falcuty.model.js                 # Faculty
+│   │   ├── field.model.js                   # Field
+│   │   ├── org_unit.model.js                # Organization unit
+│   │   ├── post.model.js                    # Post
+│   │   ├── evidence.model.js                # Evidence
+│   │   ├── feedback.model.js                # Feedback
+│   │   ├── point.model.js                   # Point
+│   │   ├── notification.model.js            # Notification
+│   │   ├── chat.model.js                    # Chat
+│   │   ├── role.model.js                    # Role
+│   │   ├── permission.model.js              # ⭐ Permission
+│   │   ├── user_permission.model.js         # ⭐ User-Permission
+│   │   ├── activity_eligibility.model.js    # Activity eligibility
 │   │   └── ...
-│   ├── controllers/          # Business logic
-│   │   ├── permission.controller.js     # ⭐ Permission controller
+│   ├── controllers/          # Business logic (20+ controllers)
 │   │   ├── auth.controller.js
-│   │   └── ...
-│   ├── routes/              # API routes
-│   │   ├── permission.routes.js         # ⭐ Permission routes
+│   │   ├── user.controller.js
+│   │   ├── student_profile.controller.js    # ✨ New
+│   │   ├── staff_profile.controller.js      # ✨ New
+│   │   ├── student_cohort.controller.js     # ✨ New
+│   │   ├── pvcd_record.controller.js        # ✨ New
+│   │   ├── activity.controller.js
+│   │   ├── registration.controller.js       # ✨ New
+│   │   ├── attendance.controller.js         # ✨ New
+│   │   ├── class.controller.js              # ✨ New
+│   │   ├── cohort.controller.js             # ✨ New
+│   │   ├── faculty.controller.js            # ✨ New
+│   │   ├── field.controller.js              # ✨ New
+│   │   ├── org_unit.controller.js           # ✨ New
+│   │   ├── post.controller.js               # ✨ New
+│   │   ├── role.controller.js               # ✨ New
+│   │   ├── evidence.controller.js
+│   │   ├── feedback.controller.js
+│   │   ├── point.controller.js
+│   │   ├── notification.controller.js
+│   │   ├── chat.controller.js
+│   │   ├── statistic.controller.js
+│   │   └── permission.controller.js         # ⭐ Permission
+│   ├── routes/              # API routes (20+ routes)
 │   │   ├── auth.routes.js
-│   │   └── ...
+│   │   ├── user.routes.js
+│   │   ├── student_profile.routes.js        # ✨ New
+│   │   ├── staff_profile.routes.js          # ✨ New
+│   │   ├── student_cohort.routes.js         # ✨ New
+│   │   ├── pvcd_record.routes.js            # ✨ New
+│   │   ├── activity.routes.js
+│   │   ├── registration.routes.js           # ✨ New
+│   │   ├── attendance.routes.js             # ✨ New
+│   │   ├── class.routes.js                  # ✨ New
+│   │   ├── cohort.routes.js                 # ✨ New
+│   │   ├── faculty.routes.js                # ✨ New
+│   │   ├── field.routes.js                  # ✨ New
+│   │   ├── org_unit.routes.js               # ✨ New
+│   │   ├── post.routes.js                   # ✨ New
+│   │   ├── role.routes.js                   # ✨ New
+│   │   ├── evidence.routes.js
+│   │   ├── feedback.routes.js
+│   │   ├── point.routes.js
+│   │   ├── notification.routes.js
+│   │   ├── chat.routes.js
+│   │   ├── statistic.routes.js
+│   │   └── permission.routes.js             # ⭐ Permission
 │   ├── middlewares/         # Middlewares
-│   │   ├── check_permission.middleware.js  # ⭐ Permission checker
 │   │   ├── auth.middleware.js
+│   │   ├── check_permission.middleware.js   # ⭐ Permission checker
+│   │   ├── role.middleware.js
+│   │   ├── error.middleware.js
 │   │   └── ...
 │   ├── config/              # Configuration
 │   │   ├── db.js
-│   │   └── ...
+│   │   ├── app.config.js
+│   │   └── db.config.js
 │   ├── utils/               # Utilities
-│   ├── seed_permission_system.js        # ⭐ Seed script
-│   ├── app.js               # Express app
+│   │   ├── email.util.js
+│   │   └── qr.util.js
+│   ├── seed_permission_system.js            # ⭐ Seed script
+│   ├── seed_sample_data.js
+│   ├── app.js               # ✨ Updated - Express app
 │   └── server.js            # Server entry
+├── public/                  # Static files
+│   ├── test-auth.html
+│   ├── test-login.html
+│   └── test-permission.html
 ├── test_connection.js       # ⭐ MongoDB test script
-├── QUICKSTART.md           # ⭐ Quick start guide
-├── MONGODB_SETUP.md        # ⭐ MongoDB setup guide
-├── PERMISSION_USAGE.md     # ⭐ Permission usage guide
-├── API_EXAMPLES.md         # ⭐ API examples
+├── test_permission_system.js
+├── API_ENDPOINTS.md        # ✨ New - Complete API documentation
+├── QUICKSTART.md
+├── MONGODB_SETUP.md
+├── PERMISSION_USAGE.md
+├── API_EXAMPLES.md
+├── Postman_Collection.json
 ├── package.json
 └── README.md               # This file
 ```
@@ -152,28 +224,44 @@ router.post('/activities',
 
 ## 📡 API Endpoints
 
-### Authentication
-```
-POST   /api/auth/login              # Login
-POST   /api/auth/register           # Register
-POST   /api/auth/refresh            # Refresh token
-```
+Xem **[API_ENDPOINTS.md](./API_ENDPOINTS.md)** để biết chi tiết đầy đủ tất cả endpoints.
 
-### Users
-```
-GET    /api/users                   # Get all users
-GET    /api/users/:id               # Get user by ID
-PUT    /api/users/:id               # Update user
-DELETE /api/users/:id               # Delete user
-```
+### Các module chính:
 
-### Activities
-```
-GET    /api/activities              # Get activities
-POST   /api/activities              # Create activity
-PUT    /api/activities/:id          # Update activity
-DELETE /api/activities/:id          # Delete activity
-```
+#### 🔐 Authentication & Users
+- `/api/auth` - Authentication
+- `/api/users` - User management
+- `/api/student-profiles` - Student profiles
+- `/api/staff-profiles` - Staff profiles
+
+#### 🏫 Organization
+- `/api/faculties` - Faculty management
+- `/api/fields` - Field of study
+- `/api/cohorts` - Cohort management
+- `/api/classes` - Class management
+- `/api/org-units` - Organization units
+- `/api/student-cohorts` - Student-cohort mapping
+- `/api/pvcd-records` - PVCD records
+
+#### 🎯 Activities
+- `/api/activities` - Activity management
+- `/api/registrations` - Activity registrations
+- `/api/attendances` - Attendance tracking
+- `/api/posts` - Activity posts
+
+#### 📊 Points & Feedback
+- `/api/points` - Point management
+- `/api/feedback` - Feedback system
+- `/api/evidences` - Evidence management
+
+#### 💬 Communication
+- `/api/notifications` - Notifications
+- `/api/chats` - Chat system
+
+#### ⚙️ System
+- `/api/permissions` - Permission system
+- `/api/roles` - Role management
+- `/api/statistics` - Statistics
 
 ### **Permissions** ⭐
 ```

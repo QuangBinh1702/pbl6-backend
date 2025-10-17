@@ -2,8 +2,9 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, unique: true, required: true },
+  username: { type: String, unique: true, required: true, trim: true },
+  name: { type: String, required: true, trim: true },
+  email: { type: String, unique: true, required: true, trim: true },
   password: { type: String, required: true },
   role: {
     type: String,
@@ -15,7 +16,7 @@ const userSchema = new mongoose.Schema({
       'khoa', // Khoa/Liên chi đoàn
       'clb', // Câu lạc bộ
       'student', // Sinh viên
-      'loptruong' // Lớp trưởng
+      // 'loptruong' // Lớp trưởng
     ],
     default: 'student'
   },

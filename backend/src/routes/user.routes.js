@@ -15,6 +15,6 @@ router.put('/:id/unlock', auth, role(['admin', 'ctsv']), userController.unlockUs
 router.put('/:id/role', auth, role(['admin', 'ctsv']), userController.updateRole); // Phân quyền
 // Quản lý minh chứng ngoài trường
 router.get('/:id/evidences', auth, userController.getUserEvidences);
-// ...
+
 
 module.exports = router;

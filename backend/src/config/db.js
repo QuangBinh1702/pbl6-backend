@@ -48,10 +48,10 @@ const connectDB = async () => {
       error.message.includes("authentication failed")
     ) {
       throw new Error(`MongoDB Atlas connection failed. Please check:
-1. IP address is whitelisted in Atlas (add 0.0.0.0/0 for Vercel)
-2. Username and password are correct
-3. Database user has proper permissions
-Original error: ${error.message}`);
+      1. IP address is whitelisted in Atlas (add 0.0.0.0/0 for Vercel)
+      2. Username and password are correct
+      3. Database user has proper permissions
+      Original error: ${error.message}`);
     }
 
     throw error;
