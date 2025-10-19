@@ -2,38 +2,80 @@ const express = require('express');
 const router = express.Router();
 const studentProfileController = require('../controllers/student_profile.controller');
 const auth = require('../middlewares/auth.middleware');
-const role = require('../middlewares/role.middleware');
+const { checkPermission } = require('../middlewares/check_permission.middleware');
 
-// Lấy tất cả hồ sơ sinh viên
-router.get('/', auth, role(['admin', 'ctsv', 'teacher']), studentProfileController.getAllStudentProfiles);
+// Get all class monitors
+router.get('/class-monitors', 
+  auth, 
+  checkPermission('student', 'VIEW'), 
+  studentProfileController.getClassMonitors
+);
 
-// Lấy hồ sơ sinh viên theo ID
-router.get('/:id', auth, studentProfileController.getStudentProfileById);
+// Get all student profiles
+router.get('/', 
+  auth, 
+  checkPermission('student', 'VIEW'), 
+  studentProfileController.getAllStudentProfiles
+);
 
-// Lấy hồ sơ sinh viên theo User ID
-router.get('/user/:userId', auth, studentProfileController.getStudentProfileByUserId);
+// Get students by class
+router.get('/class/:classId/students', 
+  auth, 
+  checkPermission('student', 'VIEW'), 
+  studentProfileController.getStudentsByClass
+);
 
-// Lấy hồ sơ sinh viên theo mã sinh viên
-router.get('/student-number/:studentNumber', auth, studentProfileController.getStudentProfileByStudentNumber);
+// Get student profile by user ID
+router.get('/user/:userId', 
+  auth, 
+  studentProfileController.getStudentProfileByUserId
+);
 
-// Lấy danh sách sinh viên theo lớp
-router.get('/class/:classId/students', auth, studentProfileController.getStudentsByClass);
+// Get student profile by student number
+router.get('/student-number/:studentNumber', 
+  auth, 
+  studentProfileController.getStudentProfileByStudentNumber
+);
 
-// Tạo hồ sơ sinh viên mới
-router.post('/', auth, role(['admin', 'ctsv']), studentProfileController.createStudentProfile);
+// Get student profile by ID
+router.get('/:id', 
+  auth, 
+  studentProfileController.getStudentProfileById
+);
 
-// Cập nhật hồ sơ sinh viên
-router.put('/:id', auth, studentProfileController.updateStudentProfile);
+// Create student profile
+router.post('/', 
+  auth, 
+  checkPermission('student', 'CREATE'), 
+  studentProfileController.createStudentProfile
+);
 
-// Xóa hồ sơ sinh viên
-router.delete('/:id', auth, role(['admin', 'ctsv']), studentProfileController.deleteStudentProfile);
+// Update student profile
+router.put('/:id', 
+  auth, 
+  checkPermission('student', 'UPDATE'), 
+  studentProfileController.updateStudentProfile
+);
 
-// Đặt làm lớp trưởng
-router.put('/:id/set-monitor', auth, role(['admin', 'ctsv', 'teacher']), studentProfileController.setClassMonitor);
+// Delete student profile
+router.delete('/:id', 
+  auth, 
+  checkPermission('student', 'DELETE'), 
+  studentProfileController.deleteStudentProfile
+);
 
-// Hủy lớp trưởng
-router.put('/:id/remove-monitor', auth, role(['admin', 'ctsv', 'teacher']), studentProfileController.removeClassMonitor);
+// Set as class monitor (admin/ctsv only)
+router.put('/:id/set-monitor', 
+  auth, 
+  checkPermission('student', 'UPDATE'), 
+  studentProfileController.setClassMonitor
+);
+
+// Remove class monitor status (admin/ctsv only)
+router.put('/:id/unset-monitor', 
+  auth, 
+  checkPermission('student', 'UPDATE'), 
+  studentProfileController.unsetClassMonitor
+);
 
 module.exports = router;
-
-

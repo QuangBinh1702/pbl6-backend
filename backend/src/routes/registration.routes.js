@@ -2,44 +2,72 @@ const express = require('express');
 const router = express.Router();
 const registrationController = require('../controllers/registration.controller');
 const auth = require('../middlewares/auth.middleware');
-const role = require('../middlewares/role.middleware');
+const { checkPermission } = require('../middlewares/check_permission.middleware');
 
-// Lấy tất cả đăng ký
-router.get('/', auth, role(['admin', 'ctsv', 'teacher']), registrationController.getAllRegistrations);
-
-// Lấy đăng ký của tôi
+// Get my registrations (no permission check needed - own data)
 router.get('/my-registrations', auth, registrationController.getMyRegistrations);
 
-// Lấy đăng ký theo hoạt động
-router.get('/activity/:activityId', auth, registrationController.getRegistrationsByActivity);
+// Get all registrations (admin/staff only)
+router.get('/', 
+  auth, 
+  checkPermission('registration', 'VIEW'), 
+  registrationController.getAllRegistrations
+);
 
-// Lấy đăng ký theo người dùng
-router.get('/user/:userId', auth, registrationController.getRegistrationsByUser);
+// Get registrations by activity
+router.get('/activity/:activityId', 
+  auth, 
+  checkPermission('registration', 'VIEW'), 
+  registrationController.getRegistrationsByActivity
+);
 
-// Lấy đăng ký theo ID
-router.get('/:id', auth, registrationController.getRegistrationById);
+// Get registrations by student
+router.get('/student/:studentId', 
+  auth, 
+  checkPermission('registration', 'VIEW'), 
+  registrationController.getRegistrationsByStudent
+);
 
-// Tạo đăng ký mới
-router.post('/', auth, registrationController.createRegistration);
+// Get registration by ID
+router.get('/:id', 
+  auth, 
+  checkPermission('registration', 'VIEW'), 
+  registrationController.getRegistrationById
+);
 
-// Cập nhật đăng ký
-router.put('/:id', auth, registrationController.updateRegistration);
+// Create registration
+router.post('/', 
+  auth, 
+  checkPermission('registration', 'CREATE'), 
+  registrationController.createRegistration
+);
 
-// Xóa đăng ký
-router.delete('/:id', auth, registrationController.deleteRegistration);
+// Update registration
+router.put('/:id', 
+  auth, 
+  checkPermission('registration', 'UPDATE'), 
+  registrationController.updateRegistration
+);
 
-// Phê duyệt đăng ký
-router.put('/:id/approve', auth, role(['admin', 'ctsv', 'teacher', 'union']), registrationController.approveRegistration);
+// Delete registration
+router.delete('/:id', 
+  auth, 
+  checkPermission('registration', 'DELETE'), 
+  registrationController.deleteRegistration
+);
 
-// Từ chối đăng ký
-router.put('/:id/reject', auth, role(['admin', 'ctsv', 'teacher', 'union']), registrationController.rejectRegistration);
+// Approve registration
+router.put('/:id/approve', 
+  auth, 
+  checkPermission('registration', 'APPROVE'), 
+  registrationController.approveRegistration
+);
 
-// Đánh dấu đã tham dự
-router.put('/:id/attend', auth, role(['admin', 'ctsv', 'teacher', 'union']), registrationController.markAttended);
-
-// Xác nhận đăng ký
-router.put('/:id/confirm', auth, role(['admin', 'ctsv', 'teacher', 'union']), registrationController.confirmRegistration);
+// Reject registration
+router.put('/:id/reject', 
+  auth, 
+  checkPermission('registration', 'REJECT'), 
+  registrationController.rejectRegistration
+);
 
 module.exports = router;
-
-

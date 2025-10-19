@@ -1,5 +1,9 @@
 // Quản lý người dùng
 const User = require('../models/user.model');
+const UserRole = require('../models/user_role.model');
+const Role = require('../models/role.model');
+const Action = require('../models/action.model');
+const UserActionOverride = require('../models/user_action_override.model');
 const Evidence = require('../models/evidence.model');
 
 module.exports = {
@@ -81,6 +85,147 @@ module.exports = {
       res.json(evidences);
     } catch (err) {
       res.status(500).json({ message: err.message });
+    }
+  },
+
+  // Role management methods
+  async getUserRoles(req, res) {
+    try {
+      const userRoles = await UserRole.find({ user_id: req.params.id })
+        .populate('role_id')
+        .populate('org_unit_id');
+      
+      res.json({ success: true, data: userRoles });
+    } catch (err) {
+      console.error('Get user roles error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  async assignRole(req, res) {
+    try {
+      const { role_id, org_unit_id } = req.body;
+      
+      if (!role_id) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'role_id is required' 
+        });
+      }
+      
+      // Check if role exists
+      const role = await Role.findById(role_id);
+      if (!role) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Role not found' 
+        });
+      }
+      
+      // Check if user-role assignment already exists
+      const existing = await UserRole.findOne({
+        user_id: req.params.id,
+        role_id,
+        org_unit_id: org_unit_id || null
+      });
+      
+      if (existing) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'User already has this role' 
+        });
+      }
+      
+      const userRole = await UserRole.create({
+        user_id: req.params.id,
+        role_id,
+        org_unit_id
+      });
+      
+      await userRole.populate('role_id');
+      await userRole.populate('org_unit_id');
+      
+      res.status(201).json({ success: true, data: userRole });
+    } catch (err) {
+      console.error('Assign role error:', err);
+      res.status(400).json({ success: false, message: err.message });
+    }
+  },
+
+  async removeRole(req, res) {
+    try {
+      const userRole = await UserRole.findOneAndDelete({
+        user_id: req.params.id,
+        role_id: req.params.roleId
+      });
+      
+      if (!userRole) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'User role assignment not found' 
+        });
+      }
+      
+      res.json({ success: true, message: 'Role removed successfully' });
+    } catch (err) {
+      console.error('Remove role error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // Action override management methods
+  async addActionOverride(req, res) {
+    try {
+      const { action_id, is_granted } = req.body;
+      
+      if (!action_id) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'action_id is required' 
+        });
+      }
+      
+      // Check if action exists
+      const action = await Action.findById(action_id);
+      if (!action) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Action not found' 
+        });
+      }
+      
+      // Create or update override
+      const override = await UserActionOverride.findOneAndUpdate(
+        { user_id: req.params.id, action_id },
+        { is_granted: is_granted !== false }, // Default to true if not specified
+        { upsert: true, new: true }
+      ).populate('action_id');
+      
+      res.status(201).json({ success: true, data: override });
+    } catch (err) {
+      console.error('Add action override error:', err);
+      res.status(400).json({ success: false, message: err.message });
+    }
+  },
+
+  async removeActionOverride(req, res) {
+    try {
+      const override = await UserActionOverride.findOneAndDelete({
+        user_id: req.params.id,
+        action_id: req.params.actionId
+      });
+      
+      if (!override) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Action override not found' 
+        });
+      }
+      
+      res.json({ success: true, message: 'Action override removed successfully' });
+    } catch (err) {
+      console.error('Remove action override error:', err);
+      res.status(500).json({ success: false, message: err.message });
     }
   },
 };

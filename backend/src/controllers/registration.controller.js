@@ -1,242 +1,302 @@
-
 // Quản lý đăng ký hoạt động
-const Registration = require('../models/registration.model');
+const ActivityRegistration = require('../models/activity_registration.model');
 const Activity = require('../models/activity.model');
+const StudentProfile = require('../models/student_profile.model');
 const User = require('../models/user.model');
 const QRCode = require('qrcode');
 
 module.exports = {
   async getAllRegistrations(req, res) {
     try {
-      const registrations = await Registration.find()
-        .populate('user', '-password')
-        .populate('activity')
-        .populate('evidence')
-        .populate('confirmedBy', '-password')
-        .populate('feedback')
+      const { status, activity_id } = req.query;
+      const filter = {};
+      
+      if (status) filter.status = status;
+      if (activity_id) filter.activity_id = activity_id;
+      
+      const registrations = await ActivityRegistration.find(filter)
+        .populate({
+          path: 'student_id',
+          populate: { path: 'user_id' }
+        })
+        .populate('activity_id')
+        .populate('approved_by')
         .sort({ createdAt: -1 });
-      res.json(registrations);
+      
+      res.json({ success: true, data: registrations });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      console.error('Get all registrations error:', err);
+      res.status(500).json({ success: false, message: err.message });
     }
   },
 
   async getRegistrationById(req, res) {
     try {
-      const registration = await Registration.findById(req.params.id)
-        .populate('user', '-password')
-        .populate('activity')
-        .populate('evidence')
-        .populate('confirmedBy', '-password')
-        .populate('feedback');
+      const registration = await ActivityRegistration.findById(req.params.id)
+        .populate({
+          path: 'student_id',
+          populate: { path: 'user_id' }
+        })
+        .populate('activity_id')
+        .populate('approved_by');
+      
       if (!registration) {
-        return res.status(404).json({ message: 'Registration not found' });
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Registration not found' 
+        });
       }
-      res.json(registration);
+      
+      res.json({ success: true, data: registration });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      console.error('Get registration by ID error:', err);
+      res.status(500).json({ success: false, message: err.message });
     }
   },
 
   async getRegistrationsByActivity(req, res) {
     try {
-      const registrations = await Registration.find({ activity: req.params.activityId })
-        .populate('user', '-password')
-        .populate('activity')
-        .populate('evidence')
-        .populate('confirmedBy', '-password')
-        .populate('feedback')
+      const { status } = req.query;
+      const filter = { activity_id: req.params.activityId };
+      
+      if (status) filter.status = status;
+      
+      const registrations = await ActivityRegistration.find(filter)
+        .populate({
+          path: 'student_id',
+          populate: { path: 'user_id' }
+        })
+        .populate('approved_by')
         .sort({ createdAt: -1 });
-      res.json(registrations);
+      
+      res.json({ success: true, data: registrations });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      console.error('Get registrations by activity error:', err);
+      res.status(500).json({ success: false, message: err.message });
     }
   },
 
-  async getRegistrationsByUser(req, res) {
+  async getRegistrationsByStudent(req, res) {
     try {
-      const registrations = await Registration.find({ user: req.params.userId })
-        .populate('user', '-password')
-        .populate('activity')
-        .populate('evidence')
-        .populate('confirmedBy', '-password')
-        .populate('feedback')
+      const { studentId } = req.params;
+      
+      const registrations = await ActivityRegistration.find({ 
+        student_id: studentId 
+      })
+        .populate('activity_id')
+        .populate('approved_by')
         .sort({ createdAt: -1 });
-      res.json(registrations);
+      
+      res.json({ success: true, data: registrations });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      console.error('Get registrations by student error:', err);
+      res.status(500).json({ success: false, message: err.message });
     }
   },
 
   async createRegistration(req, res) {
     try {
+      const { student_id, activity_id } = req.body;
+      
+      if (!student_id || !activity_id) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'student_id and activity_id are required' 
+        });
+      }
+      
       // Check if already registered
-      const existingReg = await Registration.findOne({
-        user: req.body.user || req.user._id,
-        activity: req.body.activity
+      const existingReg = await ActivityRegistration.findOne({
+        student_id,
+        activity_id
       });
       
       if (existingReg) {
-        return res.status(400).json({ message: 'Already registered for this activity' });
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Already registered for this activity' 
+        });
       }
 
-      const registration = new Registration({
-        ...req.body,
-        user: req.body.user || req.user._id
+      // Check activity exists and capacity
+      const activity = await Activity.findById(activity_id);
+      if (!activity) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Activity not found' 
+        });
+      }
+      
+      if (activity.capacity > 0) {
+        const registrationCount = await ActivityRegistration.countDocuments({ 
+          activity_id,
+          status: { $in: ['pending', 'approved'] }
+        });
+        
+        if (registrationCount >= activity.capacity) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Activity is full' 
+          });
+        }
+      }
+
+      const registration = await ActivityRegistration.create({
+        student_id,
+        activity_id,
+        status: activity.requires_approval ? 'pending' : 'approved'
       });
 
-      // Generate QR code for attendance
-      const qrData = JSON.stringify({
-        registrationId: registration._id,
-        userId: registration.user,
-        activityId: registration.activity,
-        timestamp: Date.now()
+      await registration.populate({
+        path: 'student_id',
+        populate: { path: 'user_id' }
       });
+      await registration.populate('activity_id');
       
-      const qrCode = await QRCode.toDataURL(qrData);
-      registration.qrCode = qrCode;
-
-      await registration.save();
-      await registration.populate('user', '-password');
-      await registration.populate('activity');
-      
-      res.status(201).json(registration);
+      res.status(201).json({ success: true, data: registration });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      console.error('Create registration error:', err);
+      res.status(400).json({ success: false, message: err.message });
     }
   },
 
   async updateRegistration(req, res) {
     try {
-      const registration = await Registration.findByIdAndUpdate(
+      const registration = await ActivityRegistration.findByIdAndUpdate(
         req.params.id,
         req.body,
         { new: true, runValidators: true }
       )
-        .populate('user', '-password')
-        .populate('activity')
-        .populate('evidence')
-        .populate('confirmedBy', '-password')
-        .populate('feedback');
+        .populate({
+          path: 'student_id',
+          populate: { path: 'user_id' }
+        })
+        .populate('activity_id')
+        .populate('approved_by');
       
       if (!registration) {
-        return res.status(404).json({ message: 'Registration not found' });
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Registration not found' 
+        });
       }
-      res.json(registration);
+      
+      res.json({ success: true, data: registration });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      console.error('Update registration error:', err);
+      res.status(400).json({ success: false, message: err.message });
     }
   },
 
   async deleteRegistration(req, res) {
     try {
-      const registration = await Registration.findByIdAndDelete(req.params.id);
+      const registration = await ActivityRegistration.findByIdAndDelete(req.params.id);
+      
       if (!registration) {
-        return res.status(404).json({ message: 'Registration not found' });
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Registration not found' 
+        });
       }
-      res.json({ message: 'Registration deleted successfully' });
+      
+      res.json({ success: true, message: 'Registration deleted successfully' });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      console.error('Delete registration error:', err);
+      res.status(500).json({ success: false, message: err.message });
     }
   },
 
   async approveRegistration(req, res) {
     try {
-      const registration = await Registration.findByIdAndUpdate(
+      const registration = await ActivityRegistration.findByIdAndUpdate(
         req.params.id,
-        { status: 'approved' },
+        { 
+          status: 'approved',
+          approved_by: req.user.id,
+          approved_at: new Date()
+        },
         { new: true }
       )
-        .populate('user', '-password')
-        .populate('activity');
+        .populate({
+          path: 'student_id',
+          populate: { path: 'user_id' }
+        })
+        .populate('activity_id')
+        .populate('approved_by');
       
       if (!registration) {
-        return res.status(404).json({ message: 'Registration not found' });
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Registration not found' 
+        });
       }
-      res.json(registration);
+      
+      res.json({ success: true, data: registration });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      console.error('Approve registration error:', err);
+      res.status(400).json({ success: false, message: err.message });
     }
   },
 
   async rejectRegistration(req, res) {
     try {
-      const registration = await Registration.findByIdAndUpdate(
-        req.params.id,
-        { status: 'rejected' },
-        { new: true }
-      )
-        .populate('user', '-password')
-        .populate('activity');
+      const { approval_note } = req.body;
       
-      if (!registration) {
-        return res.status(404).json({ message: 'Registration not found' });
-      }
-      res.json(registration);
-    } catch (err) {
-      res.status(400).json({ message: err.message });
-    }
-  },
-
-  async markAttended(req, res) {
-    try {
-      const registration = await Registration.findByIdAndUpdate(
+      const registration = await ActivityRegistration.findByIdAndUpdate(
         req.params.id,
         { 
-          attended: true, 
-          attendanceTime: new Date(),
-          status: 'attended'
+          status: 'rejected',
+          approved_by: req.user.id,
+          approved_at: new Date(),
+          approval_note
         },
         { new: true }
       )
-        .populate('user', '-password')
-        .populate('activity');
+        .populate({
+          path: 'student_id',
+          populate: { path: 'user_id' }
+        })
+        .populate('activity_id')
+        .populate('approved_by');
       
       if (!registration) {
-        return res.status(404).json({ message: 'Registration not found' });
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Registration not found' 
+        });
       }
-      res.json(registration);
-    } catch (err) {
-      res.status(400).json({ message: err.message });
-    }
-  },
-
-  async confirmRegistration(req, res) {
-    try {
-      const registration = await Registration.findByIdAndUpdate(
-        req.params.id,
-        { 
-          status: 'confirmed',
-          confirmedBy: req.user._id,
-          confirmedAt: new Date()
-        },
-        { new: true }
-      )
-        .populate('user', '-password')
-        .populate('activity')
-        .populate('confirmedBy', '-password');
       
-      if (!registration) {
-        return res.status(404).json({ message: 'Registration not found' });
-      }
-      res.json(registration);
+      res.json({ success: true, data: registration });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      console.error('Reject registration error:', err);
+      res.status(400).json({ success: false, message: err.message });
     }
   },
 
   async getMyRegistrations(req, res) {
     try {
-      const registrations = await Registration.find({ user: req.user._id })
-        .populate('activity')
-        .populate('evidence')
-        .populate('feedback')
+      // Get student profile for current user
+      const studentProfile = await StudentProfile.findOne({ 
+        user_id: req.user.id 
+      });
+      
+      if (!studentProfile) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Student profile not found' 
+        });
+      }
+      
+      const registrations = await ActivityRegistration.find({ 
+        student_id: studentProfile._id 
+      })
+        .populate('activity_id')
         .sort({ createdAt: -1 });
-      res.json(registrations);
+      
+      res.json({ success: true, data: registrations });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      console.error('Get my registrations error:', err);
+      res.status(500).json({ success: false, message: err.message });
     }
   },
 };
-
-

@@ -1,117 +1,302 @@
 // Quản lý hoạt động
 const Activity = require('../models/activity.model');
-const Registration = require('../models/registration.model');
+const ActivityRegistration = require('../models/activity_registration.model');
 const User = require('../models/user.model');
 
 module.exports = {
   async getAllActivities(req, res) {
     try {
-      const activities = await Activity.find();
-      res.json(activities);
+      const { org_unit_id, field_id, start_date, end_date } = req.query;
+      
+      const filter = {};
+      if (org_unit_id) filter.org_unit_id = org_unit_id;
+      if (field_id) filter.field_id = field_id;
+      if (start_date || end_date) {
+        filter.start_time = {};
+        if (start_date) filter.start_time.$gte = new Date(start_date);
+        if (end_date) filter.start_time.$lte = new Date(end_date);
+      }
+      
+      const activities = await Activity.find(filter)
+        .populate('org_unit_id')
+        .populate('field_id')
+        .sort({ start_time: -1 });
+      
+      res.json({ success: true, data: activities });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      console.error('Get all activities error:', err);
+      res.status(500).json({ success: false, message: err.message });
     }
   },
+
   async getActivityById(req, res) {
     try {
-      const activity = await Activity.findById(req.params.id);
-      if (!activity) return res.status(404).json({ message: 'Activity not found' });
-      res.json(activity);
+      const activity = await Activity.findById(req.params.id)
+        .populate('org_unit_id')
+        .populate('field_id');
+      
+      if (!activity) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Activity not found' 
+        });
+      }
+      
+      // Get registration count
+      const registrationCount = await ActivityRegistration.countDocuments({ 
+        activity_id: activity._id 
+      });
+      
+      res.json({ 
+        success: true, 
+        data: {
+          ...activity.toObject(),
+          registrationCount
+        }
+      });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      console.error('Get activity by ID error:', err);
+      res.status(500).json({ success: false, message: err.message });
     }
   },
+
   async createActivity(req, res) {
     try {
-      const activity = new Activity({ ...req.body, createdBy: req.user._id });
-      await activity.save();
-      res.status(201).json(activity);
+      const {
+        title,
+        description,
+        location,
+        start_time,
+        end_time,
+        capacity,
+        registration_open,
+        registration_close,
+        requires_approval,
+        org_unit_id,
+        field_id,
+        activity_image
+      } = req.body;
+      
+      // Validate required fields
+      if (!title || !start_time || !end_time) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Title, start_time, and end_time are required' 
+        });
+      }
+      
+      const activity = await Activity.create({
+        title,
+        description,
+        location,
+        start_time: new Date(start_time),
+        end_time: new Date(end_time),
+        start_time_updated: new Date(start_time),
+        end_time_updated: new Date(end_time),
+        capacity: capacity || 0,
+        registration_open: registration_open ? new Date(registration_open) : null,
+        registration_close: registration_close ? new Date(registration_close) : null,
+        requires_approval: requires_approval || false,
+        org_unit_id,
+        field_id,
+        activity_image
+      });
+      
+      res.status(201).json({ success: true, data: activity });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      console.error('Create activity error:', err);
+      res.status(400).json({ success: false, message: err.message });
     }
   },
+
   async updateActivity(req, res) {
     try {
-      const activity = await Activity.findByIdAndUpdate(req.params.id, req.body, { new: true });
-      if (!activity) return res.status(404).json({ message: 'Activity not found' });
-      res.json(activity);
+      const updates = { ...req.body };
+      
+      // Update time_updated fields if start_time or end_time changed
+      if (updates.start_time) {
+        updates.start_time = new Date(updates.start_time);
+        updates.start_time_updated = new Date();
+      }
+      if (updates.end_time) {
+        updates.end_time = new Date(updates.end_time);
+        updates.end_time_updated = new Date();
+      }
+      
+      const activity = await Activity.findByIdAndUpdate(
+        req.params.id, 
+        updates, 
+        { new: true, runValidators: true }
+      ).populate('org_unit_id').populate('field_id');
+      
+      if (!activity) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Activity not found' 
+        });
+      }
+      
+      res.json({ success: true, data: activity });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      console.error('Update activity error:', err);
+      res.status(400).json({ success: false, message: err.message });
     }
   },
+
   async deleteActivity(req, res) {
     try {
       const activity = await Activity.findByIdAndDelete(req.params.id);
-      if (!activity) return res.status(404).json({ message: 'Activity not found' });
-      res.json({ message: 'Activity deleted' });
+      
+      if (!activity) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Activity not found' 
+        });
+      }
+      
+      // Also delete related registrations
+      await ActivityRegistration.deleteMany({ activity_id: req.params.id });
+      
+      res.json({ success: true, message: 'Activity deleted successfully' });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      console.error('Delete activity error:', err);
+      res.status(500).json({ success: false, message: err.message });
     }
   },
+
   async approveActivity(req, res) {
     try {
-      const activity = await Activity.findByIdAndUpdate(req.params.id, { status: 'approved', approvedBy: req.user._id }, { new: true });
-      if (!activity) return res.status(404).json({ message: 'Activity not found' });
-      res.json(activity);
+      const activity = await Activity.findById(req.params.id);
+      if (!activity) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Activity not found' 
+        });
+      }
+      
+      // Update activity status (note: new schema doesn't have status field)
+      // You may need to add a status field or use a different approach
+      activity.approved = true;
+      activity.approved_by = req.user.id;
+      activity.approved_at = new Date();
+      await activity.save();
+      
+      res.json({ success: true, data: activity });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      console.error('Approve activity error:', err);
+      res.status(400).json({ success: false, message: err.message });
     }
   },
+
   async rejectActivity(req, res) {
     try {
-      const activity = await Activity.findByIdAndUpdate(req.params.id, { status: 'rejected', approvedBy: req.user._id }, { new: true });
-      if (!activity) return res.status(404).json({ message: 'Activity not found' });
-      res.json(activity);
+      const activity = await Activity.findById(req.params.id);
+      if (!activity) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Activity not found' 
+        });
+      }
+      
+      activity.approved = false;
+      activity.rejected = true;
+      activity.rejected_by = req.user.id;
+      activity.rejected_at = new Date();
+      activity.rejection_reason = req.body.reason || '';
+      await activity.save();
+      
+      res.json({ success: true, data: activity });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      console.error('Reject activity error:', err);
+      res.status(400).json({ success: false, message: err.message });
     }
   },
+
   async completeActivity(req, res) {
     try {
-      const activity = await Activity.findByIdAndUpdate(req.params.id, { status: 'completed' }, { new: true });
-      if (!activity) return res.status(404).json({ message: 'Activity not found' });
-      res.json(activity);
+      const activity = await Activity.findById(req.params.id);
+      if (!activity) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Activity not found' 
+        });
+      }
+      
+      activity.completed = true;
+      activity.completed_at = new Date();
+      await activity.save();
+      
+      res.json({ success: true, data: activity });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      console.error('Complete activity error:', err);
+      res.status(400).json({ success: false, message: err.message });
     }
   },
+
   async registerActivity(req, res) {
     try {
-      const exist = await Registration.findOne({ user: req.user._id, activity: req.params.id });
-      if (exist) return res.status(400).json({ message: 'Already registered' });
-      const registration = new Registration({ user: req.user._id, activity: req.params.id });
-      await registration.save();
-      res.status(201).json(registration);
+      const { student_id } = req.body;
+      const studentIdToUse = student_id || req.user.id;
+      
+      // Check if already registered
+      const exist = await ActivityRegistration.findOne({ 
+        student_id: studentIdToUse, 
+        activity_id: req.params.id 
+      });
+      
+      if (exist) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Already registered for this activity' 
+        });
+      }
+      
+      // Check capacity
+      const activity = await Activity.findById(req.params.id);
+      if (!activity) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Activity not found' 
+        });
+      }
+      
+      if (activity.capacity > 0) {
+        const registrationCount = await ActivityRegistration.countDocuments({ 
+          activity_id: req.params.id,
+          status: { $in: ['pending', 'approved'] }
+        });
+        
+        if (registrationCount >= activity.capacity) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Activity is full' 
+          });
+        }
+      }
+      
+      const registration = await ActivityRegistration.create({ 
+        student_id: studentIdToUse, 
+        activity_id: req.params.id,
+        status: activity.requires_approval ? 'pending' : 'approved'
+      });
+      
+      res.status(201).json({ success: true, data: registration });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      console.error('Register activity error:', err);
+      res.status(400).json({ success: false, message: err.message });
     }
   },
-  async attendanceActivity(req, res) {
+
+  async getActivityRegistrations(req, res) {
     try {
-      const { userId } = req.body;
-      const registration = await Registration.findOneAndUpdate(
-        { user: userId, activity: req.params.id },
-        { attended: true, attendanceTime: new Date() },
-        { new: true }
-      );
-      if (!registration) return res.status(404).json({ message: 'Registration not found' });
-      res.json(registration);
+      const registrations = await ActivityRegistration.find({ 
+        activity_id: req.params.id 
+      }).populate('student_id');
+      
+      res.json({ success: true, data: registrations });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      console.error('Get activity registrations error:', err);
+      res.status(500).json({ success: false, message: err.message });
     }
-  },
-  async confirmActivity(req, res) {
-    try {
-      const { userId } = req.body;
-      const registration = await Registration.findOneAndUpdate(
-        { user: userId, activity: req.params.id },
-        { status: 'confirmed', confirmedBy: req.user._id, confirmedAt: new Date() },
-        { new: true }
-      );
-      if (!registration) return res.status(404).json({ message: 'Registration not found' });
-      res.json(registration);
-    } catch (err) {
-      res.status(400).json({ message: err.message });
-    }
-  },
+  }
 };
