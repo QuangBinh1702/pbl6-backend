@@ -2,23 +2,52 @@
 const mongoose = require('mongoose');
 
 const activitySchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  description: String,
-  type: { type: String, enum: ['school', 'faculty', 'club', 'volunteer', 'external'], default: 'school' }, // Loại hoạt động
-  organizer: { type: String }, // Đơn vị tổ chức
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  time: Date,
+  org_unit_id: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'OrgUnit'
+  },
+  field_id: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Field'
+  },
+  title: { 
+    type: String, 
+    required: true,
+    trim: true
+  },
+  description: {
+    type: String,
+    trim: true
+  },
   location: String,
-  points: { type: Number, default: 0 },
-  status: { type: String, enum: ['pending', 'approved', 'rejected', 'cancelled', 'completed'], default: 'pending' },
-  approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  evidences: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Evidence' }],
-  attendanceList: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Registration' }],
-  feedbacks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Feedback' }],
-  report: String, // Báo cáo tổng kết
-  certificateTemplate: String, // Mẫu giấy chứng nhận
-  // ...other fields...
+  start_time: { 
+    type: Date,
+    required: true
+  },
+  end_time: { 
+    type: Date,
+    required: true
+  },
+  start_time_updated: Date,
+  end_time_updated: Date,
+  capacity: { 
+    type: Number,
+    min: 0
+  },
+  qr_code: String,
+  registration_open: Date,
+  registration_close: Date,
+  activity_image: String,
+  requires_approval: { 
+    type: Boolean, 
+    default: false 
+  }
 }, { timestamps: true });
+
+// Index for faster queries
+activitySchema.index({ org_unit_id: 1 });
+activitySchema.index({ field_id: 1 });
+activitySchema.index({ start_time: 1 });
+activitySchema.index({ registration_open: 1, registration_close: 1 });
 
 module.exports = mongoose.model('Activity', activitySchema);

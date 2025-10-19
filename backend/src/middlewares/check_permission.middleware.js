@@ -1,13 +1,20 @@
-const UserPermission = require('../models/user_permission.model');
-const Permission = require('../models/permission.model');
+const { 
+  hasPermission, 
+  getUserActions, 
+  isClassMonitor: checkIsClassMonitor,
+  hasAnyPermission: checkHasAnyPermission,
+  hasAllPermissions: checkHasAllPermissions
+} = require('../utils/permission.util');
 
 /**
- * Middleware kiểm tra permission chi tiết
- * @param {string} permissionName - Tên permission (name_per)
- * @param {string} actionCode - Mã action cần kiểm tra (VD: 'CREATE', 'UPDATE', 'DELETE')
+ * Middleware kiểm tra permission theo resource và action
+ * Sử dụng hệ thống phân quyền mới: user_role → role_action + user_action_override
+ * 
+ * @param {string} resource - Resource name (e.g., 'activity', 'student')
+ * @param {string} actionCode - Action code (e.g., 'VIEW', 'CREATE', 'UPDATE', 'DELETE')
  * @returns {Function} Express middleware
  */
-const checkPermission = (permissionName, actionCode) => {
+const checkPermission = (resource, actionCode) => {
   return async (req, res, next) => {
     try {
       // Kiểm tra user đã đăng nhập chưa (phải có auth middleware trước)
@@ -19,48 +26,21 @@ const checkPermission = (permissionName, actionCode) => {
       }
 
       const userId = req.user.id;
+      const orgUnitId = req.body.org_unit_id || req.query.org_unit_id || null;
       
-      // Tìm permission theo tên
-      const permission = await Permission.findOne({ 
-        name_per: permissionName,
-        is_active: true 
-      });
+      // Kiểm tra permission sử dụng utility function
+      const allowed = await hasPermission(userId, resource, actionCode, orgUnitId);
       
-      if (!permission) {
-        return res.status(404).json({ 
-          success: false,
-          message: `Permission "${permissionName}" không tồn tại hoặc đã bị vô hiệu hóa` 
-        });
-      }
-      
-      // Kiểm tra user có được gán permission này không
-      const hasPermission = await UserPermission.hasPermission(userId, permission._id);
-      
-      if (!hasPermission) {
+      if (!allowed) {
         return res.status(403).json({ 
           success: false,
-          message: 'Bạn không có quyền truy cập tài nguyên này',
-          required_permission: permissionName
+          message: `Bạn không có quyền thực hiện hành động "${actionCode}" trên "${resource}"`,
+          required_permission: `${resource}:${actionCode}`
         });
-      }
-      
-      // Nếu có actionCode, kiểm tra action có được phép không
-      if (actionCode) {
-        const isActionAllowed = permission.isActionAllowed(actionCode);
-        
-        if (!isActionAllowed) {
-          return res.status(403).json({ 
-            success: false,
-            message: `Bạn không có quyền thực hiện hành động "${actionCode}"`,
-            required_permission: permissionName,
-            required_action: actionCode
-          });
-        }
       }
       
       // Attach permission info vào request để sử dụng sau này
-      req.permission = permission;
-      req.permissionName = permissionName;
+      req.resource = resource;
       req.actionCode = actionCode;
       
       // Cho phép tiếp tục
@@ -77,7 +57,7 @@ const checkPermission = (permissionName, actionCode) => {
 
 /**
  * Middleware kiểm tra user có bất kỳ permission nào trong danh sách
- * @param {Array<{permission: string, action: string}>} permissionList
+ * @param {Array<{resource: string, action: string}>} permissionList
  * @returns {Function} Express middleware
  */
 const checkAnyPermission = (permissionList) => {
@@ -91,38 +71,20 @@ const checkAnyPermission = (permissionList) => {
       }
 
       const userId = req.user.id;
+      const orgUnitId = req.body.org_unit_id || req.query.org_unit_id || null;
       
-      // Kiểm tra từng permission trong danh sách
-      for (const item of permissionList) {
-        const permission = await Permission.findOne({ 
-          name_per: item.permission,
-          is_active: true 
+      // Sử dụng utility function để kiểm tra
+      const allowed = await checkHasAnyPermission(userId, permissionList, orgUnitId);
+      
+      if (!allowed) {
+        return res.status(403).json({ 
+          success: false,
+          message: 'Bạn không có quyền truy cập tài nguyên này',
+          required_permissions: permissionList
         });
-        
-        if (!permission) continue;
-        
-        const hasPermission = await UserPermission.hasPermission(userId, permission._id);
-        if (!hasPermission) continue;
-        
-        // Nếu có action code, kiểm tra action
-        if (item.action) {
-          const isActionAllowed = permission.isActionAllowed(item.action);
-          if (isActionAllowed) {
-            req.permission = permission;
-            return next(); // Tìm thấy permission hợp lệ
-          }
-        } else {
-          req.permission = permission;
-          return next(); // Tìm thấy permission hợp lệ
-        }
       }
       
-      // Không tìm thấy permission nào hợp lệ
-      return res.status(403).json({ 
-        success: false,
-        message: 'Bạn không có quyền truy cập tài nguyên này',
-        required_permissions: permissionList
-      });
+      next();
     } catch (error) {
       console.error('Error in checkAnyPermission middleware:', error);
       res.status(500).json({ 
@@ -135,7 +97,7 @@ const checkAnyPermission = (permissionList) => {
 
 /**
  * Middleware kiểm tra user có tất cả permissions trong danh sách
- * @param {Array<{permission: string, action: string}>} permissionList
+ * @param {Array<{resource: string, action: string}>} permissionList
  * @returns {Function} Express middleware
  */
 const checkAllPermissions = (permissionList) => {
@@ -149,49 +111,19 @@ const checkAllPermissions = (permissionList) => {
       }
 
       const userId = req.user.id;
-      const grantedPermissions = [];
+      const orgUnitId = req.body.org_unit_id || req.query.org_unit_id || null;
       
-      // Kiểm tra tất cả permissions
-      for (const item of permissionList) {
-        const permission = await Permission.findOne({ 
-          name_per: item.permission,
-          is_active: true 
+      // Sử dụng utility function để kiểm tra
+      const allowed = await checkHasAllPermissions(userId, permissionList, orgUnitId);
+      
+      if (!allowed) {
+        return res.status(403).json({ 
+          success: false,
+          message: 'Bạn không có đầy đủ quyền để thực hiện hành động này',
+          required_permissions: permissionList
         });
-        
-        if (!permission) {
-          return res.status(403).json({ 
-            success: false,
-            message: `Permission "${item.permission}" không tồn tại`,
-            required_permissions: permissionList
-          });
-        }
-        
-        const hasPermission = await UserPermission.hasPermission(userId, permission._id);
-        if (!hasPermission) {
-          return res.status(403).json({ 
-            success: false,
-            message: `Bạn không có quyền "${item.permission}"`,
-            required_permissions: permissionList
-          });
-        }
-        
-        // Kiểm tra action nếu có
-        if (item.action) {
-          const isActionAllowed = permission.isActionAllowed(item.action);
-          if (!isActionAllowed) {
-            return res.status(403).json({ 
-              success: false,
-              message: `Bạn không có quyền thực hiện action "${item.action}" trong "${item.permission}"`,
-              required_permissions: permissionList
-            });
-          }
-        }
-        
-        grantedPermissions.push(permission);
       }
       
-      // Tất cả permissions đều hợp lệ
-      req.permissions = grantedPermissions;
       next();
     } catch (error) {
       console.error('Error in checkAllPermissions middleware:', error);
@@ -204,12 +136,12 @@ const checkAllPermissions = (permissionList) => {
 };
 
 /**
- * Middleware kiểm tra user có permission dựa trên role (compatibility với hệ thống cũ)
- * @param {string} resource
- * @param {string} action
+ * Middleware kiểm tra xem user có phải là lớp trưởng không
+ * Lớp trưởng KHÔNG phải là một role, chỉ là field boolean trong student_profile
+ * 
  * @returns {Function} Express middleware
  */
-const checkPermissionByResourceAction = (resource, action) => {
+const checkClassMonitor = () => {
   return async (req, res, next) => {
     try {
       if (!req.user || !req.user.id) {
@@ -221,38 +153,56 @@ const checkPermissionByResourceAction = (resource, action) => {
 
       const userId = req.user.id;
       
-      // Tìm permission theo resource và action (hệ thống cũ)
-      const permission = await Permission.findOne({ 
-        resource,
-        action,
-        is_active: true 
-      });
+      // Kiểm tra xem user có phải là lớp trưởng không
+      const isMonitor = await checkIsClassMonitor(userId);
       
-      if (!permission) {
-        return res.status(404).json({ 
-          success: false,
-          message: `Permission "${resource}:${action}" không tồn tại` 
-        });
-      }
-      
-      const hasPermission = await UserPermission.hasPermission(userId, permission._id);
-      
-      if (!hasPermission) {
+      if (!isMonitor) {
         return res.status(403).json({ 
           success: false,
-          message: 'Bạn không có quyền truy cập tài nguyên này',
-          required_permission: `${resource}:${action}`
+          message: 'Chỉ lớp trưởng mới có quyền thực hiện hành động này'
         });
       }
       
-      req.permission = permission;
+      // Attach info vào request
+      req.isClassMonitor = true;
+      
       next();
     } catch (error) {
-      console.error('Error in checkPermissionByResourceAction middleware:', error);
+      console.error('Error in checkClassMonitor middleware:', error);
       res.status(500).json({ 
         success: false,
-        message: 'Lỗi khi kiểm tra quyền truy cập' 
+        message: 'Lỗi khi kiểm tra quyền lớp trưởng' 
       });
+    }
+  };
+};
+
+/**
+ * Middleware lấy danh sách actions mà user có thể thực hiện trên resource
+ * Hữu ích cho việc hiển thị UI động dựa trên quyền
+ * 
+ * @param {string} resource - Resource name
+ * @returns {Function} Express middleware
+ */
+const attachUserActions = (resource) => {
+  return async (req, res, next) => {
+    try {
+      if (!req.user || !req.user.id) {
+        req.userActions = [];
+        return next();
+      }
+
+      const userId = req.user.id;
+      const orgUnitId = req.body.org_unit_id || req.query.org_unit_id || null;
+      
+      const actions = await getUserActions(userId, resource, orgUnitId);
+      req.userActions = actions;
+      
+      next();
+    } catch (error) {
+      console.error('Error in attachUserActions middleware:', error);
+      req.userActions = [];
+      next();
     }
   };
 };
@@ -261,7 +211,8 @@ module.exports = {
   checkPermission,
   checkAnyPermission,
   checkAllPermissions,
-  checkPermissionByResourceAction
+  checkClassMonitor,
+  attachUserActions
 };
 
 

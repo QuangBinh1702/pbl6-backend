@@ -2,35 +2,28 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  username: { type: String, unique: true, required: true, trim: true },
-  name: { type: String, required: true, trim: true },
-  email: { type: String, unique: true, required: true, trim: true },
-  password: { type: String, required: true },
-  role: {
-    type: String,
-    enum: [
-      'admin', // Quản trị hệ thống
-      'ctsv', // Phòng Công tác Sinh viên
-      'doantruong', // Đoàn trường
-      'hoisv', // Hội sinh viên
-      'khoa', // Khoa/Liên chi đoàn
-      'clb', // Câu lạc bộ
-      'student', // Sinh viên
-      // 'loptruong' // Lớp trưởng
-    ],
-    default: 'student'
+  username: { 
+    type: String, 
+    unique: true, 
+    required: true, 
+    trim: true 
   },
-  phone: String,
-  class: String, // Lớp
-  studentId: { type: String, unique: true, sparse: true },
-  isLocked: { type: Boolean, default: false },
-  avatar: String,
-  department: String, // Khoa/đơn vị
-  graduationYear: Number, // Năm tốt nghiệp
-  joinedYear: Number, // Năm vào trường
-  evidences: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Evidence' }], // Minh chứng hoạt động ngoài
-  notifications: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Notification' }],
-  // ...other fields...
+  password_hash: { 
+    type: String, 
+    required: true 
+  },
+  active: { 
+    type: Boolean, 
+    default: true 
+  },
+  isLocked: { 
+    type: Boolean, 
+    default: false 
+  }
 }, { timestamps: true });
+
+// Index for faster queries
+userSchema.index({ username: 1 });
+userSchema.index({ active: 1 });
 
 module.exports = mongoose.model('User', userSchema);
