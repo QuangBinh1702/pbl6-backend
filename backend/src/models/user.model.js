@@ -22,8 +22,7 @@ const userSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Index for faster queries
-userSchema.index({ username: 1 });
+// Index for faster queries (username already has unique index)
 userSchema.index({ active: 1 });
 
 module.exports = mongoose.model('User', userSchema);

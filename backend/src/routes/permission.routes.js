@@ -5,81 +5,60 @@ const authMiddleware = require('../middlewares/auth.middleware');
 const { checkPermission } = require('../middlewares/check_permission.middleware');
 
 // ============================================
-// PERMISSION MANAGEMENT ROUTES
+// PERMISSION & ACTION ROUTES
 // ============================================
 
 /**
  * @route   GET /api/permissions
- * @desc    Lấy tất cả permissions
- * @query   is_active (boolean), search (string)
- * @access  Private (cần đăng nhập)
+ * @desc    Get all permissions
+ * @access  Private
  */
-router.get(
-  '/',
+router.get('/',
   authMiddleware,
   permissionController.getAllPermissions
 );
 
 /**
- * @route   GET /api/permissions/:id
- * @desc    Lấy chi tiết một permission
- * @access  Private
- */
-router.get(
-  '/:id',
-  authMiddleware,
-  permissionController.getPermissionById
-);
-
-/**
  * @route   POST /api/permissions
- * @desc    Tạo permission mới
- * @body    { name_per, description, resource, action, details }
- * @access  Private (Admin only - cần permission quản lý hệ thống)
+ * @desc    Create new permission
+ * @access  Private (Admin only)
  */
-router.post(
-  '/',
+router.post('/',
   authMiddleware,
-  // Uncomment khi đã có permission system hoàn chỉnh
-  // checkPermission('SYSTEM_MANAGEMENT', 'CREATE'),
+  checkPermission('permission', 'CREATE'),
   permissionController.createPermission
 );
 
 /**
- * @route   PUT /api/permissions/:id
- * @desc    Cập nhật permission
- * @access  Private (Admin only)
+ * @route   GET /api/permissions/actions
+ * @desc    Get all actions
+ * @query   resource, is_active
+ * @access  Private
  */
-router.put(
-  '/:id',
+router.get('/actions',
   authMiddleware,
-  // checkPermission('SYSTEM_MANAGEMENT', 'UPDATE'),
-  permissionController.updatePermission
+  permissionController.getAllActions
 );
 
 /**
- * @route   DELETE /api/permissions/:id
- * @desc    Xóa permission (soft delete)
+ * @route   POST /api/permissions/actions
+ * @desc    Create new action
  * @access  Private (Admin only)
  */
-router.delete(
-  '/:id',
+router.post('/actions',
   authMiddleware,
-  // checkPermission('SYSTEM_MANAGEMENT', 'DELETE'),
-  permissionController.deletePermission
+  checkPermission('permission', 'CREATE'),
+  permissionController.createAction
 );
 
 /**
- * @route   POST /api/permissions/:id/details
- * @desc    Thêm action detail vào permission
- * @body    { action_name, action_code, check_action, description }
- * @access  Private (Admin only)
+ * @route   GET /api/permissions/actions/:resource
+ * @desc    Get actions by resource
+ * @access  Private
  */
-router.post(
-  '/:id/details',
+router.get('/actions/:resource',
   authMiddleware,
-  // checkPermission('SYSTEM_MANAGEMENT', 'UPDATE'),
-  permissionController.addPermissionDetail
+  permissionController.getActionsByResource
 );
 
 // ============================================
@@ -87,69 +66,82 @@ router.post(
 // ============================================
 
 /**
- * @route   GET /api/permissions/users/:userId
- * @desc    Lấy tất cả permissions của user
- * @query   onlyValid (boolean) - mặc định true
+ * @route   GET /api/permissions/users/:userId/permissions
+ * @desc    Get all permissions of a user
  * @access  Private
  */
-router.get(
-  '/users/:userId',
+router.get('/users/:userId/permissions',
   authMiddleware,
   permissionController.getUserPermissions
 );
 
 /**
- * @route   POST /api/permissions/users/:userId/grant/:permissionId
- * @desc    Gán permission cho user
- * @body    { expires_at, notes }
- * @access  Private (Admin only)
- */
-router.post(
-  '/users/:userId/grant/:permissionId',
-  authMiddleware,
-  // checkPermission('USER_MANAGEMENT', 'GRANT_PERMISSION'),
-  permissionController.grantPermissionToUser
-);
-
-/**
- * @route   POST /api/permissions/users/:userId/revoke/:permissionId
- * @desc    Thu hồi permission của user
- * @access  Private (Admin only)
- */
-router.post(
-  '/users/:userId/revoke/:permissionId',
-  authMiddleware,
-  // checkPermission('USER_MANAGEMENT', 'REVOKE_PERMISSION'),
-  permissionController.revokePermissionFromUser
-);
-
-/**
- * @route   GET /api/permissions/users/:userId/check/:permissionId
- * @desc    Kiểm tra user có permission không
+ * @route   GET /api/permissions/users/:userId/actions/:resource
+ * @desc    Get user actions for a specific resource
  * @access  Private
  */
-router.get(
-  '/users/:userId/check/:permissionId',
+router.get('/users/:userId/actions/:resource',
+  authMiddleware,
+  permissionController.getUserActionsForResource
+);
+
+/**
+ * @route   POST /api/permissions/users/:userId/check-permission
+ * @desc    Check if user has a specific permission
+ * @body    { resource, action }
+ * @access  Private
+ */
+router.post('/users/:userId/check-permission',
   authMiddleware,
   permissionController.checkUserPermission
 );
 
 // ============================================
-// MAINTENANCE ROUTES
+// ROLE MANAGEMENT ROUTES
 // ============================================
 
 /**
- * @route   POST /api/permissions/cleanup
- * @desc    Cleanup expired permissions
+ * @route   GET /api/permissions/roles
+ * @desc    Get all roles
+ * @access  Private
+ */
+router.get('/roles',
+  authMiddleware,
+  permissionController.getAllRoles
+);
+
+/**
+ * @route   GET /api/permissions/roles/:roleId/actions
+ * @desc    Get actions of a role
+ * @access  Private
+ */
+router.get('/roles/:roleId/actions',
+  authMiddleware,
+  permissionController.getRoleActions
+);
+
+/**
+ * @route   POST /api/permissions/roles/:roleId/actions
+ * @desc    Add action to role
+ * @body    { action_id }
  * @access  Private (Admin only)
  */
-router.post(
-  '/cleanup',
+router.post('/roles/:roleId/actions',
   authMiddleware,
-  // checkPermission('SYSTEM_MANAGEMENT', 'MAINTENANCE'),
-  permissionController.cleanupExpiredPermissions
+  checkPermission('role', 'UPDATE'),
+  permissionController.addActionToRole
+);
+
+/**
+ * @route   DELETE /api/permissions/roles/:roleId/actions/:actionId
+ * @desc    Remove action from role
+ * @access  Private (Admin only)
+ */
+router.delete('/roles/:roleId/actions/:actionId',
+  authMiddleware,
+  checkPermission('role', 'UPDATE'),
+  permissionController.removeActionFromRole
 );
 
 module.exports = router;
-
 

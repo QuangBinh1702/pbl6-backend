@@ -1,71 +1,104 @@
 const Permission = require('../models/permission.model');
-const UserPermission = require('../models/user_permission.model');
+const Action = require('../models/action.model');
+const Role = require('../models/role.model');
+const RoleAction = require('../models/role_action.model');
+const UserRole = require('../models/user_role.model');
+const UserActionOverride = require('../models/user_action_override.model');
 const User = require('../models/user.model');
+const { hasPermission, getUserActions, getAllUserPermissions } = require('../utils/permission.util');
 
 /**
  * Lấy tất cả permissions
  */
 exports.getAllPermissions = async (req, res) => {
   try {
-    const { is_active, search } = req.query;
+    const { search } = req.query;
     
     // Build query
     const query = {};
-    if (is_active !== undefined) {
-      query.is_active = is_active === 'true';
-    }
     if (search) {
       query.$or = [
-        { name_per: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { resource: { $regex: search, $options: 'i' } }
       ];
     }
     
     const permissions = await Permission.find(query)
-      .select('name_per description details resource action is_active createdAt')
-      .sort({ createdAt: -1 });
+      .select('resource name description')
+      .sort({ resource: 1, name: 1 });
     
     res.json({
       success: true,
       count: permissions.length,
       data: permissions
     });
-  } catch (error) {
-    console.error('Error in getAllPermissions:', error);
+  } catch (err) {
+    console.error('Get all permissions error:', err);
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy danh sách permissions',
-      error: error.message
+      message: 'Error retrieving permissions',
+      error: err.message
     });
   }
 };
 
 /**
- * Lấy chi tiết một permission
+ * Lấy tất cả actions
  */
-exports.getPermissionById = async (req, res) => {
+exports.getAllActions = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { resource, is_active } = req.query;
     
-    const permission = await Permission.findById(id);
+    const query = {};
+    if (resource) query.resource = resource;
+    if (is_active !== undefined) query.is_active = is_active === 'true';
     
-    if (!permission) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy permission'
-      });
-    }
+    const actions = await Action.find(query)
+      .select('action_code action_name resource description is_active')
+      .sort({ resource: 1, action_code: 1 });
     
     res.json({
       success: true,
-      data: permission
+      count: actions.length,
+      data: actions
     });
-  } catch (error) {
-    console.error('Error in getPermissionById:', error);
+  } catch (err) {
+    console.error('Get all actions error:', err);
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy thông tin permission',
-      error: error.message
+      message: 'Error retrieving actions',
+      error: err.message
+    });
+  }
+};
+
+/**
+ * Lấy actions theo resource
+ */
+exports.getActionsByResource = async (req, res) => {
+  try {
+    const { resource } = req.params;
+    
+    const actions = await Action.find({ 
+      resource,
+      is_active: true 
+    })
+      .select('action_code action_name description')
+      .sort({ action_code: 1 });
+    
+    res.json({
+      success: true,
+      resource,
+      count: actions.length,
+      data: actions
+    });
+  } catch (err) {
+    console.error('Get actions by resource error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving actions',
+      error: err.message
     });
   }
 };
@@ -75,263 +108,114 @@ exports.getPermissionById = async (req, res) => {
  */
 exports.createPermission = async (req, res) => {
   try {
-    const { name_per, description, resource, action, details } = req.body;
+    const { resource, name, description } = req.body;
     
-    // Validate
-    if (!name_per) {
+    if (!resource || !name) {
       return res.status(400).json({
         success: false,
-        message: 'Tên permission (name_per) là bắt buộc'
-      });
-    }
-    
-    // Kiểm tra trùng
-    const existing = await Permission.findOne({ name_per });
-    if (existing) {
-      return res.status(400).json({
-        success: false,
-        message: 'Permission đã tồn tại'
+        message: 'resource and name are required'
       });
     }
     
     const permission = await Permission.create({
-      name_per,
-      description,
       resource,
-      action,
-      details: details || [],
-      is_active: true
+      name,
+      description
     });
     
     res.status(201).json({
       success: true,
-      message: 'Tạo permission thành công',
       data: permission
     });
-  } catch (error) {
-    console.error('Error in createPermission:', error);
-    res.status(500).json({
+  } catch (err) {
+    console.error('Create permission error:', err);
+    res.status(400).json({
       success: false,
-      message: 'Lỗi khi tạo permission',
-      error: error.message
+      message: 'Error creating permission',
+      error: err.message
     });
   }
 };
 
 /**
- * Cập nhật permission
+ * Tạo action mới
  */
-exports.updatePermission = async (req, res) => {
+exports.createAction = async (req, res) => {
   try {
-    const { id } = req.params;
-    const updates = req.body;
+    const { action_code, action_name, resource, description, is_active } = req.body;
     
-    const permission = await Permission.findByIdAndUpdate(
-      id,
-      updates,
-      { new: true, runValidators: true }
-    );
-    
-    if (!permission) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy permission'
-      });
-    }
-    
-    res.json({
-      success: true,
-      message: 'Cập nhật permission thành công',
-      data: permission
-    });
-  } catch (error) {
-    console.error('Error in updatePermission:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Lỗi khi cập nhật permission',
-      error: error.message
-    });
-  }
-};
-
-/**
- * Xóa permission (soft delete)
- */
-exports.deletePermission = async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    // Soft delete - chỉ set is_active = false
-    const permission = await Permission.findByIdAndUpdate(
-      id,
-      { is_active: false },
-      { new: true }
-    );
-    
-    if (!permission) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy permission'
-      });
-    }
-    
-    res.json({
-      success: true,
-      message: 'Xóa permission thành công',
-      data: permission
-    });
-  } catch (error) {
-    console.error('Error in deletePermission:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Lỗi khi xóa permission',
-      error: error.message
-    });
-  }
-};
-
-/**
- * Thêm action detail vào permission
- */
-exports.addPermissionDetail = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { action_name, action_code, check_action, description } = req.body;
-    
-    // Validate
-    if (!action_name || !action_code) {
+    if (!action_code || !action_name || !resource) {
       return res.status(400).json({
         success: false,
-        message: 'action_name và action_code là bắt buộc'
+        message: 'action_code, action_name, and resource are required'
       });
     }
     
-    const permission = await Permission.findById(id);
-    if (!permission) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy permission'
-      });
-    }
+    // Check if action already exists
+    const existing = await Action.findOne({ 
+      resource, 
+      action_code: action_code.toUpperCase() 
+    });
     
-    // Kiểm tra trùng action_code
-    const exists = permission.details.some(
-      d => d.action_code.toUpperCase() === action_code.toUpperCase()
-    );
-    
-    if (exists) {
+    if (existing) {
       return res.status(400).json({
         success: false,
-        message: 'Action code đã tồn tại trong permission này'
+        message: 'Action already exists for this resource'
       });
     }
     
-    await permission.addDetail({
-      action_name,
+    const action = await Action.create({
       action_code: action_code.toUpperCase(),
-      check_action: check_action !== undefined ? check_action : false,
-      description
+      action_name,
+      resource,
+      description,
+      is_active: is_active !== false
     });
     
-    res.json({
+    res.status(201).json({
       success: true,
-      message: 'Thêm action detail thành công',
-      data: permission
+      data: action
     });
-  } catch (error) {
-    console.error('Error in addPermissionDetail:', error);
-    res.status(500).json({
+  } catch (err) {
+    console.error('Create action error:', err);
+    res.status(400).json({
       success: false,
-      message: 'Lỗi khi thêm action detail',
-      error: error.message
+      message: 'Error creating action',
+      error: err.message
     });
   }
 };
 
 /**
- * Gán permission cho user
+ * Kiểm tra user có permission không
  */
-exports.grantPermissionToUser = async (req, res) => {
+exports.checkUserPermission = async (req, res) => {
   try {
-    const { userId, permissionId } = req.params;
-    const { expires_at, notes } = req.body;
-    const grantedBy = req.user?.id; // Người đang đăng nhập
+    const { userId } = req.params;
+    const { resource, action } = req.body;
     
-    // Validate user exists
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({
+    if (!resource || !action) {
+      return res.status(400).json({
         success: false,
-        message: 'Không tìm thấy user'
+        message: 'resource and action are required'
       });
     }
     
-    // Validate permission exists
-    const permission = await Permission.findById(permissionId);
-    if (!permission) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy permission'
-      });
-    }
-    
-    const userPermission = await UserPermission.grantPermission(
-      userId,
-      permissionId,
-      grantedBy,
-      expires_at
-    );
-    
-    // Update notes if provided
-    if (notes) {
-      userPermission.notes = notes;
-      await userPermission.save();
-    }
-    
-    await userPermission.populate('id_per', 'name_per description');
+    const allowed = await hasPermission(userId, resource, action);
     
     res.json({
       success: true,
-      message: 'Gán permission thành công',
-      data: userPermission
+      allowed,
+      user: userId,
+      resource,
+      action
     });
-  } catch (error) {
-    console.error('Error in grantPermissionToUser:', error);
+  } catch (err) {
+    console.error('Check user permission error:', err);
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi gán permission',
-      error: error.message
-    });
-  }
-};
-
-/**
- * Thu hồi permission của user
- */
-exports.revokePermissionFromUser = async (req, res) => {
-  try {
-    const { userId, permissionId } = req.params;
-    
-    const userPermission = await UserPermission.revokePermission(userId, permissionId);
-    
-    if (!userPermission) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy user permission'
-      });
-    }
-    
-    res.json({
-      success: true,
-      message: 'Thu hồi permission thành công',
-      data: userPermission
-    });
-  } catch (error) {
-    console.error('Error in revokePermissionFromUser:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Lỗi khi thu hồi permission',
-      error: error.message
+      message: 'Error checking permission',
+      error: err.message
     });
   }
 };
@@ -342,73 +226,217 @@ exports.revokePermissionFromUser = async (req, res) => {
 exports.getUserPermissions = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { onlyValid } = req.query;
     
-    const userPermissions = await UserPermission.getUserPermissions(
-      userId,
-      onlyValid !== 'false' // Mặc định là true
-    );
+    // Get all permissions grouped by resource
+    const permissions = await getAllUserPermissions(userId);
+    
+    // Get user roles
+    const userRoles = await UserRole.find({ user_id: userId })
+      .populate('role_id')
+      .populate('org_unit_id');
+    
+    // Get user overrides
+    const overrides = await UserActionOverride.find({ user_id: userId })
+      .populate('action_id');
     
     res.json({
       success: true,
-      count: userPermissions.length,
-      data: userPermissions
+      user: userId,
+      roles: userRoles.map(ur => ({
+        role: ur.role_id?.name,
+        orgUnit: ur.org_unit_id?.name
+      })),
+      permissions,
+      overrides: overrides.map(o => ({
+        action: `${o.action_id?.resource}.${o.action_id?.action_code}`,
+        granted: o.is_granted
+      }))
     });
-  } catch (error) {
-    console.error('Error in getUserPermissions:', error);
+  } catch (err) {
+    console.error('Get user permissions error:', err);
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy permissions của user',
-      error: error.message
+      message: 'Error retrieving user permissions',
+      error: err.message
     });
   }
 };
 
 /**
- * Kiểm tra user có permission không
+ * Lấy actions của user cho một resource cụ thể
  */
-exports.checkUserPermission = async (req, res) => {
+exports.getUserActionsForResource = async (req, res) => {
   try {
-    const { userId, permissionId } = req.params;
+    const { userId, resource } = req.params;
     
-    const hasPermission = await UserPermission.hasPermission(userId, permissionId);
+    const actions = await getUserActions(userId, resource);
     
     res.json({
       success: true,
-      has_permission: hasPermission,
-      user_id: userId,
-      permission_id: permissionId
+      user: userId,
+      resource,
+      actions
     });
-  } catch (error) {
-    console.error('Error in checkUserPermission:', error);
+  } catch (err) {
+    console.error('Get user actions for resource error:', err);
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi kiểm tra permission',
-      error: error.message
+      message: 'Error retrieving user actions',
+      error: err.message
     });
   }
 };
 
 /**
- * Cleanup expired permissions
+ * Lấy tất cả roles
  */
-exports.cleanupExpiredPermissions = async (req, res) => {
+exports.getAllRoles = async (req, res) => {
   try {
-    const result = await UserPermission.cleanupExpired();
+    const roles = await Role.find()
+      .select('name description')
+      .sort({ name: 1 });
     
     res.json({
       success: true,
-      message: 'Cleanup thành công',
-      modified_count: result.modifiedCount
+      count: roles.length,
+      data: roles
     });
-  } catch (error) {
-    console.error('Error in cleanupExpiredPermissions:', error);
+  } catch (err) {
+    console.error('Get all roles error:', err);
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi cleanup permissions',
-      error: error.message
+      message: 'Error retrieving roles',
+      error: err.message
     });
   }
 };
 
+/**
+ * Lấy actions của một role
+ */
+exports.getRoleActions = async (req, res) => {
+  try {
+    const { roleId } = req.params;
+    
+    const roleActions = await RoleAction.find({ role_id: roleId })
+      .populate('action_id');
+    
+    const actions = roleActions
+      .filter(ra => ra.action_id)
+      .map(ra => ({
+        id: ra.action_id._id,
+        code: ra.action_id.action_code,
+        name: ra.action_id.action_name,
+        resource: ra.action_id.resource,
+        description: ra.action_id.description
+      }));
+    
+    res.json({
+      success: true,
+      roleId,
+      count: actions.length,
+      data: actions
+    });
+  } catch (err) {
+    console.error('Get role actions error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving role actions',
+      error: err.message
+    });
+  }
+};
 
+/**
+ * Thêm action vào role
+ */
+exports.addActionToRole = async (req, res) => {
+  try {
+    const { roleId } = req.params;
+    const { action_id } = req.body;
+    
+    if (!action_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'action_id is required'
+      });
+    }
+    
+    // Check if role exists
+    const role = await Role.findById(roleId);
+    if (!role) {
+      return res.status(404).json({
+        success: false,
+        message: 'Role not found'
+      });
+    }
+    
+    // Check if action exists
+    const action = await Action.findById(action_id);
+    if (!action) {
+      return res.status(404).json({
+        success: false,
+        message: 'Action not found'
+      });
+    }
+    
+    // Check if already assigned
+    const existing = await RoleAction.findOne({ role_id: roleId, action_id });
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: 'Action already assigned to this role'
+      });
+    }
+    
+    const roleAction = await RoleAction.create({ role_id: roleId, action_id });
+    await roleAction.populate('action_id');
+    
+    res.status(201).json({
+      success: true,
+      data: roleAction
+    });
+  } catch (err) {
+    console.error('Add action to role error:', err);
+    res.status(400).json({
+      success: false,
+      message: 'Error adding action to role',
+      error: err.message
+    });
+  }
+};
+
+/**
+ * Xóa action khỏi role
+ */
+exports.removeActionFromRole = async (req, res) => {
+  try {
+    const { roleId, actionId } = req.params;
+    
+    const roleAction = await RoleAction.findOneAndDelete({
+      role_id: roleId,
+      action_id: actionId
+    });
+    
+    if (!roleAction) {
+      return res.status(404).json({
+        success: false,
+        message: 'Role-Action assignment not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Action removed from role successfully'
+    });
+  } catch (err) {
+    console.error('Remove action from role error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Error removing action from role',
+      error: err.message
+    });
+  }
+};
+
+module.exports = exports;

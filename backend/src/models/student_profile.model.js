@@ -40,9 +40,8 @@ const studentProfileSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Index for faster queries
+// Index for faster queries (student_number already has unique index)
 studentProfileSchema.index({ user_id: 1 });
-studentProfileSchema.index({ student_number: 1 });
 studentProfileSchema.index({ class_id: 1 });
 studentProfileSchema.index({ isClassMonitor: 1 });
 
