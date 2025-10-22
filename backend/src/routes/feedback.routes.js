@@ -10,21 +10,21 @@ router.get('/my-feedbacks', auth, feedbackController.getMyFeedbacks);
 // Get all feedbacks (admin/staff only)
 router.get('/', 
   auth, 
-  checkPermission('feedback', 'VIEW'), 
+  checkPermission('student_feedback', 'READ'), 
   feedbackController.getAllFeedbacks
 );
 
 // Get feedbacks by activity
 router.get('/activity/:activityId', 
   auth, 
-  checkPermission('feedback', 'VIEW'), 
+  checkPermission('student_feedback', 'READ'), 
   feedbackController.getFeedbacksByActivity
 );
 
 // Get feedback by ID
 router.get('/:id', 
   auth, 
-  checkPermission('feedback', 'VIEW'), 
+  checkPermission('student_feedback', 'READ'), 
   feedbackController.getFeedbackById
 );
 
@@ -43,7 +43,7 @@ router.put('/:id',
 // Delete feedback (admin/staff or own feedback)
 router.delete('/:id', 
   auth, 
-  checkPermission('feedback', 'DELETE'), 
+  checkPermission('student_feedback', 'DELETE'), 
   feedbackController.deleteFeedback
 );
 

@@ -16,4 +16,4 @@ const postSchema = new mongoose.Schema({
 postSchema.index({ activity_id: 1 });
 postSchema.index({ created_at: -1 });
 
-module.exports = mongoose.model('Post', postSchema);
+module.exports = mongoose.model('Post', postSchema, 'post');

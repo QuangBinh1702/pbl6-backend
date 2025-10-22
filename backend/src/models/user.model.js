@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
     type: Boolean, 
     default: false 
   }
-}, { timestamps: true });
+}, { timestamps: true, collection: 'user' });
 
 // Index for faster queries (username already has unique index)
 userSchema.index({ active: 1 });

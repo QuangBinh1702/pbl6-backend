@@ -22,4 +22,4 @@ const pvcdRecordSchema = new mongoose.Schema({
 pvcdRecordSchema.index({ student_id: 1 });
 pvcdRecordSchema.index({ year: 1 });
 
-module.exports = mongoose.model('PvcdRecord', pvcdRecordSchema);
+module.exports = mongoose.model('PvcdRecord', pvcdRecordSchema, 'pvcd_record');

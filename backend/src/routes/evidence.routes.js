@@ -3,14 +3,55 @@ const router = express.Router();
 const evidenceController = require('../controllers/evidence.controller');
 
 const auth = require('../middlewares/auth.middleware');
-const role = require('../middlewares/role.middleware');
+const { checkPermission } = require('../middlewares/check_permission.middleware');
+
 // Quản lý minh chứng hoạt động ngoài trường
-router.get('/', auth, role(['admin', 'ctsv', 'khoa', 'loptruong']), evidenceController.getAllEvidences); // Danh sách minh chứng
-router.get('/:id', auth, evidenceController.getEvidenceById); // Chi tiết minh chứng
-router.post('/', auth, role(['student']), evidenceController.createEvidence); // Tạo minh chứng
-router.put('/:id', auth, evidenceController.updateEvidence); // Cập nhật minh chứng
-router.put('/:id/approve', auth, role(['ctsv', 'khoa', 'loptruong']), evidenceController.approveEvidence); // Duyệt minh chứng
-router.put('/:id/reject', auth, role(['ctsv', 'khoa', 'loptruong']), evidenceController.rejectEvidence); // Từ chối minh chứng
-router.delete('/:id', auth, role(['admin', 'ctsv']), evidenceController.deleteEvidence); // Xóa minh chứng
+
+// Danh sách minh chứng (admin/staff/teacher can view)
+router.get('/', 
+  auth, 
+  checkPermission('evidence', 'READ'),
+  evidenceController.getAllEvidences
+);
+
+// Chi tiết minh chứng
+router.get('/:id', 
+  auth, 
+  evidenceController.getEvidenceById
+);
+
+// Tạo minh chứng (student submit evidence)
+router.post('/', 
+  auth, 
+  checkPermission('evidence', 'SUBMIT'),
+  evidenceController.createEvidence
+);
+
+// Cập nhật minh chứng (own evidence - no permission check)
+router.put('/:id', 
+  auth, 
+  evidenceController.updateEvidence
+);
+
+// Duyệt minh chứng (staff/teacher)
+router.put('/:id/approve', 
+  auth, 
+  checkPermission('evidence', 'APPROVE'),
+  evidenceController.approveEvidence
+);
+
+// Từ chối minh chứng (staff/teacher)
+router.put('/:id/reject', 
+  auth, 
+  checkPermission('evidence', 'REJECT'),
+  evidenceController.rejectEvidence
+);
+
+// Xóa minh chứng (admin/staff)
+router.delete('/:id', 
+  auth, 
+  checkPermission('evidence', 'DELETE'),
+  evidenceController.deleteEvidence
+);
 
 module.exports = router;

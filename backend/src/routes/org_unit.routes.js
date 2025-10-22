@@ -2,32 +2,62 @@ const express = require('express');
 const router = express.Router();
 const orgUnitController = require('../controllers/org_unit.controller');
 const auth = require('../middlewares/auth.middleware');
-const role = require('../middlewares/role.middleware');
+const { checkPermission } = require('../middlewares/check_permission.middleware');
 
 // Lấy tất cả đơn vị tổ chức
-router.get('/', auth, orgUnitController.getAllOrgUnits);
+router.get('/', 
+  auth, 
+  checkPermission('org_unit', 'READ'),
+  orgUnitController.getAllOrgUnits
+);
 
 // Lấy đơn vị tổ chức theo ID
-router.get('/:id', auth, orgUnitController.getOrgUnitById);
+router.get('/:id', 
+  auth, 
+  checkPermission('org_unit', 'READ'),
+  orgUnitController.getOrgUnitById
+);
 
 // Lấy đơn vị tổ chức theo loại
-router.get('/type/:type', auth, orgUnitController.getOrgUnitsByType);
+router.get('/type/:type', 
+  auth, 
+  checkPermission('org_unit', 'READ'),
+  orgUnitController.getOrgUnitsByType
+);
 
 // Lấy danh sách cán bộ của đơn vị
-router.get('/:id/staff', auth, orgUnitController.getOrgUnitStaff);
+router.get('/:id/staff', 
+  auth, 
+  checkPermission('org_unit', 'READ'),
+  orgUnitController.getOrgUnitStaff
+);
 
-// Tạo đơn vị tổ chức mới
-router.post('/', auth, role(['admin', 'ctsv']), orgUnitController.createOrgUnit);
+// Tạo đơn vị tổ chức mới (admin/staff)
+router.post('/', 
+  auth, 
+  checkPermission('org_unit', 'CREATE'),
+  orgUnitController.createOrgUnit
+);
 
-// Cập nhật đơn vị tổ chức
-router.put('/:id', auth, role(['admin', 'ctsv']), orgUnitController.updateOrgUnit);
+// Cập nhật đơn vị tổ chức (admin/staff)
+router.put('/:id', 
+  auth, 
+  checkPermission('org_unit', 'UPDATE'),
+  orgUnitController.updateOrgUnit
+);
 
-// Xóa đơn vị tổ chức
-router.delete('/:id', auth, role(['admin', 'ctsv']), orgUnitController.deleteOrgUnit);
+// Xóa đơn vị tổ chức (admin only)
+router.delete('/:id', 
+  auth, 
+  checkPermission('org_unit', 'DELETE'),
+  orgUnitController.deleteOrgUnit
+);
 
-// Đặt trưởng đơn vị
-router.put('/:id/set-leader', auth, role(['admin', 'ctsv']), orgUnitController.setLeader);
+// Đặt trưởng đơn vị (admin/staff)
+router.put('/:id/set-leader', 
+  auth, 
+  checkPermission('org_unit', 'UPDATE'),
+  orgUnitController.setLeader
+);
 
 module.exports = router;
-
-

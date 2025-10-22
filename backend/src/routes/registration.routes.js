@@ -10,63 +10,62 @@ router.get('/my-registrations', auth, registrationController.getMyRegistrations)
 // Get all registrations (admin/staff only)
 router.get('/', 
   auth, 
-  checkPermission('registration', 'VIEW'), 
+  checkPermission('activity_registration', 'READ'), 
   registrationController.getAllRegistrations
 );
 
 // Get registrations by activity
 router.get('/activity/:activityId', 
   auth, 
-  checkPermission('registration', 'VIEW'), 
+  checkPermission('activity_registration', 'READ'), 
   registrationController.getRegistrationsByActivity
 );
 
 // Get registrations by student
 router.get('/student/:studentId', 
   auth, 
-  checkPermission('registration', 'VIEW'), 
+  checkPermission('activity_registration', 'READ'), 
   registrationController.getRegistrationsByStudent
 );
 
 // Get registration by ID
 router.get('/:id', 
   auth, 
-  checkPermission('registration', 'VIEW'), 
+  checkPermission('activity_registration', 'READ'), 
   registrationController.getRegistrationById
 );
 
 // Create registration
 router.post('/', 
   auth, 
-  checkPermission('registration', 'CREATE'), 
+  checkPermission('activity_registration', 'CREATE'), 
   registrationController.createRegistration
 );
 
-// Update registration
+// Update registration (own registration only - controller checks ownership)
 router.put('/:id', 
   auth, 
-  checkPermission('registration', 'UPDATE'), 
   registrationController.updateRegistration
 );
 
-// Delete registration
+// Cancel/Delete registration (student can cancel own registration)
 router.delete('/:id', 
   auth, 
-  checkPermission('registration', 'DELETE'), 
+  checkPermission('activity_registration', 'CANCEL'), 
   registrationController.deleteRegistration
 );
 
 // Approve registration
 router.put('/:id/approve', 
   auth, 
-  checkPermission('registration', 'APPROVE'), 
+  checkPermission('activity_registration', 'APPROVE'), 
   registrationController.approveRegistration
 );
 
 // Reject registration
 router.put('/:id/reject', 
   auth, 
-  checkPermission('registration', 'REJECT'), 
+  checkPermission('activity_registration', 'REJECT'), 
   registrationController.rejectRegistration
 );
 

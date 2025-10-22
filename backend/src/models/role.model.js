@@ -12,7 +12,7 @@ const roleSchema = new mongoose.Schema({
     type: String,
     trim: true
   }
-}, { timestamps: true });
+}, { timestamps: true, collection: 'role' });
 
 // name already has unique index, no need for additional index
 

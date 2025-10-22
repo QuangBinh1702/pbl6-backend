@@ -22,4 +22,4 @@ const studentCohortSchema = new mongoose.Schema({
 studentCohortSchema.index({ student_id: 1 });
 studentCohortSchema.index({ cohort_id: 1 });
 
-module.exports = mongoose.model('StudentCohort', studentCohortSchema);
+module.exports = mongoose.model('StudentCohort', studentCohortSchema, 'student_cohort');

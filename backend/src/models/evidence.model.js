@@ -29,4 +29,4 @@ evidenceSchema.index({ student_id: 1 });
 evidenceSchema.index({ status: 1 });
 evidenceSchema.index({ submitted_at: -1 });
 
-module.exports = mongoose.model('Evidence', evidenceSchema);
+module.exports = mongoose.model('Evidence', evidenceSchema, 'evidence');

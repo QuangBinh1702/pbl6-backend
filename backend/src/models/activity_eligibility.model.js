@@ -18,4 +18,4 @@ const activityEligibilitySchema = new mongoose.Schema({
 activityEligibilitySchema.index({ activity_id: 1 });
 activityEligibilitySchema.index({ type: 1 });
 
-module.exports = mongoose.model('ActivityEligibility', activityEligibilitySchema);
+module.exports = mongoose.model('ActivityEligibility', activityEligibilitySchema, 'activity_eligiblity');

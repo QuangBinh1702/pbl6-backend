@@ -49,13 +49,13 @@ router.put('/:id/complete',
 // Registration
 router.post('/:id/register', 
   auth, 
-  checkPermission('registration', 'CREATE'), 
+  checkPermission('activity_registration', 'CREATE'), 
   activityController.registerActivity
 );
 
 router.get('/:id/registrations', 
   auth, 
-  checkPermission('registration', 'VIEW'), 
+  checkPermission('activity_registration', 'READ'), 
   activityController.getActivityRegistrations
 );
 

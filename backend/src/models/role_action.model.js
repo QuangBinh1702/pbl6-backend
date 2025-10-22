@@ -34,5 +34,5 @@ roleActionSchema.statics.getRolesWithAction = async function(actionId) {
     .exec();
 };
 
-module.exports = mongoose.model('RoleAction', roleActionSchema);
+module.exports = mongoose.model('RoleAction', roleActionSchema, 'role_action');
 

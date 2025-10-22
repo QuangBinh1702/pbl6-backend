@@ -34,5 +34,5 @@ studentFeedbackSchema.index({ submitted_at: -1 });
 // Prevent duplicate feedback from same student for same activity
 studentFeedbackSchema.index({ activity_id: 1, student_id: 1 }, { unique: true });
 
-module.exports = mongoose.model('StudentFeedback', studentFeedbackSchema);
+module.exports = mongoose.model('StudentFeedback', studentFeedbackSchema, 'student_feedback');
 

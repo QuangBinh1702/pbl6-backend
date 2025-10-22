@@ -2,276 +2,709 @@
 
 ## Tổng quan
 
-Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ thống quản lý hoạt động sinh viên.
+Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ thống quản lý hoạt động sinh viên PBL6.
 
-Base URL: `/api`
+**Base URL**: `/api`
 
-## Authentication & Users
+**Server**: `http://localhost:5000` (Development)
+
+---
+
+## 📑 Mục lục
+
+1. [Authentication & Users](#authentication--users)
+2. [Profiles](#profiles)
+3. [Organization](#organization)
+4. [Activities](#activities)
+5. [Points & Feedback](#points--feedback)
+6. [System & Permissions](#system--permissions)
+7. [Statistics](#statistics)
+
+---
+
+## 🔐 Authentication & Users
 
 ### Auth Routes (`/api/auth`)
-- `POST /api/auth/login` - Đăng nhập
-- `POST /api/auth/register` - Đăng ký tài khoản
-- `GET /api/auth/profile` - Lấy thông tin profile của user hiện tại
+
+| Method | Endpoint | Description | Auth Required | Roles |
+|--------|----------|-------------|---------------|-------|
+| POST | `/api/auth/login` | Đăng nhập | ❌ | Public |
+| POST | `/api/auth/register` | Đăng ký tài khoản mới | ❌ | Public |
+| GET | `/api/auth/profile` | Lấy thông tin profile của user hiện tại | ✅ | All authenticated |
+
+**Request Body - Login:**
+```json
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+**Request Body - Register:**
+```json
+{
+  "email": "newuser@stu.ptit.edu.vn",
+  "password": "password123",
+  "firstName": "Nguyen",
+  "lastName": "Van A"
+}
+```
+
+---
 
 ### User Routes (`/api/users`)
-- `GET /api/users` - Lấy danh sách người dùng (admin, ctsv)
-- `GET /api/users/:id` - Lấy chi tiết người dùng
-- `POST /api/users` - Tạo tài khoản mới (admin, ctsv)
-- `PUT /api/users/:id` - Cập nhật thông tin người dùng
-- `DELETE /api/users/:id` - Xóa tài khoản (admin, ctsv)
-- `PUT /api/users/:id/lock` - Khóa tài khoản (admin, ctsv)
-- `PUT /api/users/:id/unlock` - Mở khóa tài khoản (admin, ctsv)
-- `GET /api/users/:id/roles` - Lấy vai trò của người dùng
-- `POST /api/users/:id/roles` - Gán vai trò cho người dùng
-- `DELETE /api/users/:id/roles/:roleId` - Xóa vai trò khỏi người dùng
-- `POST /api/users/:id/actions/override` - Thêm action override cho người dùng
-- `DELETE /api/users/:id/actions/override/:actionId` - Xóa action override khỏi người dùng
 
-## Profiles
+| Method | Endpoint | Description | Auth Required | Permission Required |
+|--------|----------|-------------|---------------|---------------------|
+| GET | `/api/users` | Lấy danh sách tất cả người dùng | ✅ | `user:READ` |
+| GET | `/api/users/:id` | Lấy chi tiết người dùng theo ID | ✅ | - |
+| POST | `/api/users` | Tạo tài khoản người dùng mới | ✅ | `user:CREATE` |
+| PUT | `/api/users/:id` | Cập nhật thông tin người dùng | ✅ | `user:UPDATE` |
+| DELETE | `/api/users/:id` | Xóa tài khoản người dùng | ✅ | `user:DELETE` |
+| PUT | `/api/users/:id/lock` | Khóa tài khoản người dùng | ✅ | `user:UPDATE` |
+| PUT | `/api/users/:id/unlock` | Mở khóa tài khoản người dùng | ✅ | `user:UPDATE` |
+
+#### User Role Management
+
+| Method | Endpoint | Description | Auth Required | Permission Required |
+|--------|----------|-------------|---------------|---------------------|
+| GET | `/api/users/:id/roles` | Lấy danh sách vai trò của người dùng | ✅ | `user:READ` |
+| POST | `/api/users/:id/roles` | Gán vai trò cho người dùng | ✅ | `user:UPDATE` |
+| DELETE | `/api/users/:id/roles/:roleId` | Xóa vai trò khỏi người dùng | ✅ | `user:UPDATE` |
+
+#### User Action Override Management
+
+| Method | Endpoint | Description | Auth Required | Permission Required |
+|--------|----------|-------------|---------------|---------------------|
+| POST | `/api/users/:id/actions/override` | Thêm action override cho người dùng | ✅ | `user:UPDATE` |
+| DELETE | `/api/users/:id/actions/override/:actionId` | Xóa action override khỏi người dùng | ✅ | `user:UPDATE` |
+
+**Request Body - Create User:**
+```json
+{
+  "email": "newuser@stu.ptit.edu.vn",
+  "password": "password123",
+  "firstName": "Nguyen",
+  "lastName": "Van B",
+  "role": "student"
+}
+```
+
+**Request Body - Assign Role:**
+```json
+{
+  "roleId": "role_uuid_here"
+}
+```
+
+---
+
+## 👤 Profiles
 
 ### Student Profile Routes (`/api/student-profiles`)
-- `GET /api/student-profiles/class-monitors` - Lấy tất cả lớp trưởng
-- `GET /api/student-profiles` - Lấy tất cả hồ sơ sinh viên (admin, ctsv, teacher)
-- `GET /api/student-profiles/:id` - Lấy hồ sơ sinh viên theo ID
-- `GET /api/student-profiles/user/:userId` - Lấy hồ sơ theo User ID
-- `GET /api/student-profiles/student-number/:studentNumber` - Lấy hồ sơ theo mã sinh viên
-- `GET /api/student-profiles/class/:classId/students` - Lấy sinh viên theo lớp
-- `POST /api/student-profiles` - Tạo hồ sơ sinh viên mới (admin, ctsv)
-- `PUT /api/student-profiles/:id` - Cập nhật hồ sơ sinh viên
-- `DELETE /api/student-profiles/:id` - Xóa hồ sơ sinh viên (admin, ctsv)
-- `PUT /api/student-profiles/:id/set-monitor` - Đặt làm lớp trưởng (admin, ctsv, teacher)
-- `PUT /api/student-profiles/:id/unset-monitor` - Hủy lớp trưởng (admin, ctsv, teacher)
+
+| Method | Endpoint | Description | Auth Required | Permission Required |
+|--------|----------|-------------|---------------|---------------------|
+| GET | `/api/student-profiles` | Lấy tất cả hồ sơ sinh viên | ✅ | `student_profile:READ` |
+| GET | `/api/student-profiles/:id` | Lấy hồ sơ sinh viên theo ID | ✅ | - |
+| GET | `/api/student-profiles/user/:userId` | Lấy hồ sơ sinh viên theo User ID | ✅ | - |
+| GET | `/api/student-profiles/student-number/:studentNumber` | Lấy hồ sơ theo mã sinh viên | ✅ | - |
+| GET | `/api/student-profiles/class/:classId/students` | Lấy danh sách sinh viên theo lớp | ✅ | `student_profile:READ` |
+| GET | `/api/student-profiles/class-monitors` | Lấy danh sách tất cả lớp trưởng | ✅ | `student_profile:READ` |
+| POST | `/api/student-profiles` | Tạo hồ sơ sinh viên mới | ✅ | `student_profile:CREATE` |
+| PUT | `/api/student-profiles/:id` | Cập nhật hồ sơ sinh viên | ✅ | `student_profile:UPDATE` |
+| DELETE | `/api/student-profiles/:id` | Xóa hồ sơ sinh viên | ✅ | `student_profile:DELETE` |
+| PUT | `/api/student-profiles/:id/set-monitor` | Đặt làm lớp trưởng | ✅ | `student_profile:UPDATE` |
+| PUT | `/api/student-profiles/:id/unset-monitor` | Hủy chức lớp trưởng | ✅ | `student_profile:UPDATE` |
+
+**Request Body - Create Student Profile:**
+```json
+{
+  "userId": "user_uuid_here",
+  "studentNumber": "102220095",
+  "classId": "class_uuid_here",
+  "cohortId": "cohort_uuid_here",
+  "phone": "0123456789",
+  "address": "Hà Nội"
+}
+```
+
+---
 
 ### Staff Profile Routes (`/api/staff-profiles`)
-- `GET /api/staff-profiles` - Lấy tất cả hồ sơ cán bộ (admin, ctsv)
-- `GET /api/staff-profiles/:id` - Lấy hồ sơ cán bộ theo ID
-- `GET /api/staff-profiles/user/:userId` - Lấy hồ sơ theo User ID
-- `GET /api/staff-profiles/staff-number/:staffNumber` - Lấy hồ sơ theo mã cán bộ
-- `GET /api/staff-profiles/org-unit/:orgUnitId/staff` - Lấy cán bộ theo đơn vị
-- `POST /api/staff-profiles` - Tạo hồ sơ cán bộ mới (admin, ctsv)
-- `PUT /api/staff-profiles/:id` - Cập nhật hồ sơ cán bộ
-- `DELETE /api/staff-profiles/:id` - Xóa hồ sơ cán bộ (admin, ctsv)
+
+| Method | Endpoint | Description | Auth Required | Roles |
+|--------|----------|-------------|---------------|-------|
+| GET | `/api/staff-profiles` | Lấy tất cả hồ sơ cán bộ | ✅ | admin, ctsv |
+| GET | `/api/staff-profiles/:id` | Lấy hồ sơ cán bộ theo ID | ✅ | - |
+| GET | `/api/staff-profiles/user/:userId` | Lấy hồ sơ cán bộ theo User ID | ✅ | - |
+| GET | `/api/staff-profiles/staff-number/:staffNumber` | Lấy hồ sơ theo mã cán bộ | ✅ | - |
+| GET | `/api/staff-profiles/org-unit/:orgUnitId/staff` | Lấy danh sách cán bộ theo đơn vị | ✅ | - |
+| POST | `/api/staff-profiles` | Tạo hồ sơ cán bộ mới | ✅ | admin, ctsv |
+| PUT | `/api/staff-profiles/:id` | Cập nhật hồ sơ cán bộ | ✅ | - |
+| DELETE | `/api/staff-profiles/:id` | Xóa hồ sơ cán bộ | ✅ | admin, ctsv |
+
+**Request Body - Create Staff Profile:**
+```json
+{
+  "userId": "user_uuid_here",
+  "staffNumber": "STAFF001",
+  "orgUnitId": "org_unit_uuid_here",
+  "position": "Giảng viên",
+  "phone": "0123456789",
+  "address": "Hà Nội"
+}
+```
+
+---
 
 ### Student Cohort Routes (`/api/student-cohorts`)
-- `GET /api/student-cohorts` - Lấy tất cả sinh viên-khóa (admin, ctsv, teacher)
-- `GET /api/student-cohorts/:id` - Lấy sinh viên-khóa theo ID
-- `GET /api/student-cohorts/student/:studentId` - Lấy theo sinh viên
-- `GET /api/student-cohorts/cohort/:cohortId` - Lấy theo khóa
-- `POST /api/student-cohorts` - Tạo mới (admin, ctsv)
-- `PUT /api/student-cohorts/:id` - Cập nhật (admin, ctsv)
-- `DELETE /api/student-cohorts/:id` - Xóa (admin, ctsv)
+
+| Method | Endpoint | Description | Auth Required | Roles |
+|--------|----------|-------------|---------------|-------|
+| GET | `/api/student-cohorts` | Lấy tất cả mối quan hệ sinh viên-khóa | ✅ | admin, ctsv, teacher |
+| GET | `/api/student-cohorts/:id` | Lấy quan hệ sinh viên-khóa theo ID | ✅ | - |
+| GET | `/api/student-cohorts/student/:studentId` | Lấy các khóa của sinh viên | ✅ | - |
+| GET | `/api/student-cohorts/cohort/:cohortId` | Lấy sinh viên theo khóa | ✅ | - |
+| POST | `/api/student-cohorts` | Tạo mối quan hệ sinh viên-khóa mới | ✅ | admin, ctsv |
+| PUT | `/api/student-cohorts/:id` | Cập nhật mối quan hệ | ✅ | admin, ctsv |
+| DELETE | `/api/student-cohorts/:id` | Xóa mối quan hệ | ✅ | admin, ctsv |
+
+---
 
 ### PVCD Record Routes (`/api/pvcd-records`)
-- `GET /api/pvcd-records` - Lấy tất cả bản ghi PVCD (admin, ctsv, teacher)
-- `GET /api/pvcd-records/:id` - Lấy bản ghi theo ID
-- `GET /api/pvcd-records/student/:studentId` - Lấy theo sinh viên
-- `GET /api/pvcd-records/year/:year` - Lấy theo năm (admin, ctsv, teacher)
-- `POST /api/pvcd-records` - Tạo bản ghi mới (admin, ctsv)
-- `PUT /api/pvcd-records/:id` - Cập nhật bản ghi (admin, ctsv)
-- `PUT /api/pvcd-records/:id/points` - Cập nhật điểm (admin, ctsv)
-- `DELETE /api/pvcd-records/:id` - Xóa bản ghi (admin, ctsv)
 
-## Organization
+| Method | Endpoint | Description | Auth Required | Roles |
+|--------|----------|-------------|---------------|-------|
+| GET | `/api/pvcd-records` | Lấy tất cả bản ghi PVCD | ✅ | admin, ctsv, teacher |
+| GET | `/api/pvcd-records/:id` | Lấy bản ghi PVCD theo ID | ✅ | - |
+| GET | `/api/pvcd-records/student/:studentId` | Lấy bản ghi PVCD theo sinh viên | ✅ | - |
+| GET | `/api/pvcd-records/year/:year` | Lấy bản ghi PVCD theo năm | ✅ | admin, ctsv, teacher |
+| POST | `/api/pvcd-records` | Tạo bản ghi PVCD mới | ✅ | admin, ctsv |
+| PUT | `/api/pvcd-records/:id` | Cập nhật bản ghi PVCD | ✅ | admin, ctsv |
+| PUT | `/api/pvcd-records/:id/points` | Cập nhật điểm PVCD | ✅ | admin, ctsv |
+| DELETE | `/api/pvcd-records/:id` | Xóa bản ghi PVCD | ✅ | admin, ctsv |
+
+**Request Body - Create PVCD Record:**
+```json
+{
+  "studentId": "student_uuid_here",
+  "year": 2024,
+  "semester": 1,
+  "points": 15,
+  "note": "Điểm PVCD học kỳ 1"
+}
+```
+
+---
+
+## 🏢 Organization
 
 ### Faculty Routes (`/api/faculties`)
-- `GET /api/faculties` - Lấy tất cả khoa
-- `GET /api/faculties/:id` - Lấy khoa theo ID
-- `GET /api/faculties/:id/classes` - Lấy danh sách lớp của khoa
-- `POST /api/faculties` - Tạo khoa mới (admin, ctsv)
-- `PUT /api/faculties/:id` - Cập nhật khoa (admin, ctsv)
-- `DELETE /api/faculties/:id` - Xóa khoa (admin, ctsv)
+
+| Method | Endpoint | Description | Auth Required | Roles |
+|--------|----------|-------------|---------------|-------|
+| GET | `/api/faculties` | Lấy tất cả khoa | ✅ | - |
+| GET | `/api/faculties/:id` | Lấy thông tin khoa theo ID | ✅ | - |
+| GET | `/api/faculties/:id/classes` | Lấy danh sách lớp của khoa | ✅ | - |
+| POST | `/api/faculties` | Tạo khoa mới | ✅ | admin, ctsv |
+| PUT | `/api/faculties/:id` | Cập nhật thông tin khoa | ✅ | admin, ctsv |
+| DELETE | `/api/faculties/:id` | Xóa khoa | ✅ | admin, ctsv |
+
+**Request Body - Create Faculty:**
+```json
+{
+  "name": "Khoa Công nghệ thông tin",
+  "code": "CNTT",
+  "description": "Khoa Công nghệ thông tin"
+}
+```
+
+---
 
 ### Field Routes (`/api/fields`)
-- `GET /api/fields` - Lấy tất cả ngành học
-- `GET /api/fields/:id` - Lấy ngành học theo ID
-- `POST /api/fields` - Tạo ngành học mới (admin, ctsv)
-- `PUT /api/fields/:id` - Cập nhật ngành học (admin, ctsv)
-- `DELETE /api/fields/:id` - Xóa ngành học (admin, ctsv)
+
+| Method | Endpoint | Description | Auth Required | Roles |
+|--------|----------|-------------|---------------|-------|
+| GET | `/api/fields` | Lấy tất cả ngành học | ✅ | - |
+| GET | `/api/fields/:id` | Lấy thông tin ngành học theo ID | ✅ | - |
+| POST | `/api/fields` | Tạo ngành học mới | ✅ | admin, ctsv |
+| PUT | `/api/fields/:id` | Cập nhật thông tin ngành học | ✅ | admin, ctsv |
+| DELETE | `/api/fields/:id` | Xóa ngành học | ✅ | admin, ctsv |
+
+**Request Body - Create Field:**
+```json
+{
+  "name": "Công nghệ thông tin",
+  "code": "CNTT",
+  "description": "Ngành Công nghệ thông tin"
+}
+```
+
+---
 
 ### Cohort Routes (`/api/cohorts`)
-- `GET /api/cohorts` - Lấy tất cả khóa học
-- `GET /api/cohorts/:id` - Lấy khóa học theo ID
-- `GET /api/cohorts/year/:year` - Lấy khóa học theo năm
-- `GET /api/cohorts/:id/classes` - Lấy danh sách lớp của khóa
-- `GET /api/cohorts/:id/students` - Lấy danh sách sinh viên của khóa
-- `POST /api/cohorts` - Tạo khóa học mới (admin, ctsv)
-- `PUT /api/cohorts/:id` - Cập nhật khóa học (admin, ctsv)
-- `DELETE /api/cohorts/:id` - Xóa khóa học (admin, ctsv)
+
+| Method | Endpoint | Description | Auth Required | Roles |
+|--------|----------|-------------|---------------|-------|
+| GET | `/api/cohorts` | Lấy tất cả khóa học | ✅ | - |
+| GET | `/api/cohorts/:id` | Lấy thông tin khóa học theo ID | ✅ | - |
+| GET | `/api/cohorts/year/:year` | Lấy khóa học theo năm | ✅ | - |
+| GET | `/api/cohorts/:id/classes` | Lấy danh sách lớp của khóa | ✅ | - |
+| GET | `/api/cohorts/:id/students` | Lấy danh sách sinh viên của khóa | ✅ | - |
+| POST | `/api/cohorts` | Tạo khóa học mới | ✅ | admin, ctsv |
+| PUT | `/api/cohorts/:id` | Cập nhật thông tin khóa học | ✅ | admin, ctsv |
+| DELETE | `/api/cohorts/:id` | Xóa khóa học | ✅ | admin, ctsv |
+
+**Request Body - Create Cohort:**
+```json
+{
+  "name": "Khóa 2022",
+  "year": 2022,
+  "description": "Khóa học 2022"
+}
+```
+
+---
 
 ### Class Routes (`/api/classes`)
-- `GET /api/classes` - Lấy tất cả lớp học
-- `GET /api/classes/:id` - Lấy lớp học theo ID
-- `GET /api/classes/faculty/:facultyId/classes` - Lấy lớp theo khoa
-- `GET /api/classes/cohort/:cohortId/classes` - Lấy lớp theo khóa
-- `GET /api/classes/:id/students` - Lấy sinh viên trong lớp
-- `POST /api/classes` - Tạo lớp học mới (admin, ctsv)
-- `PUT /api/classes/:id` - Cập nhật lớp học (admin, ctsv)
-- `DELETE /api/classes/:id` - Xóa lớp học (admin, ctsv)
+
+| Method | Endpoint | Description | Auth Required | Roles |
+|--------|----------|-------------|---------------|-------|
+| GET | `/api/classes` | Lấy tất cả lớp học | ✅ | - |
+| GET | `/api/classes/:id` | Lấy thông tin lớp học theo ID | ✅ | - |
+| GET | `/api/classes/faculty/:facultyId/classes` | Lấy danh sách lớp theo khoa | ✅ | - |
+| GET | `/api/classes/cohort/:cohortId/classes` | Lấy danh sách lớp theo khóa | ✅ | - |
+| GET | `/api/classes/:id/students` | Lấy danh sách sinh viên trong lớp | ✅ | - |
+| POST | `/api/classes` | Tạo lớp học mới | ✅ | admin, ctsv |
+| PUT | `/api/classes/:id` | Cập nhật thông tin lớp học | ✅ | admin, ctsv |
+| DELETE | `/api/classes/:id` | Xóa lớp học | ✅ | admin, ctsv |
+
+**Request Body - Create Class:**
+```json
+{
+  "name": "CNTT01",
+  "code": "CNTT01",
+  "facultyId": "faculty_uuid_here",
+  "cohortId": "cohort_uuid_here",
+  "description": "Lớp CNTT01"
+}
+```
+
+---
 
 ### Organization Unit Routes (`/api/org-units`)
-- `GET /api/org-units` - Lấy tất cả đơn vị tổ chức
-- `GET /api/org-units/:id` - Lấy đơn vị theo ID
-- `GET /api/org-units/type/:type` - Lấy đơn vị theo loại
-- `GET /api/org-units/:id/staff` - Lấy cán bộ của đơn vị
-- `POST /api/org-units` - Tạo đơn vị mới (admin, ctsv)
-- `PUT /api/org-units/:id` - Cập nhật đơn vị (admin, ctsv)
-- `DELETE /api/org-units/:id` - Xóa đơn vị (admin, ctsv)
-- `PUT /api/org-units/:id/set-leader` - Đặt trưởng đơn vị (admin, ctsv)
 
-## Activities
+| Method | Endpoint | Description | Auth Required | Roles |
+|--------|----------|-------------|---------------|-------|
+| GET | `/api/org-units` | Lấy tất cả đơn vị tổ chức | ✅ | - |
+| GET | `/api/org-units/:id` | Lấy thông tin đơn vị theo ID | ✅ | - |
+| GET | `/api/org-units/type/:type` | Lấy đơn vị theo loại | ✅ | - |
+| GET | `/api/org-units/:id/staff` | Lấy danh sách cán bộ của đơn vị | ✅ | - |
+| POST | `/api/org-units` | Tạo đơn vị tổ chức mới | ✅ | admin, ctsv |
+| PUT | `/api/org-units/:id` | Cập nhật thông tin đơn vị | ✅ | admin, ctsv |
+| DELETE | `/api/org-units/:id` | Xóa đơn vị tổ chức | ✅ | admin, ctsv |
+| PUT | `/api/org-units/:id/set-leader` | Đặt trưởng đơn vị | ✅ | admin, ctsv |
+
+**Request Body - Create Organization Unit:**
+```json
+{
+  "name": "Khoa Công nghệ thông tin",
+  "code": "CNTT",
+  "type": "faculty",
+  "description": "Khoa Công nghệ thông tin"
+}
+```
+
+**Request Body - Set Leader:**
+```json
+{
+  "staffId": "staff_uuid_here"
+}
+```
+
+---
+
+## 🎯 Activities
 
 ### Activity Routes (`/api/activities`)
-- `GET /api/activities` - Lấy tất cả hoạt động (public)
-- `GET /api/activities/:id` - Lấy hoạt động theo ID (public)
-- `POST /api/activities` - Tạo hoạt động mới
-- `PUT /api/activities/:id` - Cập nhật hoạt động
-- `DELETE /api/activities/:id` - Xóa hoạt động
-- `PUT /api/activities/:id/approve` - Phê duyệt hoạt động
-- `PUT /api/activities/:id/reject` - Từ chối hoạt động
-- `PUT /api/activities/:id/complete` - Hoàn thành hoạt động
-- `POST /api/activities/:id/register` - Đăng ký tham gia hoạt động
-- `GET /api/activities/:id/registrations` - Lấy danh sách đăng ký của hoạt động
+
+| Method | Endpoint | Description | Auth Required | Permission Required |
+|--------|----------|-------------|---------------|---------------------|
+| GET | `/api/activities` | Lấy tất cả hoạt động | ❌ | - (Public) |
+| GET | `/api/activities/:id` | Lấy chi tiết hoạt động theo ID | ❌ | - (Public) |
+| POST | `/api/activities` | Tạo hoạt động mới | ✅ | `activity:CREATE` |
+| PUT | `/api/activities/:id` | Cập nhật thông tin hoạt động | ✅ | `activity:UPDATE` |
+| DELETE | `/api/activities/:id` | Xóa hoạt động | ✅ | `activity:DELETE` |
+| PUT | `/api/activities/:id/approve` | Phê duyệt hoạt động | ✅ | `activity:APPROVE` |
+| PUT | `/api/activities/:id/reject` | Từ chối hoạt động | ✅ | `activity:REJECT` |
+| PUT | `/api/activities/:id/complete` | Đánh dấu hoàn thành hoạt động | ✅ | `activity:UPDATE` |
+| POST | `/api/activities/:id/register` | Đăng ký tham gia hoạt động | ✅ | `activity_registration:CREATE` |
+| GET | `/api/activities/:id/registrations` | Lấy danh sách đăng ký của hoạt động | ✅ | `activity_registration:READ` |
+
+**Request Body - Create Activity:**
+```json
+{
+  "name": "Hoạt động tình nguyện",
+  "description": "Mô tả hoạt động",
+  "type": "faculty",
+  "time": "2024-01-15T00:00:00.000Z",
+  "location": "P101",
+  "points": 5,
+  "maxParticipants": 50,
+  "requirements": "Yêu cầu tham gia"
+}
+```
+
+**Request Body - Reject Activity:**
+```json
+{
+  "reason": "Lý do từ chối hoạt động"
+}
+```
+
+---
 
 ### Registration Routes (`/api/registrations`)
-- `GET /api/registrations/my-registrations` - Lấy đăng ký của tôi
-- `GET /api/registrations` - Lấy tất cả đăng ký (admin, ctsv, teacher)
-- `GET /api/registrations/activity/:activityId` - Lấy đăng ký theo hoạt động
-- `GET /api/registrations/student/:studentId` - Lấy đăng ký theo sinh viên
-- `GET /api/registrations/:id` - Lấy đăng ký theo ID
-- `POST /api/registrations` - Tạo đăng ký mới
-- `PUT /api/registrations/:id` - Cập nhật đăng ký
-- `DELETE /api/registrations/:id` - Xóa đăng ký
-- `PUT /api/registrations/:id/approve` - Phê duyệt đăng ký (admin, ctsv, teacher, union)
-- `PUT /api/registrations/:id/reject` - Từ chối đăng ký (admin, ctsv, teacher, union)
+
+| Method | Endpoint | Description | Auth Required | Permission Required |
+|--------|----------|-------------|---------------|---------------------|
+| GET | `/api/registrations/my-registrations` | Lấy danh sách đăng ký của tôi | ✅ | - (Own data) |
+| GET | `/api/registrations` | Lấy tất cả đăng ký | ✅ | `activity_registration:READ` |
+| GET | `/api/registrations/activity/:activityId` | Lấy đăng ký theo hoạt động | ✅ | `activity_registration:READ` |
+| GET | `/api/registrations/student/:studentId` | Lấy đăng ký theo sinh viên | ✅ | `activity_registration:READ` |
+| GET | `/api/registrations/:id` | Lấy chi tiết đăng ký theo ID | ✅ | `activity_registration:READ` |
+| POST | `/api/registrations` | Tạo đăng ký mới | ✅ | `activity_registration:CREATE` |
+| PUT | `/api/registrations/:id` | Cập nhật đăng ký | ✅ | - (Own data) |
+| DELETE | `/api/registrations/:id` | Hủy đăng ký | ✅ | `activity_registration:CANCEL` |
+| PUT | `/api/registrations/:id/approve` | Phê duyệt đăng ký | ✅ | `activity_registration:APPROVE` |
+| PUT | `/api/registrations/:id/reject` | Từ chối đăng ký | ✅ | `activity_registration:REJECT` |
+
+**Request Body - Create Registration:**
+```json
+{
+  "activityId": "activity_uuid_here",
+  "studentId": "student_uuid_here",
+  "note": "Ghi chú đăng ký"
+}
+```
+
+**Request Body - Reject Registration:**
+```json
+{
+  "reason": "Lý do từ chối đăng ký"
+}
+```
+
+---
 
 ### Attendance Routes (`/api/attendances`)
-- `GET /api/attendances` - Lấy tất cả điểm danh (admin, ctsv, teacher)
-- `GET /api/attendances/:id` - Lấy điểm danh theo ID
-- `GET /api/attendances/activity/:activityId` - Lấy điểm danh theo hoạt động
-- `GET /api/attendances/student/:studentId` - Lấy điểm danh theo sinh viên
-- `POST /api/attendances` - Tạo điểm danh mới (admin, ctsv, teacher, union)
-- `PUT /api/attendances/:id` - Cập nhật điểm danh (admin, ctsv, teacher, union)
-- `DELETE /api/attendances/:id` - Xóa điểm danh (admin, ctsv, teacher, union)
-- `PUT /api/attendances/:id/verify` - Xác minh điểm danh (admin, ctsv, teacher, union)
-- `PUT /api/attendances/:id/feedback` - Thêm phản hồi
-- `POST /api/attendances/scan-qr` - Quét mã QR điểm danh
+
+| Method | Endpoint | Description | Auth Required | Roles |
+|--------|----------|-------------|---------------|-------|
+| GET | `/api/attendances` | Lấy tất cả bản ghi điểm danh | ✅ | admin, ctsv, teacher |
+| GET | `/api/attendances/:id` | Lấy chi tiết điểm danh theo ID | ✅ | - |
+| GET | `/api/attendances/activity/:activityId` | Lấy điểm danh theo hoạt động | ✅ | - |
+| GET | `/api/attendances/student/:studentId` | Lấy điểm danh theo sinh viên | ✅ | - |
+| POST | `/api/attendances` | Tạo bản ghi điểm danh mới | ✅ | admin, ctsv, teacher, union |
+| PUT | `/api/attendances/:id` | Cập nhật điểm danh | ✅ | admin, ctsv, teacher, union |
+| DELETE | `/api/attendances/:id` | Xóa điểm danh | ✅ | admin, ctsv, teacher, union |
+| PUT | `/api/attendances/:id/verify` | Xác minh điểm danh | ✅ | admin, ctsv, teacher, union |
+| PUT | `/api/attendances/:id/feedback` | Thêm phản hồi cho điểm danh | ✅ | - |
+| POST | `/api/attendances/scan-qr` | Quét mã QR để điểm danh | ✅ | - |
+
+**Request Body - Create Attendance:**
+```json
+{
+  "activityId": "activity_uuid_here",
+  "studentId": "student_uuid_here",
+  "attendedAt": "2024-01-15T00:00:00.000Z",
+  "note": "Ghi chú điểm danh"
+}
+```
+
+**Request Body - Scan QR:**
+```json
+{
+  "qrCode": "QR_CODE_DATA",
+  "activityId": "activity_uuid_here"
+}
+```
+
+---
 
 ### Post Routes (`/api/posts`)
-- `GET /api/posts` - Lấy tất cả bài đăng
-- `GET /api/posts/:id` - Lấy bài đăng theo ID
-- `GET /api/posts/activity/:activityId` - Lấy bài đăng theo hoạt động
-- `POST /api/posts` - Tạo bài đăng mới (admin, ctsv, teacher, union)
-- `PUT /api/posts/:id` - Cập nhật bài đăng (admin, ctsv, teacher, union)
-- `DELETE /api/posts/:id` - Xóa bài đăng (admin, ctsv, teacher, union)
 
-## Points & Feedback
+| Method | Endpoint | Description | Auth Required | Roles |
+|--------|----------|-------------|---------------|-------|
+| GET | `/api/posts` | Lấy tất cả bài đăng | ✅ | - |
+| GET | `/api/posts/:id` | Lấy chi tiết bài đăng theo ID | ✅ | - |
+| GET | `/api/posts/activity/:activityId` | Lấy bài đăng theo hoạt động | ✅ | - |
+| POST | `/api/posts` | Tạo bài đăng mới | ✅ | admin, ctsv, teacher, union |
+| PUT | `/api/posts/:id` | Cập nhật bài đăng | ✅ | admin, ctsv, teacher, union |
+| DELETE | `/api/posts/:id` | Xóa bài đăng | ✅ | admin, ctsv, teacher, union |
 
-### Point Routes (`/api/points`)
-- `GET /api/points/:userId` - Lấy điểm của sinh viên
-- `PUT /api/points/:userId` - Cập nhật điểm (ctsv, đoàn trường)
-- `GET /api/points/:userId/history` - Lấy lịch sử điểm
+**Request Body - Create Post:**
+```json
+{
+  "activityId": "activity_uuid_here",
+  "title": "Tiêu đề bài đăng",
+  "content": "Nội dung bài đăng chi tiết",
+  "images": ["image1.jpg", "image2.jpg"]
+}
+```
+
+---
+
+## ⭐ Points & Feedback
 
 ### Feedback Routes (`/api/feedback`)
-- `GET /api/feedback/my-feedbacks` - Lấy phản hồi của tôi
-- `GET /api/feedback` - Lấy tất cả phản hồi (admin, staff)
-- `GET /api/feedback/activity/:activityId` - Lấy phản hồi theo hoạt động
-- `GET /api/feedback/:id` - Lấy phản hồi theo ID
-- `POST /api/feedback` - Tạo phản hồi mới (sinh viên)
-- `PUT /api/feedback/:id` - Cập nhật phản hồi (chỉ phản hồi của mình)
-- `DELETE /api/feedback/:id` - Xóa phản hồi (admin, staff hoặc của mình)
+
+| Method | Endpoint | Description | Auth Required | Permission Required |
+|--------|----------|-------------|---------------|---------------------|
+| GET | `/api/feedback/my-feedbacks` | Lấy danh sách phản hồi của tôi | ✅ | - (Own data) |
+| GET | `/api/feedback` | Lấy tất cả phản hồi | ✅ | `student_feedback:READ` |
+| GET | `/api/feedback/activity/:activityId` | Lấy phản hồi theo hoạt động | ✅ | `student_feedback:READ` |
+| GET | `/api/feedback/:id` | Lấy chi tiết phản hồi theo ID | ✅ | `student_feedback:READ` |
+| POST | `/api/feedback` | Tạo phản hồi mới | ✅ | - (Students) |
+| PUT | `/api/feedback/:id` | Cập nhật phản hồi | ✅ | - (Own feedback) |
+| DELETE | `/api/feedback/:id` | Xóa phản hồi | ✅ | `student_feedback:DELETE` |
+
+**Request Body - Create Feedback:**
+```json
+{
+  "activityId": "activity_uuid_here",
+  "rating": 5,
+  "comment": "Hoạt động rất hay và bổ ích",
+  "suggestions": "Nên tổ chức thêm hoạt động tương tự"
+}
+```
+
+---
 
 ### Evidence Routes (`/api/evidences`)
-- `GET /api/evidences` - Lấy tất cả minh chứng (admin, ctsv, khoa, loptruong)
-- `GET /api/evidences/:id` - Lấy minh chứng theo ID
-- `POST /api/evidences` - Tạo minh chứng mới (sinh viên)
-- `PUT /api/evidences/:id` - Cập nhật minh chứng
-- `PUT /api/evidences/:id/approve` - Phê duyệt minh chứng (ctsv, khoa, loptruong)
-- `PUT /api/evidences/:id/reject` - Từ chối minh chứng (ctsv, khoa, loptruong)
-- `DELETE /api/evidences/:id` - Xóa minh chứng (admin, ctsv)
 
-## Communication
+| Method | Endpoint | Description | Auth Required | Roles |
+|--------|----------|-------------|---------------|-------|
+| GET | `/api/evidences` | Lấy tất cả minh chứng | ✅ | admin, ctsv, khoa, loptruong |
+| GET | `/api/evidences/:id` | Lấy chi tiết minh chứng theo ID | ✅ | - |
+| POST | `/api/evidences` | Tạo minh chứng mới | ✅ | student |
+| PUT | `/api/evidences/:id` | Cập nhật minh chứng | ✅ | - |
+| PUT | `/api/evidences/:id/approve` | Phê duyệt minh chứng | ✅ | ctsv, khoa, loptruong |
+| PUT | `/api/evidences/:id/reject` | Từ chối minh chứng | ✅ | ctsv, khoa, loptruong |
+| DELETE | `/api/evidences/:id` | Xóa minh chứng | ✅ | admin, ctsv |
 
-### Notification Routes (`/api/notifications`)
-- `POST /api/notifications` - Tạo thông báo mới
-- `GET /api/notifications/:userId` - Lấy thông báo của user
+**Request Body - Create Evidence:**
+```json
+{
+  "activityId": "activity_uuid_here",
+  "title": "Minh chứng tham gia hoạt động",
+  "description": "Mô tả minh chứng",
+  "files": ["certificate.pdf", "photo.jpg"]
+}
+```
 
-### Chat Routes (`/api/chats`)
-- `GET /api/chats/:activityId` - Lấy tin nhắn của hoạt động
-- `POST /api/chats/:activityId` - Gửi tin nhắn trong hoạt động
+**Request Body - Reject Evidence:**
+```json
+{
+  "reason": "Lý do từ chối minh chứng"
+}
+```
 
-## System
+---
+
+## 🔐 System & Permissions
 
 ### Permission Routes (`/api/permissions`)
-- `GET /api/permissions` - Lấy tất cả permissions
-- `POST /api/permissions` - Tạo permission mới (admin)
-- `GET /api/permissions/actions` - Lấy tất cả actions
-- `POST /api/permissions/actions` - Tạo action mới (admin)
-- `GET /api/permissions/actions/:resource` - Lấy actions theo resource
-- `GET /api/permissions/users/:userId/permissions` - Lấy permissions của user
-- `GET /api/permissions/users/:userId/actions/:resource` - Lấy user actions cho resource
-- `POST /api/permissions/users/:userId/check-permission` - Kiểm tra permission của user
-- `GET /api/permissions/roles` - Lấy tất cả roles
-- `GET /api/permissions/roles/:roleId/actions` - Lấy actions của role
-- `POST /api/permissions/roles/:roleId/actions` - Thêm action vào role (admin)
-- `DELETE /api/permissions/roles/:roleId/actions/:actionId` - Xóa action khỏi role (admin)
+
+#### Permission Management
+
+| Method | Endpoint | Description | Auth Required | Permission Required |
+|--------|----------|-------------|---------------|---------------------|
+| GET | `/api/permissions` | Lấy tất cả permissions | ✅ | - |
+| POST | `/api/permissions` | Tạo permission mới | ✅ | `permission:CREATE` |
+
+**Request Body - Create Permission:**
+```json
+{
+  "name": "New Permission",
+  "description": "Mô tả quyền mới"
+}
+```
+
+#### Action Management
+
+| Method | Endpoint | Description | Auth Required | Permission Required |
+|--------|----------|-------------|---------------|---------------------|
+| GET | `/api/permissions/actions` | Lấy tất cả actions | ✅ | - |
+| POST | `/api/permissions/actions` | Tạo action mới | ✅ | `permission:CREATE` |
+| GET | `/api/permissions/actions/:resource` | Lấy actions theo resource | ✅ | - |
+
+**Request Body - Create Action:**
+```json
+{
+  "name": "NEW_ACTION",
+  "resource": "activity",
+  "description": "Mô tả action mới"
+}
+```
+
+#### User Permission Management
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/permissions/users/:userId/permissions` | Lấy tất cả permissions của user | ✅ |
+| GET | `/api/permissions/users/:userId/actions/:resource` | Lấy actions của user cho resource | ✅ |
+| POST | `/api/permissions/users/:userId/check-permission` | Kiểm tra permission của user | ✅ |
+
+**Request Body - Check Permission:**
+```json
+{
+  "resource": "activity",
+  "action": "CREATE"
+}
+```
+
+#### Role Permission Management
+
+| Method | Endpoint | Description | Auth Required | Permission Required |
+|--------|----------|-------------|---------------|---------------------|
+| GET | `/api/permissions/roles` | Lấy tất cả roles | ✅ | - |
+| GET | `/api/permissions/roles/:roleId/actions` | Lấy actions của role | ✅ | - |
+| POST | `/api/permissions/roles/:roleId/actions` | Thêm action vào role | ✅ | `role:UPDATE` |
+| DELETE | `/api/permissions/roles/:roleId/actions/:actionId` | Xóa action khỏi role | ✅ | `role:UPDATE` |
+
+**Request Body - Add Action to Role:**
+```json
+{
+  "action_id": "action_uuid_here"
+}
+```
+
+---
 
 ### Role Routes (`/api/roles`)
-- `GET /api/roles` - Lấy tất cả vai trò (admin, ctsv)
-- `GET /api/roles/:id` - Lấy vai trò theo ID (admin, ctsv)
-- `GET /api/roles/name/:name` - Lấy vai trò theo tên (admin, ctsv)
-- `GET /api/roles/:id/users` - Lấy người dùng theo vai trò (admin, ctsv)
-- `POST /api/roles` - Tạo vai trò mới (admin)
-- `PUT /api/roles/:id` - Cập nhật vai trò (admin)
-- `DELETE /api/roles/:id` - Xóa vai trò (admin)
-- `POST /api/roles/:id/permissions` - Thêm quyền vào vai trò (admin)
-- `DELETE /api/roles/:id/permissions` - Xóa quyền khỏi vai trò (admin)
 
-### Statistic Routes (`/api/statistics`)
-- `GET /api/statistics/community-points` - Thống kê điểm PVCD
-- `GET /api/statistics/activities` - Thống kê hoạt động
-- `GET /api/statistics/certificates` - Thống kê giấy chứng nhận
+| Method | Endpoint | Description | Auth Required | Roles |
+|--------|----------|-------------|---------------|-------|
+| GET | `/api/roles` | Lấy tất cả vai trò | ✅ | admin, ctsv |
+| GET | `/api/roles/:id` | Lấy vai trò theo ID | ✅ | admin, ctsv |
+| GET | `/api/roles/name/:name` | Lấy vai trò theo tên | ✅ | admin, ctsv |
+| GET | `/api/roles/:id/users` | Lấy người dùng theo vai trò | ✅ | admin, ctsv |
+| POST | `/api/roles` | Tạo vai trò mới | ✅ | admin |
+| PUT | `/api/roles/:id` | Cập nhật vai trò | ✅ | admin |
+| DELETE | `/api/roles/:id` | Xóa vai trò | ✅ | admin |
+| POST | `/api/roles/:id/permissions` | Thêm quyền vào vai trò | ✅ | admin |
+| DELETE | `/api/roles/:id/permissions` | Xóa quyền khỏi vai trò | ✅ | admin |
 
-## Authentication
+**Request Body - Create Role:**
+```json
+{
+  "name": "New Role",
+  "description": "Mô tả vai trò mới"
+}
+```
+
+---
+
+## 🔑 Authentication
 
 Hầu hết các endpoints yêu cầu authentication token trong header:
+
 ```
-Authorization: Bearer <token>
+Authorization: Bearer <PLOK>
 ```
 
-## Role-based Access Control
+### Lấy Token
 
-Các vai trò trong hệ thống:
-- `admin` - Quản trị viên hệ thống
-- `ctsv` - Cán bộ công tác sinh viên
-- `teacher` - Giảng viên
-- `union` - Cán bộ đoàn hội
-- `student` - Sinh viên
+1. Đăng nhập qua `/api/auth/login`
+2. Nhận token từ response
+3. Sử dụng token trong header cho các requests tiếp theo
 
-## Response Format
+---
 
-### Success Response
+## 👥 Role-based Access Control
+
+Hệ thống có **4 roles chính**:
+
+| Role | Description | Số lượng Permissions |
+|------|-------------|---------------------|
+| `admin` | Quản trị viên hệ thống - Toàn quyền | ~82 permissions |
+| `staff` | Cán bộ (CTSV, Đoàn, Hội SV, Khoa, CLB) - Quản lý sinh viên và hoạt động | ~55 permissions |
+| `teacher` | Giảng viên - Quản lý lớp, chấm điểm, duyệt minh chứng | ~35 permissions |
+| `student` | Sinh viên - Tham gia hoạt động, nộp minh chứng | ~17 permissions |
+
+**Lưu ý đặc biệt:**
+- **Staff** được phân biệt qua `org_unit_id` trong `user_role` (CTSV, Đoàn trường, Khoa, CLB)
+- **Lớp trưởng** KHÔNG phải role riêng, mà là field `isClassMonitor: true` trong `student_profile`
+- **Lớp trưởng** có thêm 2 quyền: `class:attendance` và `class:report` (cần middleware `checkClassMonitor()`)
+
+---
+
+## 📌 HTTP Status Codes
+
+| Code | Meaning |
+|------|---------|
+| 200 | OK - Request thành công |
+| 201 | Created - Tạo mới thành công |
+| 400 | Bad Request - Dữ liệu không hợp lệ |
+| 401 | Unauthorized - Chưa đăng nhập |
+| 403 | Forbidden - Không có quyền truy cập |
+| 404 | Not Found - Không tìm thấy |
+| 500 | Internal Server Error - Lỗi server |
+
+---
+
+## 📱 Test Accounts
+
+Sau khi chạy `seed_correct_structure.js`, bạn có **10 users** cho đầy đủ 4 roles:
+
+### 👑 Admin (1 account)
+| Username | Password | Role | Mô tả |
+|----------|----------|------|-------|
+| `admin` | `admin123` | admin | Quản trị viên hệ thống - Toàn quyền |
+
+### 👔 Staff (3 accounts)
+| Username | Password | Role | Org Unit | Mô tả |
+|----------|----------|------|----------|-------|
+| `staff_ctsv` | `staff123` | staff | Phòng CTSV | Cán bộ Công tác sinh viên |
+| `staff_doan` | `staff123` | staff | Đoàn trường | Cán bộ Đoàn trường |
+| `staff_khoa` | `staff123` | staff | Khoa CNTT | Cán bộ Khoa CNTT |
+
+### 👨‍🏫 Teacher (2 accounts)
+| Username | Password | Role | Mô tả |
+|----------|----------|------|-------|
+| `teacher1` | `teacher123` | teacher | Giảng viên A (GV001) |
+| `teacher2` | `teacher123` | teacher | Giảng viên B (GV002) |
+
+### 👨‍🎓 Student (4 accounts)
+| Username | Password | Role | Student Number | Đặc biệt |
+|----------|----------|------|----------------|----------|
+| `student1` | `student123` | student | 102220001 | Sinh viên thường |
+| `student2_monitor` | `student123` | student | 102220002 | **LỚP TRƯỞNG ⭐** (isClassMonitor: true) |
+| `student3` | `student123` | student | 102220003 | Sinh viên thường |
+| `student4` | `student123` | student | 102220004 | Sinh viên thường |
+
+### Login Format
 ```json
 {
-  "data": {},
-  "message": "Success"
+  "username": "admin",
+  "password": "admin123"
 }
 ```
 
-### Error Response
-```json
-{
-  "message": "Error message"
-}
+### Reset Database
+```bash
+# Windows
+reset_database.bat
+
+# Mac/Linux
+chmod +x reset_database.sh
+./reset_database.sh
 ```
 
-## Status Codes
-
-- `200` - Success
-- `201` - Created
-- `400` - Bad Request
-- `401` - Unauthorized
-- `403` - Forbidden
-- `404` - Not Found
-- `500` - Internal Server Error
-
+**Note:** 
+- Database: `Community_Activity_Management`
+- **Tất cả passwords đã được hash bằng bcrypt** trong seed file (saltRounds = 10)
+- Lớp trưởng được xác định qua field `isClassMonitor: true` trong `student_profile`, KHÔNG phải role riêng
 

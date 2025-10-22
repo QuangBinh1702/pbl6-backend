@@ -5,6 +5,7 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 console.log('\n' + '='.repeat(70));
 console.log('🌱 SEED - ĐÚNG CẤU TRÚC GỐC 100%');
@@ -93,13 +94,34 @@ async function seedData() {
     
     // 6. USER (ĐÚNG CẤU TRÚC: _id, username, password_hash, active, isLocked)
     console.log('📝 Users...');
+    
+    // Hash passwords before inserting
+    const saltRounds = 10;
+    const hashedPasswords = {
+      admin123: await bcrypt.hash('admin123', saltRounds),
+      staff123: await bcrypt.hash('staff123', saltRounds),
+      teacher123: await bcrypt.hash('teacher123', saltRounds),
+      student123: await bcrypt.hash('student123', saltRounds)
+    };
+    
     const users = await db.collection('user').insertMany([
-      { username: 'alice', password_hash: '123456789', active: true, isLocked: false },
-      { username: 'bob', password_hash: 'password456', active: true, isLocked: false },
-      { username: 'charlie', password_hash: 'pass789', active: true, isLocked: false },
-      { username: 'david', password_hash: 'mypass123', active: true, isLocked: false },
-      { username: 'emma', password_hash: 'emma2024', active: true, isLocked: true },
-      { username: 'frank', password_hash: 'frank999', active: false, isLocked: false }
+      // ADMIN
+      { username: 'admin', password_hash: hashedPasswords.admin123, active: true, isLocked: false },
+      
+      // STAFF
+      { username: 'staff_ctsv', password_hash: hashedPasswords.staff123, active: true, isLocked: false },
+      { username: 'staff_doan', password_hash: hashedPasswords.staff123, active: true, isLocked: false },
+      { username: 'staff_khoa', password_hash: hashedPasswords.staff123, active: true, isLocked: false },
+      
+      // TEACHER
+      { username: 'teacher1', password_hash: hashedPasswords.teacher123, active: true, isLocked: false },
+      { username: 'teacher2', password_hash: hashedPasswords.teacher123, active: true, isLocked: false },
+      
+      // STUDENT
+      { username: 'student1', password_hash: hashedPasswords.student123, active: true, isLocked: false },
+      { username: 'student2_monitor', password_hash: hashedPasswords.student123, active: true, isLocked: false },
+      { username: 'student3', password_hash: hashedPasswords.student123, active: true, isLocked: false },
+      { username: 'student4', password_hash: hashedPasswords.student123, active: true, isLocked: false }
     ]);
     console.log(`   ✅ ${users.insertedCount} users`);
     
@@ -117,28 +139,64 @@ async function seedData() {
     console.log('📝 Staff Profiles...');
     const staffProfiles = await db.collection('staff_profile').insertMany([
       {
-        user_id: users.insertedIds[1],
-        staff_number: 'STF001',
-        full_name: 'Nguyen Van A',
-        date_of_birth: new Date('1990-01-01'),
+        user_id: users.insertedIds[1], // staff_ctsv
+        staff_number: 'CTSV001',
+        full_name: 'Nguyễn Văn CTSV',
+        date_of_birth: new Date('1985-01-15'),
         gender: 'male',
-        email: 'vana@example.com',
-        phone: '0123456789',
-        org_unit_id: orgUnits.insertedIds[0],
-        staff_image: 'https://example.com/images/staff1.jpg',
+        email: 'ctsv@ptit.edu.vn',
+        phone: '0912345001',
+        org_unit_id: orgUnits.insertedIds[0], // Phòng CTSV
+        staff_image: '',
         contact_address: 'Hanoi, Vietnam'
       },
       {
-        user_id: users.insertedIds[2],
-        staff_number: 'STF002',
-        full_name: 'Tran Thi B',
-        date_of_birth: new Date('1988-05-15'),
+        user_id: users.insertedIds[2], // staff_doan
+        staff_number: 'DOAN001',
+        full_name: 'Trần Thị Đoàn',
+        date_of_birth: new Date('1987-05-20'),
         gender: 'female',
-        email: 'tranb@example.com',
-        phone: '0987654321',
-        org_unit_id: orgUnits.insertedIds[1],
-        staff_image: 'https://example.com/images/staff2.jpg',
-        contact_address: 'Da Nang, Vietnam'
+        email: 'doan@ptit.edu.vn',
+        phone: '0912345002',
+        org_unit_id: orgUnits.insertedIds[2], // Đoàn trường
+        staff_image: '',
+        contact_address: 'Hanoi, Vietnam'
+      },
+      {
+        user_id: users.insertedIds[3], // staff_khoa
+        staff_number: 'KHOA001',
+        full_name: 'Lê Văn Khoa',
+        date_of_birth: new Date('1983-08-10'),
+        gender: 'male',
+        email: 'khoa@ptit.edu.vn',
+        phone: '0912345003',
+        org_unit_id: orgUnits.insertedIds[0], // Khoa CNTT
+        staff_image: '',
+        contact_address: 'Hanoi, Vietnam'
+      },
+      {
+        user_id: users.insertedIds[4], // teacher1
+        staff_number: 'GV001',
+        full_name: 'Phạm Thị Giáo viên A',
+        date_of_birth: new Date('1986-03-25'),
+        gender: 'female',
+        email: 'teachera@ptit.edu.vn',
+        phone: '0912345004',
+        org_unit_id: orgUnits.insertedIds[0],
+        staff_image: '',
+        contact_address: 'Hanoi, Vietnam'
+      },
+      {
+        user_id: users.insertedIds[5], // teacher2
+        staff_number: 'GV002',
+        full_name: 'Hoàng Văn Giáo viên B',
+        date_of_birth: new Date('1988-07-12'),
+        gender: 'male',
+        email: 'teacherb@ptit.edu.vn',
+        phone: '0912345005',
+        org_unit_id: orgUnits.insertedIds[0],
+        staff_image: '',
+        contact_address: 'Hanoi, Vietnam'
       }
     ]);
     console.log(`   ✅ ${staffProfiles.insertedCount} staff profiles`);
@@ -147,45 +205,59 @@ async function seedData() {
     console.log('📝 Student Profiles...');
     const studentProfiles = await db.collection('student_profile').insertMany([
       {
-        user_id: users.insertedIds[3],
-        student_number: 'STU001',
-        full_name: 'Tran Thi B',
-        date_of_birth: new Date('2000-01-01'),
-        gender: 'female',
-        email: 'thib@example.com',
-        phone: '0987654321',
-        enrollment_year: 2021,
-        class_id: classes.insertedIds[0],
-        student_image: 'https://example.com/images/student1.png',
-        contact_address: 'Da Nang, Vietnam',
+        user_id: users.insertedIds[6], // student1
+        student_number: '102220001',
+        full_name: 'Nguyễn Văn An',
+        date_of_birth: new Date('2004-01-15'),
+        gender: 'male',
+        email: 'student1@stu.ptit.edu.vn',
+        phone: '0923456001',
+        enrollment_year: 2022,
+        class_id: classes.insertedIds[0], // IT2021A
+        student_image: '',
+        contact_address: 'Hanoi, Vietnam',
         isClassMonitor: false
       },
       {
-        user_id: users.insertedIds[4],
-        student_number: 'STU002',
-        full_name: 'Le Van C',
-        date_of_birth: new Date('2001-03-15'),
-        gender: 'male',
-        email: 'levanc@example.com',
-        phone: '0911223344',
+        user_id: users.insertedIds[7], // student2_monitor - LỚP TRƯỞNG
+        student_number: '102220002',
+        full_name: 'Trần Thị Bình (Lớp trưởng)',
+        date_of_birth: new Date('2004-05-20'),
+        gender: 'female',
+        email: 'student2@stu.ptit.edu.vn',
+        phone: '0923456002',
         enrollment_year: 2022,
-        class_id: classes.insertedIds[1],
-        student_image: 'https://example.com/images/student2.png',
-        contact_address: 'Hue, Vietnam',
-        isClassMonitor: true
+        class_id: classes.insertedIds[1], // IT2022A
+        student_image: '',
+        contact_address: 'Hanoi, Vietnam',
+        isClassMonitor: true // LỚP TRƯỞNG
       },
       {
-        user_id: users.insertedIds[5],
-        student_number: 'STU003',
-        full_name: 'Pham Thi D',
-        date_of_birth: new Date('2002-07-20'),
+        user_id: users.insertedIds[8], // student3
+        student_number: '102220003',
+        full_name: 'Lê Văn Cường',
+        date_of_birth: new Date('2004-08-10'),
+        gender: 'male',
+        email: 'student3@stu.ptit.edu.vn',
+        phone: '0923456003',
+        enrollment_year: 2022,
+        class_id: classes.insertedIds[1], // IT2022A
+        student_image: '',
+        contact_address: 'Hanoi, Vietnam',
+        isClassMonitor: false
+      },
+      {
+        user_id: users.insertedIds[9], // student4
+        student_number: '102220004',
+        full_name: 'Phạm Thị Dung',
+        date_of_birth: new Date('2004-12-25'),
         gender: 'female',
-        email: 'phamd@example.com',
-        phone: '0933445566',
-        enrollment_year: 2023,
-        class_id: classes.insertedIds[2],
-        student_image: 'https://example.com/images/student3.png',
-        contact_address: 'Hoi An, Vietnam',
+        email: 'student4@stu.ptit.edu.vn',
+        phone: '0923456004',
+        enrollment_year: 2022,
+        class_id: classes.insertedIds[2], // IT2023A
+        student_image: '',
+        contact_address: 'Da Nang, Vietnam',
         isClassMonitor: false
       }
     ]);
@@ -239,9 +311,23 @@ async function seedData() {
     // 13. USER_ROLE (user_id, role_id, org_unit_id)
     console.log('📝 User Roles...');
     const userRoles = await db.collection('user_role').insertMany([
-      { user_id: users.insertedIds[0], role_id: roles.insertedIds[0], org_unit_id: orgUnits.insertedIds[0] },
-      { user_id: users.insertedIds[1], role_id: roles.insertedIds[1], org_unit_id: orgUnits.insertedIds[1] },
-      { user_id: users.insertedIds[3], role_id: roles.insertedIds[2], org_unit_id: orgUnits.insertedIds[0] }
+      // ADMIN
+      { user_id: users.insertedIds[0], role_id: roles.insertedIds[0], org_unit_id: null }, // admin
+      
+      // STAFF
+      { user_id: users.insertedIds[1], role_id: roles.insertedIds[3], org_unit_id: orgUnits.insertedIds[0] }, // staff_ctsv -> CTSV
+      { user_id: users.insertedIds[2], role_id: roles.insertedIds[3], org_unit_id: orgUnits.insertedIds[2] }, // staff_doan -> Đoàn
+      { user_id: users.insertedIds[3], role_id: roles.insertedIds[3], org_unit_id: orgUnits.insertedIds[0] }, // staff_khoa -> Khoa CNTT
+      
+      // TEACHER
+      { user_id: users.insertedIds[4], role_id: roles.insertedIds[1], org_unit_id: orgUnits.insertedIds[0] }, // teacher1
+      { user_id: users.insertedIds[5], role_id: roles.insertedIds[1], org_unit_id: orgUnits.insertedIds[0] }, // teacher2
+      
+      // STUDENT
+      { user_id: users.insertedIds[6], role_id: roles.insertedIds[2], org_unit_id: null }, // student1
+      { user_id: users.insertedIds[7], role_id: roles.insertedIds[2], org_unit_id: null }, // student2_monitor (lớp trưởng)
+      { user_id: users.insertedIds[8], role_id: roles.insertedIds[2], org_unit_id: null }, // student3
+      { user_id: users.insertedIds[9], role_id: roles.insertedIds[2], org_unit_id: null }  // student4
     ]);
     console.log(`   ✅ ${userRoles.insertedCount} user roles`);
     
@@ -448,13 +534,29 @@ async function seedData() {
     console.log('\n' + '='.repeat(70));
     console.log('🎉 HOÀN TẤT!');
     console.log('='.repeat(70));
-    console.log('\n💡 DỮ LIỆU MẪU (ĐÚNG CẤU TRÚC GỐC):');
-    console.log('   • Users: alice, bob, charlie, david, emma, frank');
-    console.log('   • Password: giống username (plaintext)');
-    console.log('   • Students: STU001, STU002, STU003');
-    console.log('   • Staff: STF001, STF002');
-    console.log('   • Activities: AI Seminar, ML Workshop');
-    console.log('\n✅ TẤT CẢ DỮ LIỆU ĐÃ THEO ĐÚNG CẤU TRÚC GỐC!\n');
+    console.log('\n💡 DỮ LIỆU MẪU - 10 USERS CHO 4 ROLES:');
+    console.log('\n👑 ADMIN (1):');
+    console.log('   • admin / admin123');
+    console.log('\n👔 STAFF (3):');
+    console.log('   • staff_ctsv / staff123 (Phòng CTSV)');
+    console.log('   • staff_doan / staff123 (Đoàn trường)');
+    console.log('   • staff_khoa / staff123 (Khoa CNTT)');
+    console.log('\n👨‍🏫 TEACHER (2):');
+    console.log('   • teacher1 / teacher123');
+    console.log('   • teacher2 / teacher123');
+    console.log('\n👨‍🎓 STUDENT (4):');
+    console.log('   • student1 / student123 (102220001)');
+    console.log('   • student2_monitor / student123 (102220002 - LỚP TRƯỞNG ⭐)');
+    console.log('   • student3 / student123 (102220003)');
+    console.log('   • student4 / student123 (102220004)');
+    console.log('\n📊 THỐNG KÊ:');
+    console.log(`   • Users: 10`);
+    console.log(`   • Roles: 4 (admin, staff, teacher, student)`);
+    console.log(`   • Staff Profiles: 5`);
+    console.log(`   • Student Profiles: 4 (1 lớp trưởng)`);
+    console.log(`   • Classes: 3`);
+    console.log(`   • Activities: 2`);
+    console.log('\n✅ TIẾP THEO: Chạy node seed_permissions.js để tạo permissions!\n');
     
   } catch (error) {
     console.error('\n❌ LỖI:', error);

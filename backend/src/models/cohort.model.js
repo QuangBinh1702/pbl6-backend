@@ -7,4 +7,4 @@ const cohortSchema = new mongoose.Schema({
 // Index for faster queries
 cohortSchema.index({ year: 1 });
 
-module.exports = mongoose.model('Cohort', cohortSchema);
+module.exports = mongoose.model('Cohort', cohortSchema, 'cohort');

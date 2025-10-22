@@ -36,5 +36,5 @@ activityRegistrationSchema.index({ status: 1 });
 // Prevent duplicate registrations
 activityRegistrationSchema.index({ activity_id: 1, student_id: 1 }, { unique: true });
 
-module.exports = mongoose.model('ActivityRegistration', activityRegistrationSchema);
+module.exports = mongoose.model('ActivityRegistration', activityRegistrationSchema, 'activity_registration');
 

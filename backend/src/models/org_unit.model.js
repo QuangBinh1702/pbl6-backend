@@ -18,4 +18,4 @@ const orgUnitSchema = new mongoose.Schema({
 // Index for faster queries
 orgUnitSchema.index({ type: 1 });
 
-module.exports = mongoose.model('OrgUnit', orgUnitSchema);
+module.exports = mongoose.model('OrgUnit', orgUnitSchema, 'org_unit');

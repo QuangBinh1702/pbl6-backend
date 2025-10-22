@@ -50,5 +50,5 @@ userActionOverrideSchema.statics.checkOverride = async function(userId, actionId
   return override.is_granted; // true = granted, false = revoked
 };
 
-module.exports = mongoose.model('UserActionOverride', userActionOverrideSchema);
+module.exports = mongoose.model('UserActionOverride', userActionOverrideSchema, 'user_action_override');
 

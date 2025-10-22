@@ -7,21 +7,21 @@ const { checkPermission } = require('../middlewares/check_permission.middleware'
 // Get all class monitors
 router.get('/class-monitors', 
   auth, 
-  checkPermission('student', 'VIEW'), 
+  checkPermission('student_profile', 'READ'), 
   studentProfileController.getClassMonitors
 );
 
 // Get all student profiles
 router.get('/', 
   auth, 
-  checkPermission('student', 'VIEW'), 
+  checkPermission('student_profile', 'READ'), 
   studentProfileController.getAllStudentProfiles
 );
 
 // Get students by class
 router.get('/class/:classId/students', 
   auth, 
-  checkPermission('student', 'VIEW'), 
+  checkPermission('student_profile', 'READ'), 
   studentProfileController.getStudentsByClass
 );
 
@@ -46,35 +46,35 @@ router.get('/:id',
 // Create student profile
 router.post('/', 
   auth, 
-  checkPermission('student', 'CREATE'), 
+  checkPermission('student_profile', 'CREATE'), 
   studentProfileController.createStudentProfile
 );
 
 // Update student profile
 router.put('/:id', 
   auth, 
-  checkPermission('student', 'UPDATE'), 
+  checkPermission('student_profile', 'UPDATE'), 
   studentProfileController.updateStudentProfile
 );
 
 // Delete student profile
 router.delete('/:id', 
   auth, 
-  checkPermission('student', 'DELETE'), 
+  checkPermission('student_profile', 'DELETE'), 
   studentProfileController.deleteStudentProfile
 );
 
 // Set as class monitor (admin/ctsv only)
 router.put('/:id/set-monitor', 
   auth, 
-  checkPermission('student', 'UPDATE'), 
+  checkPermission('student_profile', 'UPDATE'), 
   studentProfileController.setClassMonitor
 );
 
 // Remove class monitor status (admin/ctsv only)
 router.put('/:id/unset-monitor', 
   auth, 
-  checkPermission('student', 'UPDATE'), 
+  checkPermission('student_profile', 'UPDATE'), 
   studentProfileController.unsetClassMonitor
 );
 

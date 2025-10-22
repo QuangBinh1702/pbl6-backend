@@ -10,4 +10,4 @@ const falcutySchema = new mongoose.Schema({
 // Index for faster queries
 falcutySchema.index({ name: 1 });
 
-module.exports = mongoose.model('Falcuty', falcutySchema);
+module.exports = mongoose.model('Falcuty', falcutySchema, 'falcuty');

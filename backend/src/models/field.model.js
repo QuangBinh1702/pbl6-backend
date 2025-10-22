@@ -7,4 +7,4 @@ const fieldSchema = new mongoose.Schema({
 // Index for faster queries
 fieldSchema.index({ name: 1 });
 
-module.exports = mongoose.model('Field', fieldSchema);
+module.exports = mongoose.model('Field', fieldSchema, 'field');

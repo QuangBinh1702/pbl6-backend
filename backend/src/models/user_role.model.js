@@ -43,5 +43,5 @@ userRoleSchema.statics.hasRole = async function(userId, roleName) {
   return userRoles.some(ur => ur.role_id && ur.role_id.name === roleName);
 };
 
-module.exports = mongoose.model('UserRole', userRoleSchema);
+module.exports = mongoose.model('UserRole', userRoleSchema, 'user_role');
 

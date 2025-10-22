@@ -29,4 +29,4 @@ staffProfileSchema.index({ user_id: 1 });
 staffProfileSchema.index({ staff_number: 1 });
 staffProfileSchema.index({ org_unit_id: 1 });
 
-module.exports = mongoose.model('StaffProfile', staffProfileSchema);
+module.exports = mongoose.model('StaffProfile', staffProfileSchema, 'staff_profile');

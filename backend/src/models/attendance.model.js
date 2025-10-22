@@ -34,4 +34,4 @@ attendanceSchema.index({ student_id: 1 });
 attendanceSchema.index({ activity_id: 1 });
 attendanceSchema.index({ scanned_at: -1 });
 
-module.exports = mongoose.model('Attendance', attendanceSchema);
+module.exports = mongoose.model('Attendance', attendanceSchema, 'attendance');

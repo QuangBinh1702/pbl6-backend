@@ -19,4 +19,4 @@ const classSchema = new mongoose.Schema({
 classSchema.index({ falcuty_id: 1 });
 classSchema.index({ cohort_id: 1 });
 
-module.exports = mongoose.model('Class', classSchema);
+module.exports = mongoose.model('Class', classSchema, 'class');

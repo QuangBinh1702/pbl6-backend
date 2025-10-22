@@ -21,4 +21,4 @@ const permissionSchema = new mongoose.Schema({
 permissionSchema.index({ resource: 1 });
 permissionSchema.index({ name: 1 });
 
-module.exports = mongoose.model('Permission', permissionSchema);
+module.exports = mongoose.model('Permission', permissionSchema, 'permission');

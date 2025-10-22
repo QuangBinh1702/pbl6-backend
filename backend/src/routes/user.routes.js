@@ -8,7 +8,7 @@ const { checkPermission } = require('../middlewares/check_permission.middleware'
 // Get all users (admin/ctsv only)
 router.get('/', 
   auth, 
-  checkPermission('user', 'VIEW'), 
+  checkPermission('user', 'READ'), 
   userController.getAllUsers
 );
 
@@ -56,7 +56,7 @@ router.put('/:id/unlock',
 // Role management endpoints
 router.get('/:id/roles', 
   auth, 
-  checkPermission('user', 'VIEW'), 
+  checkPermission('user', 'READ'), 
   userController.getUserRoles
 );
 

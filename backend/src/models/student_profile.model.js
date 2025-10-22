@@ -45,4 +45,4 @@ studentProfileSchema.index({ user_id: 1 });
 studentProfileSchema.index({ class_id: 1 });
 studentProfileSchema.index({ isClassMonitor: 1 });
 
-module.exports = mongoose.model('StudentProfile', studentProfileSchema);
+module.exports = mongoose.model('StudentProfile', studentProfileSchema, 'student_profile');

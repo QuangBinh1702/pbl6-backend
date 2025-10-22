@@ -1,0 +1,1806 @@
+{
+  "info": {
+    "name": "PBL6 - Community Activity Management API",
+    "description": "Complete API collection for PBL6 Community Activity Management System - Updated Version",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "2.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "userId", "value": "", "type": "string" },
+    { "key": "activityId", "value": "", "type": "string" },
+    { "key": "roleId", "value": "", "type": "string" },
+    { "key": "studentId", "value": "", "type": "string" },
+    { "key": "staffId", "value": "", "type": "string" },
+    { "key": "facultyId", "value": "", "type": "string" },
+    { "key": "classId", "value": "", "type": "string" },
+    { "key": "cohortId", "value": "", "type": "string" },
+    { "key": "registrationId", "value": "", "type": "string" },
+    { "key": "attendanceId", "value": "", "type": "string" },
+    { "key": "postId", "value": "", "type": "string" },
+    { "key": "feedbackId", "value": "", "type": "string" },
+    { "key": "evidenceId", "value": "", "type": "string" },
+    { "key": "orgUnitId", "value": "", "type": "string" },
+    { "key": "fieldId", "value": "", "type": "string" },
+    { "key": "pvcdRecordId", "value": "", "type": "string" },
+    { "key": "permissionId", "value": "", "type": "string" },
+    { "key": "actionId", "value": "", "type": "string" },
+    { "key": "studentCohortId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "description": "Authentication endpoints for login, register and profile",
+      "item": [
+        {
+          "name": "Login - Student",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"alice\",\n  \"password\": \"123456789\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login - Admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@stu.ptit.edu.vn\",\n  \"password\": \"123456\",\n  \"firstName\": \"Nguyen\",\n  \"lastName\": \"Van A\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/auth/profile"
+          }
+        }
+      ]
+    },
+    {
+      "name": "👥 Users",
+      "description": "User management endpoints",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/users"
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@stu.ptit.edu.vn\",\n  \"password\": \"123456\",\n  \"firstName\": \"Nguyen\",\n  \"lastName\": \"Van B\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/users/{{userId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Updated Name\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Lock User",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/users/{{userId}}/lock"
+          }
+        },
+        {
+          "name": "Unlock User",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/users/{{userId}}/unlock"
+          }
+        },
+        {
+          "name": "Get User Roles",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/users/{{userId}}/roles"
+          }
+        },
+        {
+          "name": "Assign Role to User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/users/{{userId}}/roles",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleId\": \"{{roleId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Remove Role from User",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/users/{{userId}}/roles/{{roleId}}"
+          }
+        },
+        {
+          "name": "Add Action Override",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/users/{{userId}}/actions/override",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actionId\": \"{{actionId}}\",\n  \"canPerform\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Remove Action Override",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/users/{{userId}}/actions/override/{{actionId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🎯 Activities",
+      "description": "Activity management endpoints",
+      "item": [
+        {
+          "name": "Get All Activities",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/activities"
+          }
+        },
+        {
+          "name": "Get Activity by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/activities/{{activityId}}"
+          }
+        },
+        {
+          "name": "Create Activity",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/activities",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hoạt động tình nguyện\",\n  \"description\": \"Mô tả hoạt động\",\n  \"type\": \"faculty\",\n  \"time\": \"2024-01-15T00:00:00.000Z\",\n  \"location\": \"P101\",\n  \"points\": 5,\n  \"maxParticipants\": 50\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Activity",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/activities/{{activityId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hoạt động đã cập nhật\",\n  \"points\": 10\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Activity",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/activities/{{activityId}}"
+          }
+        },
+        {
+          "name": "Approve Activity",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/activities/{{activityId}}/approve"
+          }
+        },
+        {
+          "name": "Reject Activity",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/activities/{{activityId}}/reject",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Lý do từ chối\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Complete Activity",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/activities/{{activityId}}/complete"
+          }
+        },
+        {
+          "name": "Register for Activity",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/activities/{{activityId}}/register"
+          }
+        },
+        {
+          "name": "Get Activity Registrations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/activities/{{activityId}}/registrations"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📝 Registrations",
+      "description": "Registration management endpoints",
+      "item": [
+        {
+          "name": "Get My Registrations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/registrations/my-registrations"
+          }
+        },
+        {
+          "name": "Get All Registrations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/registrations"
+          }
+        },
+        {
+          "name": "Get Registrations by Activity",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/registrations/activity/{{activityId}}"
+          }
+        },
+        {
+          "name": "Get Registrations by Student",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/registrations/student/{{studentId}}"
+          }
+        },
+        {
+          "name": "Get Registration by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/registrations/{{registrationId}}"
+          }
+        },
+        {
+          "name": "Create Registration",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/registrations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityId\": \"{{activityId}}\",\n  \"studentId\": \"{{studentId}}\",\n  \"note\": \"Ghi chú\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Registration",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/registrations/{{registrationId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Ghi chú cập nhật\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Registration",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/registrations/{{registrationId}}"
+          }
+        },
+        {
+          "name": "Approve Registration",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/registrations/{{registrationId}}/approve"
+          }
+        },
+        {
+          "name": "Reject Registration",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/registrations/{{registrationId}}/reject",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Lý do từ chối\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "✅ Attendance",
+      "description": "Attendance management endpoints",
+      "item": [
+        {
+          "name": "Get All Attendances",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/attendances"
+          }
+        },
+        {
+          "name": "Get Attendance by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/attendances/{{attendanceId}}"
+          }
+        },
+        {
+          "name": "Get Attendances by Activity",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/attendances/activity/{{activityId}}"
+          }
+        },
+        {
+          "name": "Get Attendances by Student",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/attendances/student/{{studentId}}"
+          }
+        },
+        {
+          "name": "Create Attendance",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/attendances",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityId\": \"{{activityId}}\",\n  \"studentId\": \"{{studentId}}\",\n  \"attendedAt\": \"2024-01-15T00:00:00.000Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Attendance",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/attendances/{{attendanceId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Ghi chú cập nhật\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Attendance",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/attendances/{{attendanceId}}"
+          }
+        },
+        {
+          "name": "Verify Attendance",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/attendances/{{attendanceId}}/verify"
+          }
+        },
+        {
+          "name": "Add Feedback",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/attendances/{{attendanceId}}/feedback",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"feedback\": \"Phản hồi điểm danh\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Scan QR Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/attendances/scan-qr",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"qrCode\": \"QR_CODE_DATA\",\n  \"activityId\": \"{{activityId}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👨‍🎓 Student Profiles",
+      "description": "Student profile management endpoints",
+      "item": [
+        {
+          "name": "Get All Student Profiles",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/student-profiles"
+          }
+        },
+        {
+          "name": "Get Student Profile by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/student-profiles/{{studentId}}"
+          }
+        },
+        {
+          "name": "Get by User ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/student-profiles/user/{{userId}}"
+          }
+        },
+        {
+          "name": "Get by Student Number",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/student-profiles/student-number/102220095"
+          }
+        },
+        {
+          "name": "Get Students by Class",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/student-profiles/class/{{classId}}/students"
+          }
+        },
+        {
+          "name": "Get Class Monitors",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/student-profiles/class-monitors"
+          }
+        },
+        {
+          "name": "Create Student Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/student-profiles",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"studentNumber\": \"102220096\",\n  \"classId\": \"{{classId}}\",\n  \"phone\": \"0123456789\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Student Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/student-profiles/{{studentId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"0987654321\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Student Profile",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/student-profiles/{{studentId}}"
+          }
+        },
+        {
+          "name": "Set Class Monitor",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/student-profiles/{{studentId}}/set-monitor"
+          }
+        },
+        {
+          "name": "Unset Class Monitor",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/student-profiles/{{studentId}}/unset-monitor"
+          }
+        }
+      ]
+    },
+    {
+      "name": "👨‍💼 Staff Profiles",
+      "description": "Staff profile management endpoints",
+      "item": [
+        {
+          "name": "Get All Staff Profiles",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/staff-profiles"
+          }
+        },
+        {
+          "name": "Get Staff Profile by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/staff-profiles/{{staffId}}"
+          }
+        },
+        {
+          "name": "Get by User ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/staff-profiles/user/{{userId}}"
+          }
+        },
+        {
+          "name": "Get by Staff Number",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/staff-profiles/staff-number/STAFF001"
+          }
+        },
+        {
+          "name": "Get Staff by Org Unit",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/staff-profiles/org-unit/{{orgUnitId}}/staff"
+          }
+        },
+        {
+          "name": "Create Staff Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/staff-profiles",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"staffNumber\": \"STAFF002\",\n  \"orgUnitId\": \"{{orgUnitId}}\",\n  \"position\": \"Giảng viên\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Staff Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/staff-profiles/{{staffId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"position\": \"Phó trưởng khoa\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Staff Profile",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/staff-profiles/{{staffId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏢 Organization",
+      "description": "Organization management (Faculties, Classes, Cohorts, etc.)",
+      "item": [
+        {
+          "name": "Faculties",
+          "item": [
+            {
+              "name": "Get All Faculties",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/faculties"
+              }
+            },
+            {
+              "name": "Get Faculty by ID",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/faculties/{{facultyId}}"
+              }
+            },
+            {
+              "name": "Get Faculty Classes",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/faculties/{{facultyId}}/classes"
+              }
+            },
+            {
+              "name": "Create Faculty",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/faculties",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Khoa Công nghệ thông tin\",\n  \"code\": \"CNTT\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Faculty",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/faculties/{{facultyId}}",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Khoa CNTT Updated\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Faculty",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/faculties/{{facultyId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Classes",
+          "item": [
+            {
+              "name": "Get All Classes",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/classes"
+              }
+            },
+            {
+              "name": "Get Class by ID",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/classes/{{classId}}"
+              }
+            },
+            {
+              "name": "Get Classes by Faculty",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/classes/faculty/{{facultyId}}/classes"
+              }
+            },
+            {
+              "name": "Get Classes by Cohort",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/classes/cohort/{{cohortId}}/classes"
+              }
+            },
+            {
+              "name": "Get Class Students",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/classes/{{classId}}/students"
+              }
+            },
+            {
+              "name": "Create Class",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/classes",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"CNTT01\",\n  \"code\": \"CNTT01\",\n  \"facultyId\": \"{{facultyId}}\",\n  \"cohortId\": \"{{cohortId}}\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Class",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/classes/{{classId}}",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"CNTT01 Updated\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Class",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/classes/{{classId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cohorts",
+          "item": [
+            {
+              "name": "Get All Cohorts",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/cohorts"
+              }
+            },
+            {
+              "name": "Get Cohort by ID",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/cohorts/{{cohortId}}"
+              }
+            },
+            {
+              "name": "Get Cohort by Year",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/cohorts/year/2022"
+              }
+            },
+            {
+              "name": "Get Cohort Classes",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/cohorts/{{cohortId}}/classes"
+              }
+            },
+            {
+              "name": "Get Cohort Students",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/cohorts/{{cohortId}}/students"
+              }
+            },
+            {
+              "name": "Create Cohort",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/cohorts",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Khóa 2022\",\n  \"year\": 2022\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Cohort",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/cohorts/{{cohortId}}",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Khóa 2022 Updated\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Cohort",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/cohorts/{{cohortId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fields",
+          "item": [
+            {
+              "name": "Get All Fields",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/fields"
+              }
+            },
+            {
+              "name": "Get Field by ID",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/fields/{{fieldId}}"
+              }
+            },
+            {
+              "name": "Create Field",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/fields",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Công nghệ thông tin\",\n  \"code\": \"CNTT\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Field",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/fields/{{fieldId}}",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"CNTT Updated\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Field",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/fields/{{fieldId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Organization Units",
+          "item": [
+            {
+              "name": "Get All Org Units",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/org-units"
+              }
+            },
+            {
+              "name": "Get Org Unit by ID",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/org-units/{{orgUnitId}}"
+              }
+            },
+            {
+              "name": "Get Org Units by Type",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/org-units/type/faculty"
+              }
+            },
+            {
+              "name": "Get Org Unit Staff",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/org-units/{{orgUnitId}}/staff"
+              }
+            },
+            {
+              "name": "Create Org Unit",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/org-units",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Khoa CNTT\",\n  \"code\": \"CNTT\",\n  \"type\": \"faculty\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Org Unit",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/org-units/{{orgUnitId}}",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Khoa CNTT Updated\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Org Unit",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/org-units/{{orgUnitId}}"
+              }
+            },
+            {
+              "name": "Set Leader",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/org-units/{{orgUnitId}}/set-leader",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"staffId\": \"{{staffId}}\"\n}"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "⭐ Feedback & Evidence",
+      "description": "Feedback and Evidence management",
+      "item": [
+        {
+          "name": "Feedback",
+          "item": [
+            {
+              "name": "Get My Feedbacks",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/feedback/my-feedbacks"
+              }
+            },
+            {
+              "name": "Get All Feedbacks",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/feedback"
+              }
+            },
+            {
+              "name": "Get Feedbacks by Activity",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/feedback/activity/{{activityId}}"
+              }
+            },
+            {
+              "name": "Get Feedback by ID",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/feedback/{{feedbackId}}"
+              }
+            },
+            {
+              "name": "Create Feedback",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/feedback",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"activityId\": \"{{activityId}}\",\n  \"rating\": 5,\n  \"comment\": \"Hoạt động rất hay\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Feedback",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/feedback/{{feedbackId}}",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"rating\": 4,\n  \"comment\": \"Updated\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Feedback",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/feedback/{{feedbackId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Evidence",
+          "item": [
+            {
+              "name": "Get All Evidences",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/evidences"
+              }
+            },
+            {
+              "name": "Get Evidence by ID",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/evidences/{{evidenceId}}"
+              }
+            },
+            {
+              "name": "Create Evidence",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/evidences",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"activityId\": \"{{activityId}}\",\n  \"title\": \"Minh chứng\",\n  \"description\": \"Mô tả\",\n  \"files\": [\"file1.jpg\"]\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Evidence",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/evidences/{{evidenceId}}",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Updated\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Approve Evidence",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/evidences/{{evidenceId}}/approve"
+              }
+            },
+            {
+              "name": "Reject Evidence",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/evidences/{{evidenceId}}/reject",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Lý do từ chối\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Evidence",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/evidences/{{evidenceId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Posts",
+          "item": [
+            {
+              "name": "Get All Posts",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/posts"
+              }
+            },
+            {
+              "name": "Get Post by ID",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/posts/{{postId}}"
+              }
+            },
+            {
+              "name": "Get Posts by Activity",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/posts/activity/{{activityId}}"
+              }
+            },
+            {
+              "name": "Create Post",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/posts",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"activityId\": \"{{activityId}}\",\n  \"title\": \"Bài đăng\",\n  \"content\": \"Nội dung\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Post",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/posts/{{postId}}",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Updated\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Post",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/posts/{{postId}}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "📚 PVCD & Student Cohorts",
+      "description": "PVCD Records and Student Cohort management",
+      "item": [
+        {
+          "name": "PVCD Records",
+          "item": [
+            {
+              "name": "Get All PVCD Records",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/pvcd-records"
+              }
+            },
+            {
+              "name": "Get PVCD Record by ID",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/pvcd-records/{{pvcdRecordId}}"
+              }
+            },
+            {
+              "name": "Get PVCD Records by Student",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/pvcd-records/student/{{studentId}}"
+              }
+            },
+            {
+              "name": "Get PVCD Records by Year",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/pvcd-records/year/2024"
+              }
+            },
+            {
+              "name": "Create PVCD Record",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/pvcd-records",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"year\": 2024,\n  \"semester\": 1,\n  \"points\": 15\n}"
+                }
+              }
+            },
+            {
+              "name": "Update PVCD Record",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/pvcd-records/{{pvcdRecordId}}",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"points\": 20\n}"
+                }
+              }
+            },
+            {
+              "name": "Update PVCD Points",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/pvcd-records/{{pvcdRecordId}}/points",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"points\": 25\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete PVCD Record",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/pvcd-records/{{pvcdRecordId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student Cohorts",
+          "item": [
+            {
+              "name": "Get All Student Cohorts",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/student-cohorts"
+              }
+            },
+            {
+              "name": "Get Student Cohort by ID",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/student-cohorts/{{studentCohortId}}"
+              }
+            },
+            {
+              "name": "Get by Student",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/student-cohorts/student/{{studentId}}"
+              }
+            },
+            {
+              "name": "Get by Cohort",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/student-cohorts/cohort/{{cohortId}}"
+              }
+            },
+            {
+              "name": "Create Student Cohort",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/student-cohorts",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"cohortId\": \"{{cohortId}}\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Student Cohort",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/student-cohorts/{{studentCohortId}}",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"cohortId\": \"{{cohortId}}\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Student Cohort",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/student-cohorts/{{studentCohortId}}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🔐 Permissions & Roles",
+      "description": "Permission and Role management endpoints",
+      "item": [
+        {
+          "name": "Permissions",
+          "item": [
+            {
+              "name": "Get All Permissions",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/permissions"
+              }
+            },
+            {
+              "name": "Create Permission",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/permissions",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"New Permission\",\n  \"description\": \"Description\"\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Actions",
+          "item": [
+            {
+              "name": "Get All Actions",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/permissions/actions"
+              }
+            },
+            {
+              "name": "Create Action",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/permissions/actions",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"NEW_ACTION\",\n  \"resource\": \"activity\",\n  \"description\": \"Description\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Get Actions by Resource",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/permissions/actions/activity"
+              }
+            }
+          ]
+        },
+        {
+          "name": "User Permissions",
+          "item": [
+            {
+              "name": "Get User Permissions",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/permissions/users/{{userId}}/permissions"
+              }
+            },
+            {
+              "name": "Get User Actions for Resource",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/permissions/users/{{userId}}/actions/activity"
+              }
+            },
+            {
+              "name": "Check User Permission",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/permissions/users/{{userId}}/check-permission",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"resource\": \"activity\",\n  \"action\": \"CREATE\"\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Role Management",
+          "item": [
+            {
+              "name": "Get All Roles (Permissions API)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/permissions/roles"
+              }
+            },
+            {
+              "name": "Get Role Actions",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/permissions/roles/{{roleId}}/actions"
+              }
+            },
+            {
+              "name": "Add Action to Role",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/permissions/roles/{{roleId}}/actions",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"action_id\": \"{{actionId}}\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Remove Action from Role",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/permissions/roles/{{roleId}}/actions/{{actionId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Roles",
+          "item": [
+            {
+              "name": "Get All Roles",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/roles"
+              }
+            },
+            {
+              "name": "Get Role by ID",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/roles/{{roleId}}"
+              }
+            },
+            {
+              "name": "Get Role by Name",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/roles/name/admin"
+              }
+            },
+            {
+              "name": "Get Users by Role",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/roles/{{roleId}}/users"
+              }
+            },
+            {
+              "name": "Create Role",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/roles",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"New Role\",\n  \"description\": \"Description\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Role",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/roles/{{roleId}}",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Updated Role\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Role",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/roles/{{roleId}}"
+              }
+            },
+            {
+              "name": "Add Permission to Role",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/roles/{{roleId}}/permissions",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"permissionId\": \"{{permissionId}}\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Remove Permission from Role",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/roles/{{roleId}}/permissions"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "📊 Statistics",
+      "description": "Statistical data endpoints",
+      "item": [
+        {
+          "name": "Get Community Points Statistics",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/statistics/community-points"
+          }
+        },
+        {
+          "name": "Get Activities Statistics",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/statistics/activities"
+          }
+        },
+        {
+          "name": "Get Certificates Statistics",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/statistics/certificates"
+          }
+        }
+      ]
+    }
+  ]
+}
+
