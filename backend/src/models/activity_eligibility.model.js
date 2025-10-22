@@ -1,9 +1,21 @@
 const mongoose = require('mongoose');
 
 const activityEligibilitySchema = new mongoose.Schema({
-  activity: { type: mongoose.Schema.Types.ObjectId, ref: 'Activity' },
-  type: { type: String, enum: ['falcuty', 'cohort'] },
-  reference: { type: mongoose.Schema.Types.ObjectId }
-});
+  activity_id: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Activity' 
+  },
+  type: { 
+    type: String, 
+    enum: ['falcuty', 'cohort'] 
+  },
+  reference_id: { 
+    type: mongoose.Schema.Types.ObjectId 
+  }
+}, { timestamps: true });
+
+// Index for faster queries
+activityEligibilitySchema.index({ activity_id: 1 });
+activityEligibilitySchema.index({ type: 1 });
 
 module.exports = mongoose.model('ActivityEligibility', activityEligibilitySchema);

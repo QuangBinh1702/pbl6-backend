@@ -10,6 +10,10 @@ const roleActionSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Action',
     required: true
+  },
+  is_granted: { 
+    type: Boolean, 
+    default: true
   }
 }, { timestamps: true });
 

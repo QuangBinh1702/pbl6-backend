@@ -11,7 +11,7 @@ Base URL: `/api`
 ### Auth Routes (`/api/auth`)
 - `POST /api/auth/login` - Đăng nhập
 - `POST /api/auth/register` - Đăng ký tài khoản
-- `POST /api/auth/refresh` - Làm mới token
+- `GET /api/auth/profile` - Lấy thông tin profile của user hiện tại
 
 ### User Routes (`/api/users`)
 - `GET /api/users` - Lấy danh sách người dùng (admin, ctsv)
@@ -21,12 +21,16 @@ Base URL: `/api`
 - `DELETE /api/users/:id` - Xóa tài khoản (admin, ctsv)
 - `PUT /api/users/:id/lock` - Khóa tài khoản (admin, ctsv)
 - `PUT /api/users/:id/unlock` - Mở khóa tài khoản (admin, ctsv)
-- `PUT /api/users/:id/role` - Phân quyền (admin, ctsv)
-- `GET /api/users/:id/evidences` - Lấy minh chứng của người dùng
+- `GET /api/users/:id/roles` - Lấy vai trò của người dùng
+- `POST /api/users/:id/roles` - Gán vai trò cho người dùng
+- `DELETE /api/users/:id/roles/:roleId` - Xóa vai trò khỏi người dùng
+- `POST /api/users/:id/actions/override` - Thêm action override cho người dùng
+- `DELETE /api/users/:id/actions/override/:actionId` - Xóa action override khỏi người dùng
 
 ## Profiles
 
 ### Student Profile Routes (`/api/student-profiles`)
+- `GET /api/student-profiles/class-monitors` - Lấy tất cả lớp trưởng
 - `GET /api/student-profiles` - Lấy tất cả hồ sơ sinh viên (admin, ctsv, teacher)
 - `GET /api/student-profiles/:id` - Lấy hồ sơ sinh viên theo ID
 - `GET /api/student-profiles/user/:userId` - Lấy hồ sơ theo User ID
@@ -36,7 +40,7 @@ Base URL: `/api`
 - `PUT /api/student-profiles/:id` - Cập nhật hồ sơ sinh viên
 - `DELETE /api/student-profiles/:id` - Xóa hồ sơ sinh viên (admin, ctsv)
 - `PUT /api/student-profiles/:id/set-monitor` - Đặt làm lớp trưởng (admin, ctsv, teacher)
-- `PUT /api/student-profiles/:id/remove-monitor` - Hủy lớp trưởng (admin, ctsv, teacher)
+- `PUT /api/student-profiles/:id/unset-monitor` - Hủy lớp trưởng (admin, ctsv, teacher)
 
 ### Staff Profile Routes (`/api/staff-profiles`)
 - `GET /api/staff-profiles` - Lấy tất cả hồ sơ cán bộ (admin, ctsv)
@@ -117,31 +121,28 @@ Base URL: `/api`
 ## Activities
 
 ### Activity Routes (`/api/activities`)
-- `GET /api/activities` - Lấy tất cả hoạt động
-- `GET /api/activities/:id` - Lấy hoạt động theo ID
+- `GET /api/activities` - Lấy tất cả hoạt động (public)
+- `GET /api/activities/:id` - Lấy hoạt động theo ID (public)
 - `POST /api/activities` - Tạo hoạt động mới
 - `PUT /api/activities/:id` - Cập nhật hoạt động
 - `DELETE /api/activities/:id` - Xóa hoạt động
 - `PUT /api/activities/:id/approve` - Phê duyệt hoạt động
 - `PUT /api/activities/:id/reject` - Từ chối hoạt động
 - `PUT /api/activities/:id/complete` - Hoàn thành hoạt động
-- `POST /api/activities/:id/register` - Đăng ký tham gia
-- `POST /api/activities/:id/attendance` - Điểm danh
-- `POST /api/activities/:id/confirm` - Xác nhận hoạt động
+- `POST /api/activities/:id/register` - Đăng ký tham gia hoạt động
+- `GET /api/activities/:id/registrations` - Lấy danh sách đăng ký của hoạt động
 
 ### Registration Routes (`/api/registrations`)
-- `GET /api/registrations` - Lấy tất cả đăng ký (admin, ctsv, teacher)
 - `GET /api/registrations/my-registrations` - Lấy đăng ký của tôi
-- `GET /api/registrations/:id` - Lấy đăng ký theo ID
+- `GET /api/registrations` - Lấy tất cả đăng ký (admin, ctsv, teacher)
 - `GET /api/registrations/activity/:activityId` - Lấy đăng ký theo hoạt động
-- `GET /api/registrations/user/:userId` - Lấy đăng ký theo người dùng
+- `GET /api/registrations/student/:studentId` - Lấy đăng ký theo sinh viên
+- `GET /api/registrations/:id` - Lấy đăng ký theo ID
 - `POST /api/registrations` - Tạo đăng ký mới
 - `PUT /api/registrations/:id` - Cập nhật đăng ký
 - `DELETE /api/registrations/:id` - Xóa đăng ký
 - `PUT /api/registrations/:id/approve` - Phê duyệt đăng ký (admin, ctsv, teacher, union)
 - `PUT /api/registrations/:id/reject` - Từ chối đăng ký (admin, ctsv, teacher, union)
-- `PUT /api/registrations/:id/attend` - Đánh dấu đã tham dự (admin, ctsv, teacher, union)
-- `PUT /api/registrations/:id/confirm` - Xác nhận đăng ký (admin, ctsv, teacher, union)
 
 ### Attendance Routes (`/api/attendances`)
 - `GET /api/attendances` - Lấy tất cả điểm danh (admin, ctsv, teacher)
@@ -166,39 +167,53 @@ Base URL: `/api`
 ## Points & Feedback
 
 ### Point Routes (`/api/points`)
-- `GET /api/points` - Lấy điểm của sinh viên
-- `POST /api/points` - Thêm điểm
-- `PUT /api/points/:id` - Cập nhật điểm
+- `GET /api/points/:userId` - Lấy điểm của sinh viên
+- `PUT /api/points/:userId` - Cập nhật điểm (ctsv, đoàn trường)
+- `GET /api/points/:userId/history` - Lấy lịch sử điểm
 
 ### Feedback Routes (`/api/feedback`)
-- `GET /api/feedback` - Lấy tất cả phản hồi
-- `POST /api/feedback` - Tạo phản hồi mới
-- `PUT /api/feedback/:id/resolve` - Giải quyết phản hồi
+- `GET /api/feedback/my-feedbacks` - Lấy phản hồi của tôi
+- `GET /api/feedback` - Lấy tất cả phản hồi (admin, staff)
+- `GET /api/feedback/activity/:activityId` - Lấy phản hồi theo hoạt động
+- `GET /api/feedback/:id` - Lấy phản hồi theo ID
+- `POST /api/feedback` - Tạo phản hồi mới (sinh viên)
+- `PUT /api/feedback/:id` - Cập nhật phản hồi (chỉ phản hồi của mình)
+- `DELETE /api/feedback/:id` - Xóa phản hồi (admin, staff hoặc của mình)
 
 ### Evidence Routes (`/api/evidences`)
-- `GET /api/evidences` - Lấy tất cả minh chứng
+- `GET /api/evidences` - Lấy tất cả minh chứng (admin, ctsv, khoa, loptruong)
 - `GET /api/evidences/:id` - Lấy minh chứng theo ID
-- `POST /api/evidences` - Tạo minh chứng mới
+- `POST /api/evidences` - Tạo minh chứng mới (sinh viên)
 - `PUT /api/evidences/:id` - Cập nhật minh chứng
-- `PUT /api/evidences/:id/approve` - Phê duyệt minh chứng
-- `PUT /api/evidences/:id/reject` - Từ chối minh chứng
-- `DELETE /api/evidences/:id` - Xóa minh chứng
+- `PUT /api/evidences/:id/approve` - Phê duyệt minh chứng (ctsv, khoa, loptruong)
+- `PUT /api/evidences/:id/reject` - Từ chối minh chứng (ctsv, khoa, loptruong)
+- `DELETE /api/evidences/:id` - Xóa minh chứng (admin, ctsv)
 
 ## Communication
 
 ### Notification Routes (`/api/notifications`)
-- `GET /api/notifications` - Lấy thông báo
 - `POST /api/notifications` - Tạo thông báo mới
-- `PUT /api/notifications/:id/read` - Đánh dấu đã đọc
+- `GET /api/notifications/:userId` - Lấy thông báo của user
 
 ### Chat Routes (`/api/chats`)
-- `GET /api/chats` - Lấy tin nhắn
-- `POST /api/chats` - Gửi tin nhắn
+- `GET /api/chats/:activityId` - Lấy tin nhắn của hoạt động
+- `POST /api/chats/:activityId` - Gửi tin nhắn trong hoạt động
 
 ## System
 
 ### Permission Routes (`/api/permissions`)
-- Quản lý quyền hạn động (xem chi tiết trong permission.routes.js)
+- `GET /api/permissions` - Lấy tất cả permissions
+- `POST /api/permissions` - Tạo permission mới (admin)
+- `GET /api/permissions/actions` - Lấy tất cả actions
+- `POST /api/permissions/actions` - Tạo action mới (admin)
+- `GET /api/permissions/actions/:resource` - Lấy actions theo resource
+- `GET /api/permissions/users/:userId/permissions` - Lấy permissions của user
+- `GET /api/permissions/users/:userId/actions/:resource` - Lấy user actions cho resource
+- `POST /api/permissions/users/:userId/check-permission` - Kiểm tra permission của user
+- `GET /api/permissions/roles` - Lấy tất cả roles
+- `GET /api/permissions/roles/:roleId/actions` - Lấy actions của role
+- `POST /api/permissions/roles/:roleId/actions` - Thêm action vào role (admin)
+- `DELETE /api/permissions/roles/:roleId/actions/:actionId` - Xóa action khỏi role (admin)
 
 ### Role Routes (`/api/roles`)
 - `GET /api/roles` - Lấy tất cả vai trò (admin, ctsv)
@@ -212,7 +227,9 @@ Base URL: `/api`
 - `DELETE /api/roles/:id/permissions` - Xóa quyền khỏi vai trò (admin)
 
 ### Statistic Routes (`/api/statistics`)
-- `GET /api/statistics` - Lấy thống kê hệ thống
+- `GET /api/statistics/community-points` - Thống kê điểm PVCD
+- `GET /api/statistics/activities` - Thống kê hoạt động
+- `GET /api/statistics/certificates` - Thống kê giấy chứng nhận
 
 ## Authentication
 

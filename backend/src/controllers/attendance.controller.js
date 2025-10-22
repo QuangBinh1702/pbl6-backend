@@ -8,17 +8,17 @@ module.exports = {
     try {
       const attendances = await Attendance.find()
         .populate({
-          path: 'student',
+          path: 'student_id',
           populate: {
-            path: 'user',
-            select: '-password'
+            path: 'user_id',
+            select: '-password_hash'
           }
         })
-        .populate('activity')
+        .populate('activity_id')
         .sort({ scanned_at: -1 });
-      res.json(attendances);
+      res.json({ success: true, data: attendances });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      res.status(500).json({ success: false, message: err.message });
     }
   },
 
@@ -26,55 +26,55 @@ module.exports = {
     try {
       const attendance = await Attendance.findById(req.params.id)
         .populate({
-          path: 'student',
+          path: 'student_id',
           populate: {
-            path: 'user',
-            select: '-password'
+            path: 'user_id',
+            select: '-password_hash'
           }
         })
-        .populate('activity');
+        .populate('activity_id');
       if (!attendance) {
-        return res.status(404).json({ message: 'Attendance not found' });
+        return res.status(404).json({ success: false, message: 'Attendance not found' });
       }
-      res.json(attendance);
+      res.json({ success: true, data: attendance });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      res.status(500).json({ success: false, message: err.message });
     }
   },
 
   async getAttendancesByActivity(req, res) {
     try {
-      const attendances = await Attendance.find({ activity: req.params.activityId })
+      const attendances = await Attendance.find({ activity_id: req.params.activityId })
         .populate({
-          path: 'student',
+          path: 'student_id',
           populate: {
-            path: 'user',
-            select: '-password'
+            path: 'user_id',
+            select: '-password_hash'
           }
         })
-        .populate('activity')
+        .populate('activity_id')
         .sort({ scanned_at: -1 });
-      res.json(attendances);
+      res.json({ success: true, data: attendances });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      res.status(500).json({ success: false, message: err.message });
     }
   },
 
   async getAttendancesByStudent(req, res) {
     try {
-      const attendances = await Attendance.find({ student: req.params.studentId })
+      const attendances = await Attendance.find({ student_id: req.params.studentId })
         .populate({
-          path: 'student',
+          path: 'student_id',
           populate: {
-            path: 'user',
-            select: '-password'
+            path: 'user_id',
+            select: '-password_hash'
           }
         })
-        .populate('activity')
+        .populate('activity_id')
         .sort({ scanned_at: -1 });
-      res.json(attendances);
+      res.json({ success: true, data: attendances });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      res.status(500).json({ success: false, message: err.message });
     }
   },
 
@@ -82,28 +82,28 @@ module.exports = {
     try {
       // Check if attendance already exists
       const existingAttendance = await Attendance.findOne({
-        student: req.body.student,
-        activity: req.body.activity
+        student_id: req.body.student_id,
+        activity_id: req.body.activity_id
       });
 
       if (existingAttendance) {
-        return res.status(400).json({ message: 'Attendance already recorded' });
+        return res.status(400).json({ success: false, message: 'Attendance already recorded' });
       }
 
       const attendance = new Attendance(req.body);
       await attendance.save();
       await attendance.populate({
-        path: 'student',
+        path: 'student_id',
         populate: {
-          path: 'user',
-          select: '-password'
+          path: 'user_id',
+          select: '-password_hash'
         }
       });
-      await attendance.populate('activity');
+      await attendance.populate('activity_id');
       
-      res.status(201).json(attendance);
+      res.status(201).json({ success: true, data: attendance });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      res.status(400).json({ success: false, message: err.message });
     }
   },
 
@@ -115,20 +115,20 @@ module.exports = {
         { new: true, runValidators: true }
       )
         .populate({
-          path: 'student',
+          path: 'student_id',
           populate: {
-            path: 'user',
-            select: '-password'
+            path: 'user_id',
+            select: '-password_hash'
           }
         })
-        .populate('activity');
+        .populate('activity_id');
       
       if (!attendance) {
-        return res.status(404).json({ message: 'Attendance not found' });
+        return res.status(404).json({ success: false, message: 'Attendance not found' });
       }
-      res.json(attendance);
+      res.json({ success: true, data: attendance });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      res.status(400).json({ success: false, message: err.message });
     }
   },
 
@@ -136,11 +136,11 @@ module.exports = {
     try {
       const attendance = await Attendance.findByIdAndDelete(req.params.id);
       if (!attendance) {
-        return res.status(404).json({ message: 'Attendance not found' });
+        return res.status(404).json({ success: false, message: 'Attendance not found' });
       }
-      res.json({ message: 'Attendance deleted successfully' });
+      res.json({ success: true, message: 'Attendance deleted successfully' });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      res.status(500).json({ success: false, message: err.message });
     }
   },
 
@@ -155,20 +155,20 @@ module.exports = {
         { new: true }
       )
         .populate({
-          path: 'student',
+          path: 'student_id',
           populate: {
-            path: 'user',
-            select: '-password'
+            path: 'user_id',
+            select: '-password_hash'
           }
         })
-        .populate('activity');
+        .populate('activity_id');
       
       if (!attendance) {
-        return res.status(404).json({ message: 'Attendance not found' });
+        return res.status(404).json({ success: false, message: 'Attendance not found' });
       }
-      res.json(attendance);
+      res.json({ success: true, data: attendance });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      res.status(400).json({ success: false, message: err.message });
     }
   },
 
@@ -184,20 +184,20 @@ module.exports = {
         { new: true }
       )
         .populate({
-          path: 'student',
+          path: 'student_id',
           populate: {
-            path: 'user',
-            select: '-password'
+            path: 'user_id',
+            select: '-password_hash'
           }
         })
-        .populate('activity');
+        .populate('activity_id');
       
       if (!attendance) {
-        return res.status(404).json({ message: 'Attendance not found' });
+        return res.status(404).json({ success: false, message: 'Attendance not found' });
       }
-      res.json(attendance);
+      res.json({ success: true, data: attendance });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      res.status(400).json({ success: false, message: err.message });
     }
   },
 
@@ -208,42 +208,42 @@ module.exports = {
       const data = JSON.parse(qrData);
       
       // Find student profile
-      const studentProfile = await StudentProfile.findOne({ user: data.userId });
+      const studentProfile = await StudentProfile.findOne({ user_id: data.userId });
       if (!studentProfile) {
-        return res.status(404).json({ message: 'Student profile not found' });
+        return res.status(404).json({ success: false, message: 'Student profile not found' });
       }
 
       // Check if attendance already exists
       const existingAttendance = await Attendance.findOne({
-        student: studentProfile._id,
-        activity: data.activityId
+        student_id: studentProfile._id,
+        activity_id: data.activityId
       });
 
       if (existingAttendance) {
-        return res.status(400).json({ message: 'Attendance already recorded' });
+        return res.status(400).json({ success: false, message: 'Attendance already recorded' });
       }
 
       // Create attendance record
       const attendance = new Attendance({
-        student: studentProfile._id,
-        activity: data.activityId,
+        student_id: studentProfile._id,
+        activity_id: data.activityId,
         status: 'present',
         scanned_at: new Date()
       });
 
       await attendance.save();
       await attendance.populate({
-        path: 'student',
+        path: 'student_id',
         populate: {
-          path: 'user',
-          select: '-password'
+          path: 'user_id',
+          select: '-password_hash'
         }
       });
-      await attendance.populate('activity');
+      await attendance.populate('activity_id');
 
-      res.status(201).json(attendance);
+      res.status(201).json({ success: true, data: attendance });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      res.status(400).json({ success: false, message: err.message });
     }
   },
 };

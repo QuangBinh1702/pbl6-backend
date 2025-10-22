@@ -8,12 +8,17 @@ const permissionSchema = new mongoose.Schema({
   },
   name: { 
     type: String, 
-    required: true 
+    required: true,
+    trim: true
   },
-  description: String
+  description: {
+    type: String,
+    trim: true
+  }
 }, { timestamps: true });
 
 // Index for faster queries
 permissionSchema.index({ resource: 1 });
+permissionSchema.index({ name: 1 });
 
 module.exports = mongoose.model('Permission', permissionSchema);

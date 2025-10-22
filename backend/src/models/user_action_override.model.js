@@ -6,6 +6,10 @@ const userActionOverrideSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  user_role_id: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'UserRole'
+  },
   action_id: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Action',
@@ -15,7 +19,13 @@ const userActionOverrideSchema = new mongoose.Schema({
     type: Boolean, 
     required: true,
     default: true
-  }
+  },
+  note: String,
+  granted_by: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User'
+  },
+  granted_at: Date
 }, { timestamps: true });
 
 // Compound index to prevent duplicate user-action pairs
@@ -25,6 +35,7 @@ userActionOverrideSchema.index({ user_id: 1, action_id: 1 }, { unique: true });
 userActionOverrideSchema.statics.getOverridesForUser = async function(userId) {
   return this.find({ user_id: userId })
     .populate('action_id')
+    .populate('granted_by')
     .exec();
 };
 

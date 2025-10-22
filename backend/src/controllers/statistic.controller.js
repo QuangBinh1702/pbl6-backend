@@ -1,5 +1,4 @@
 // Thống kê
-const Point = require('../models/point.model');
 const Activity = require('../models/activity.model');
 const Evidence = require('../models/evidence.model');
 
