@@ -26,8 +26,9 @@ const app = express();
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Cho phép tất cả origin
-    callback(null, true);
+    // Cho phép tất cả origin - trả về origin của request
+    // Nếu không có origin (như Postman), cho phép luôn
+    callback(null, origin || true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
