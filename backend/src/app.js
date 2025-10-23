@@ -7,18 +7,28 @@ const ensureDBConnection = require('./middlewares/db.middleware');
 
 const app = express();
 
-// CORS configuration for frontend connection
+// // CORS configuration for frontend connection
+// const corsOptions = {
+//   origin: [
+//     'http://localhost:3000',  // React default
+//     'http://localhost:3001',  // Alternative React port
+//     'http://localhost:8080',  // Vue default
+//     'http://localhost:4200',  // Angular default
+//     'http://127.0.0.1:3000',
+//     'http://127.0.0.1:3001',
+//     'http://127.0.0.1:8080',
+//     'http://127.0.0.1:4200'
+//   ],
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
+// };
+
 const corsOptions = {
-  origin: [
-    'http://localhost:3000',  // React default
-    'http://localhost:3001',  // Alternative React port
-    'http://localhost:8080',  // Vue default
-    'http://localhost:4200',  // Angular default
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:3001',
-    'http://127.0.0.1:8080',
-    'http://127.0.0.1:4200'
-  ],
+  origin: function (origin, callback) {
+    // Cho phép tất cả origin
+    callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
