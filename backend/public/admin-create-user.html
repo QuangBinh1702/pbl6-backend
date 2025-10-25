@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Tạo Tài Khoản</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #dc3545;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .admin-warning {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus {
+            border-color: #dc3545;
+            outline: none;
+        }
+        .error {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .success {
+            color: #28a745;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #c82333;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .login-section {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .login-section h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Admin - Tạo Tài Khoản</h1>
+        
+        <div class="admin-warning">
+            <strong>⚠️ Cảnh báo:</strong> Chỉ admin mới có thể tạo tài khoản mới!
+        </div>
+
+        <div class="login-section">
+            <h3>🔑 Đăng nhập Admin trước:</h3>
+            <div class="form-group">
+                <label for="adminUsername">Username:</label>
+                <input type="text" id="adminUsername" placeholder="Nhập username admin...">
+            </div>
+            <div class="form-group">
+                <label for="adminPassword">Password:</label>
+                <input type="password" id="adminPassword" placeholder="Nhập password admin...">
+            </div>
+            <button type="button" id="loginBtn">Đăng Nhập Admin</button>
+        </div>
+
+        <form id="createUserForm" style="display: none;">
+            <h3>👤 Tạo Tài Khoản Mới:</h3>
+            
+            <div class="form-group">
+                <label for="username">👤 Username:</label>
+                <input type="text" id="username" name="username" placeholder="Nhập username..." required>
+                <div id="usernameError" class="error"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">🔒 Password:</label>
+                <input type="password" id="password" name="password" placeholder="Nhập password..." required>
+                <div id="passwordError" class="error"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="roleName">🎭 Vai trò:</label>
+                <select id="roleName" name="roleName" required>
+                    <option value="">-- Chọn vai trò --</option>
+                </select>
+                <div id="roleError" class="error"></div>
+            </div>
+
+            <button type="submit" id="submitBtn">✅ Tạo Tài Khoản</button>
+        </form>
+
+        <div id="result" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        let adminToken = null;
+        
+        // Load available roles
+        async function loadRoles() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/roles`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const roleSelect = document.getElementById('roleName');
+                    roleSelect.innerHTML = '<option value="">-- Chọn vai trò --</option>';
+                    
+                    data.data.forEach(role => {
+                        const option = document.createElement('option');
+                        option.value = role.name;
+                        option.textContent = `${role.name} - ${role.description}`;
+                        roleSelect.appendChild(option);
+                    });
+                } else {
+                    showError('result', 'Không thể tải danh sách vai trò: ' + data.message);
+                }
+            } catch (error) {
+                showError('result', 'Lỗi kết nối: ' + error.message);
+            }
+        }
+
+        // Admin login
+        document.getElementById('loginBtn').addEventListener('click', async function() {
+            const username = document.getElementById('adminUsername').value.trim();
+            const password = document.getElementById('adminPassword').value;
+
+            if (!username || !password) {
+                showError('result', 'Vui lòng nhập đầy đủ thông tin đăng nhập');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    adminToken = data.token;
+                    showSuccess('Đăng nhập admin thành công! Bây giờ có thể tạo tài khoản.');
+                    document.getElementById('createUserForm').style.display = 'block';
+                    document.querySelector('.login-section').style.display = 'none';
+                } else {
+                    showError('result', 'Đăng nhập thất bại: ' + data.message);
+                }
+            } catch (error) {
+                showError('result', 'Lỗi kết nối: ' + error.message);
+            }
+        });
+
+        // Clear all error messages
+        function clearErrors() {
+            document.getElementById('usernameError').textContent = '';
+            document.getElementById('passwordError').textContent = '';
+            document.getElementById('roleError').textContent = '';
+            document.getElementById('result').innerHTML = '';
+        }
+
+        // Show error message
+        function showError(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="error">❌ ${message}</div>`;
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            const element = document.getElementById('result');
+            element.innerHTML = `<div class="success">✅ ${message}</div>`;
+        }
+
+        // Validate username
+        function validateUsername(username) {
+            const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+            if (!usernameRegex.test(username)) {
+                showError('usernameError', 'Username phải có 3-20 ký tự và chỉ chứa chữ, số, dấu gạch dưới');
+                return false;
+            }
+            return true;
+        }
+
+        // Validate password
+        function validatePassword(password) {
+            if (password.length < 6) {
+                showError('passwordError', 'Password phải có ít nhất 6 ký tự');
+                return false;
+            }
+            return true;
+        }
+
+        // Handle form submission
+        document.getElementById('createUserForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            clearErrors();
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const roleName = document.getElementById('roleName').value;
+
+            // Validate inputs
+            if (!validateUsername(username)) return;
+            if (!validatePassword(password)) return;
+            if (!roleName) {
+                showError('roleError', 'Vui lòng chọn vai trò');
+                return;
+            }
+
+            // Disable submit button
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Đang xử lý...';
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/create-user`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({
+                        username,
+                        password,
+                        roleName
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess(`Tạo tài khoản thành công! Tài khoản ${data.user.username} với vai trò ${data.user.role} đã được tạo bởi admin ${data.user.createdBy}.`);
+                    document.getElementById('createUserForm').reset();
+                } else {
+                    showError('result', data.message);
+                }
+            } catch (error) {
+                showError('result', 'Lỗi kết nối: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '✅ Tạo Tài Khoản';
+            }
+        });
+
+        // Load roles when page loads
+        loadRoles();
+    </script>
+</body>
+</html>

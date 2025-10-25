@@ -100,11 +100,20 @@ module.exports = {
     try {
       const { username, password, roleName } = req.body;
       
-      // Validate
-      if (!username || !password) {
+      // Validate required fields
+      if (!username || !password || !roleName) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Username and password are required' 
+          message: 'Username, password and role are required' 
+        });
+      }
+      
+      // Validate username format
+      const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+      if (!usernameRegex.test(username)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Username must be 3-20 characters long and contain only letters, numbers, and underscores' 
         });
       }
       
@@ -114,6 +123,23 @@ module.exports = {
         return res.status(400).json({ 
           success: false, 
           message: 'Username already exists' 
+        });
+      }
+      
+      // Validate password strength
+      if (password.length < 6) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Password must be at least 6 characters long' 
+        });
+      }
+      
+      // Check if role exists
+      const role = await Role.findOne({ name: roleName });
+      if (!role) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid role. Available roles: admin, teacher, student, staff' 
         });
       }
       
@@ -128,16 +154,11 @@ module.exports = {
         isLocked: false
       });
       
-      // Assign default role (student) if not specified
-      const roleToAssign = roleName || 'student';
-      const role = await Role.findOne({ name: roleToAssign });
-      
-      if (role) {
-        await UserRole.create({
-          user_id: user._id,
-          role_id: role._id
-        });
-      }
+      // Assign the specified role
+      await UserRole.create({
+        user_id: user._id,
+        role_id: role._id
+      });
       
       res.status(201).json({ 
         success: true,
@@ -146,11 +167,107 @@ module.exports = {
           id: user._id,
           username: user.username,
           active: user.active,
-          role: roleToAssign
+          role: roleName
         }
       });
     } catch (err) {
       console.error('Register error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  async createUser(req, res) {
+    try {
+      const { username, password, roleName } = req.body;
+      
+      // Validate required fields
+      if (!username || !password || !roleName) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Username, password and role are required' 
+        });
+      }
+      
+      // Validate username format
+      const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+      if (!usernameRegex.test(username)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Username must be 3-20 characters long and contain only letters, numbers, and underscores' 
+        });
+      }
+      
+      // Check if username exists
+      const exists = await User.findOne({ username });
+      if (exists) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Username already exists' 
+        });
+      }
+      
+      // Validate password strength
+      if (password.length < 6) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Password must be at least 6 characters long' 
+        });
+      }
+      
+      // Check if role exists
+      const role = await Role.findOne({ name: roleName });
+      if (!role) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid role. Available roles: admin, teacher, student, staff' 
+        });
+      }
+      
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // Create user with new schema
+      const user = await User.create({
+        username,
+        password_hash: hashedPassword,
+        active: true,
+        isLocked: false
+      });
+      
+      // Assign the specified role
+      await UserRole.create({
+        user_id: user._id,
+        role_id: role._id
+      });
+      
+      res.status(201).json({ 
+        success: true,
+        message: 'User created successfully by admin',
+        user: {
+          id: user._id,
+          username: user.username,
+          active: user.active,
+          role: roleName,
+          createdBy: req.user.username
+        }
+      });
+    } catch (err) {
+      console.error('Create user error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  async getAvailableRoles(req, res) {
+    try {
+      const roles = await Role.find({}, 'name description').sort({ name: 1 });
+      
+      res.json({ 
+        success: true, 
+        data: roles,
+        message: 'Available roles retrieved successfully'
+      });
+    } catch (err) {
+      console.error('Get available roles error:', err);
       res.status(500).json({ success: false, message: err.message });
     }
   },
