@@ -87,6 +87,39 @@ module.exports = {
     }
   },
 
+  async getStudentProfileByUsername(req, res) {
+    try {
+      // First, find the user by username
+      const user = await User.findOne({ username: req.params.username });
+      
+      if (!user) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'User not found' 
+        });
+      }
+      
+      // Then find the student profile by user_id
+      const studentProfile = await StudentProfile.findOne({ 
+        user_id: user._id 
+      })
+        .populate('user_id')
+        .populate('class_id');
+      
+      if (!studentProfile) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Student profile not found for this user' 
+        });
+      }
+      
+      res.json({ success: true, data: studentProfile });
+    } catch (err) {
+      console.error('Get student profile by username error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
   async getStudentsByClass(req, res) {
     try {
       const studentProfiles = await StudentProfile.find({ 

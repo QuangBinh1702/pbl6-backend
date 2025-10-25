@@ -6,7 +6,7 @@ module.exports = {
   async getAllPosts(req, res) {
     try {
       const posts = await Post.find()
-        .populate('activity')
+        .populate('activity_id')
         .sort({ created_at: -1 });
       res.json(posts);
     } catch (err) {
@@ -17,7 +17,7 @@ module.exports = {
   async getPostById(req, res) {
     try {
       const post = await Post.findById(req.params.id)
-        .populate('activity');
+        .populate('activity_id');
       if (!post) {
         return res.status(404).json({ message: 'Post not found' });
       }
@@ -29,8 +29,8 @@ module.exports = {
 
   async getPostsByActivity(req, res) {
     try {
-      const posts = await Post.find({ activity: req.params.activityId })
-        .populate('activity')
+      const posts = await Post.find({ activity_id: req.params.activityId })
+        .populate('activity_id')
         .sort({ created_at: -1 });
       res.json(posts);
     } catch (err) {
@@ -42,7 +42,7 @@ module.exports = {
     try {
       const post = new Post(req.body);
       await post.save();
-      await post.populate('activity');
+      await post.populate('activity_id');
       res.status(201).json(post);
     } catch (err) {
       res.status(400).json({ message: err.message });
@@ -55,7 +55,7 @@ module.exports = {
         req.params.id,
         req.body,
         { new: true, runValidators: true }
-      ).populate('activity');
+      ).populate('activity_id');
       if (!post) {
         return res.status(404).json({ message: 'Post not found' });
       }

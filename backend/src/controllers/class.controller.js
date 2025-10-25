@@ -6,8 +6,8 @@ module.exports = {
   async getAllClasses(req, res) {
     try {
       const classes = await Class.find()
-        .populate('falcuty')
-        .populate('cohort');
+        .populate('falcuty_id')
+        .populate('cohort_id');
       res.json(classes);
     } catch (err) {
       res.status(500).json({ message: err.message });
@@ -17,8 +17,8 @@ module.exports = {
   async getClassById(req, res) {
     try {
       const classData = await Class.findById(req.params.id)
-        .populate('falcuty')
-        .populate('cohort');
+        .populate('falcuty_id')
+        .populate('cohort_id');
       if (!classData) {
         return res.status(404).json({ message: 'Class not found' });
       }
@@ -32,8 +32,8 @@ module.exports = {
     try {
       const classData = new Class(req.body);
       await classData.save();
-      await classData.populate('falcuty');
-      await classData.populate('cohort');
+      await classData.populate('falcuty_id');
+      await classData.populate('cohort_id');
       res.status(201).json(classData);
     } catch (err) {
       res.status(400).json({ message: err.message });
@@ -47,8 +47,8 @@ module.exports = {
         req.body,
         { new: true, runValidators: true }
       )
-        .populate('falcuty')
-        .populate('cohort');
+        .populate('falcuty_id')
+        .populate('cohort_id');
       if (!classData) {
         return res.status(404).json({ message: 'Class not found' });
       }
@@ -72,9 +72,9 @@ module.exports = {
 
   async getClassesByFaculty(req, res) {
     try {
-      const classes = await Class.find({ falcuty: req.params.facultyId })
-        .populate('falcuty')
-        .populate('cohort');
+      const classes = await Class.find({ falcuty_id: req.params.facultyId })
+        .populate('falcuty_id')
+        .populate('cohort_id');
       res.json(classes);
     } catch (err) {
       res.status(500).json({ message: err.message });
@@ -83,9 +83,9 @@ module.exports = {
 
   async getClassesByCohort(req, res) {
     try {
-      const classes = await Class.find({ cohort: req.params.cohortId })
-        .populate('falcuty')
-        .populate('cohort');
+      const classes = await Class.find({ cohort_id: req.params.cohortId })
+        .populate('falcuty_id')
+        .populate('cohort_id');
       res.json(classes);
     } catch (err) {
       res.status(500).json({ message: err.message });
@@ -94,9 +94,9 @@ module.exports = {
 
   async getClassStudents(req, res) {
     try {
-      const students = await StudentProfile.find({ class: req.params.id })
-        .populate('user', '-password')
-        .populate('class');
+      const students = await StudentProfile.find({ class_id: req.params.id })
+        .populate('user_id')
+        .populate('class_id');
       res.json(students);
     } catch (err) {
       res.status(500).json({ message: err.message });

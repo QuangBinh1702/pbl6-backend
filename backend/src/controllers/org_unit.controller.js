@@ -6,7 +6,7 @@ module.exports = {
   async getAllOrgUnits(req, res) {
     try {
       const orgUnits = await OrgUnit.find()
-        .populate('leader')
+        .populate('leader_id')
         .sort({ name: 1 });
       res.json(orgUnits);
     } catch (err) {
@@ -17,7 +17,7 @@ module.exports = {
   async getOrgUnitById(req, res) {
     try {
       const orgUnit = await OrgUnit.findById(req.params.id)
-        .populate('leader');
+        .populate('leader_id');
       if (!orgUnit) {
         return res.status(404).json({ message: 'Organization unit not found' });
       }
@@ -30,7 +30,7 @@ module.exports = {
   async getOrgUnitsByType(req, res) {
     try {
       const orgUnits = await OrgUnit.find({ type: req.params.type })
-        .populate('leader')
+        .populate('leader_id')
         .sort({ name: 1 });
       res.json(orgUnits);
     } catch (err) {
@@ -42,7 +42,7 @@ module.exports = {
     try {
       const orgUnit = new OrgUnit(req.body);
       await orgUnit.save();
-      await orgUnit.populate('leader');
+      await orgUnit.populate('leader_id');
       res.status(201).json(orgUnit);
     } catch (err) {
       res.status(400).json({ message: err.message });
@@ -55,7 +55,7 @@ module.exports = {
         req.params.id,
         req.body,
         { new: true, runValidators: true }
-      ).populate('leader');
+      ).populate('leader_id');
       if (!orgUnit) {
         return res.status(404).json({ message: 'Organization unit not found' });
       }
@@ -79,9 +79,9 @@ module.exports = {
 
   async getOrgUnitStaff(req, res) {
     try {
-      const staff = await StaffProfile.find({ org_unit: req.params.id })
-        .populate('user', '-password')
-        .populate('org_unit');
+      const staff = await StaffProfile.find({ org_unit_id: req.params.id })
+        .populate('user_id')
+        .populate('org_unit_id');
       res.json(staff);
     } catch (err) {
       res.status(500).json({ message: err.message });
@@ -93,9 +93,9 @@ module.exports = {
       const { leaderId } = req.body;
       const orgUnit = await OrgUnit.findByIdAndUpdate(
         req.params.id,
-        { leader: leaderId },
+        { leader_id: leaderId },
         { new: true }
-      ).populate('leader');
+      ).populate('leader_id');
       if (!orgUnit) {
         return res.status(404).json({ message: 'Organization unit not found' });
       }

@@ -31,6 +31,12 @@ router.get('/staff-number/:staffNumber',
   staffProfileController.getStaffProfileByStaffNumber
 );
 
+// Lấy hồ sơ cán bộ theo username
+router.get('/username/:username', 
+  auth, 
+  staffProfileController.getStaffProfileByUsername
+);
+
 // Lấy danh sách cán bộ theo đơn vị
 router.get('/org-unit/:orgUnitId/staff', 
   auth, 

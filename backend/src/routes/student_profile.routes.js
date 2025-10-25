@@ -37,6 +37,12 @@ router.get('/student-number/:studentNumber',
   studentProfileController.getStudentProfileByStudentNumber
 );
 
+// Get student profile by username
+router.get('/username/:username', 
+  auth, 
+  studentProfileController.getStudentProfileByUsername
+);
+
 // Get student profile by ID
 router.get('/:id', 
   auth, 
