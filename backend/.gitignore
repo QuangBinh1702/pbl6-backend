@@ -1,9 +1,25 @@
+# Dependencies
 node_modules
-.env
-vercel.json
-package.json
-package-lock.json
-SEED_ALL.js
 
-test_permission_system.js
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
 
