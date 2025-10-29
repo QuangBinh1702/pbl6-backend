@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test Faculties API</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; }
+    .card { max-width: 780px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 4px 16px rgb(0 0 0 / 6%); }
+    h1 { font-size: 20px; margin: 0 0 16px; }
+    .row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+    label { min-width: 120px; font-weight: 600; }
+    input, select { flex: 1; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; }
+    button { padding: 10px 14px; background: #2563eb; color: white; border: none; border-radius: 8px; cursor: pointer; }
+    button:disabled { background: #9ca3af; cursor: not-allowed; }
+    .hint { color: #6b7280; font-size: 12px; margin-top: -6px; margin-bottom: 8px; }
+    pre { white-space: pre-wrap; word-break: break-word; background: #0b1021; color: #e5e7eb; padding: 12px; border-radius: 10px; }
+    .hdr { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; background: #f3f4f6; padding: 10px; border-radius: 8px; }
+    .row-stacked { display: grid; gap: 6px; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Test /api/faculties</h1>
+
+    <div class="row-stacked">
+      <label for="loginUrl">Login URL</label>
+      <input id="loginUrl" type="text" value="https://pbl6-backend-iy5q.onrender.com/api/auth/login" />
+      <div class="hint">Endpoint đăng nhập (POST). Cập nhật theo backend nếu khác.</div>
+    </div>
+
+    <div class="row-stacked">
+      <label for="username">Username</label>
+      <input id="username" type="text" placeholder="student1" />
+    </div>
+
+    <div class="row-stacked">
+      <label for="password">Mật khẩu</label>
+      <input id="password" type="password" placeholder="••••••••" />
+    </div>
+
+    <div class="row">
+      <button id="btnLogin" type="button" style="background:#16a34a">Đăng nhập & lấy token</button>
+      <button id="btnLogout" type="button" style="background:#ef4444">Đăng xuất / Xoá token</button>
+    </div>
+
+    <div class="row-stacked">
+      <div class="hdr"><strong>Token hiện tại</strong>
+        <div id="tokenPreview"></div>
+      </div>
+    </div>
+
+    <div class="row-stacked">
+      <label for="baseUrl">Base URL</label>
+      <input id="baseUrl" type="text" value="https://pbl6-backend-iy5q.onrender.com/api/faculties" />
+      <div class="hint">Mặc định dùng endpoint deploy. Có thể đổi sang local nếu cần.</div>
+    </div>
+
+    <div class="row">
+      <button id="btnCall">Gọi API</button>
+      <button id="btnClear" type="button" style="background:#6b7280">Clear</button>
+    </div>
+
+    <div class="row-stacked">
+      <div class="hdr"><strong>Request headers xem trước</strong>
+        <div id="hdrPreview"></div>
+      </div>
+    </div>
+
+    <div class="row-stacked">
+      <label>Kết quả</label>
+      <pre id="output">(chưa có)</pre>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const loginUrlEl = $("loginUrl");
+    const usernameEl = $("username");
+    const passwordEl = $("password");
+    const baseUrlEl = $("baseUrl");
+    const tokenKey = "accessToken";
+    const btnCall = $("btnCall");
+    const btnClear = $("btnClear");
+    const btnLogin = $("btnLogin");
+    const btnLogout = $("btnLogout");
+    const out = $("output");
+    const hdrPreview = $("hdrPreview");
+    const tokenPreview = $("tokenPreview");
+
+    function getStoredToken() {
+      return sessionStorage.getItem(tokenKey) || "";
+    }
+
+    function setStoredToken(token) {
+      if (token) sessionStorage.setItem(tokenKey, token);
+      else sessionStorage.removeItem(tokenKey);
+      updateTokenPreview();
+      updateHeaderPreview();
+    }
+
+    function updateTokenPreview() {
+      const token = getStoredToken();
+      tokenPreview.textContent = token ? `${token.slice(0, 10)}... (${token.length} chars)` : "(chưa có)";
+    }
+
+    function updateHeaderPreview() {
+      const token = getStoredToken();
+      const headers = { };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      hdrPreview.textContent = JSON.stringify(headers, null, 2) || "{}";
+    }
+
+    updateTokenPreview();
+    updateHeaderPreview();
+
+    btnClear.addEventListener('click', () => {
+      out.textContent = "(đã xoá)";
+    });
+
+    btnLogin.addEventListener('click', async () => {
+      const loginUrl = loginUrlEl.value.trim();
+      const username = usernameEl.value.trim();
+      const password = passwordEl.value;
+      if (!username || !password) {
+        out.textContent = JSON.stringify({ error: true, message: "Vui lòng nhập username và mật khẩu" }, null, 2);
+        return;
+      }
+      btnLogin.disabled = true;
+      out.textContent = "Đang đăng nhập...";
+      try {
+        const res = await fetch(loginUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          out.textContent = JSON.stringify({ ok: false, status: res.status, body: data }, null, 2);
+          return;
+        }
+        const token = data?.token || data?.accessToken || data?.access_token;
+        if (!token) {
+          out.textContent = JSON.stringify({ ok: true, note: "Login thành công nhưng không tìm thấy token trong response", body: data }, null, 2);
+          return;
+        }
+        setStoredToken(token);
+        out.textContent = JSON.stringify({ ok: true, message: "Đăng nhập thành công, đã lưu token vào sessionStorage" }, null, 2);
+      } catch (err) {
+        out.textContent = JSON.stringify({ error: true, message: err?.message || String(err) }, null, 2);
+      } finally {
+        btnLogin.disabled = false;
+      }
+    });
+
+    btnLogout.addEventListener('click', () => {
+      setStoredToken("");
+      out.textContent = JSON.stringify({ ok: true, message: "Đã xoá token" }, null, 2);
+    });
+
+    btnCall.addEventListener('click', async () => {
+      const url = baseUrlEl.value.trim();
+      const token = getStoredToken();
+
+      btnCall.disabled = true;
+      out.textContent = "Đang gọi...";
+
+      try {
+        const headers = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
+        const res = await fetch(url, { headers });
+        const text = await res.text();
+        let body;
+        try { body = JSON.parse(text); } catch { body = text; }
+
+        const info = {
+          ok: res.ok,
+          status: res.status,
+          statusText: res.statusText,
+          url: res.url,
+          body,
+        };
+        out.textContent = JSON.stringify(info, null, 2);
+      } catch (err) {
+        out.textContent = JSON.stringify({ error: true, message: err?.message || String(err) }, null, 2);
+      } finally {
+        btnCall.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
+
+

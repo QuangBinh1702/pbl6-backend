@@ -4,24 +4,18 @@ const facultyController = require('../controllers/faculty.controller');
 const auth = require('../middlewares/auth.middleware');
 const { checkPermission } = require('../middlewares/check_permission.middleware');
 
-// Lấy tất cả khoa (all users can view)
+// Lấy tất cả khoa (public)
 router.get('/', 
-  auth, 
-  checkPermission('faculty', 'READ'),
   facultyController.getAllFaculties
 );
 
-// Lấy khoa theo ID
+// Lấy khoa theo ID (public)
 router.get('/:id', 
-  auth, 
-  checkPermission('faculty', 'READ'),
   facultyController.getFacultyById
 );
 
-// Lấy danh sách lớp của khoa
+// Lấy danh sách lớp của khoa (public)
 router.get('/:id/classes', 
-  auth, 
-  checkPermission('faculty', 'READ'),
   facultyController.getFacultyClasses
 );
 

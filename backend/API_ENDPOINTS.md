@@ -204,9 +204,9 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 | Method | Endpoint | Description | Auth Required | Roles |
 |--------|----------|-------------|---------------|-------|
-| GET | `/api/faculties` | Lấy tất cả khoa | ✅ | - |
-| GET | `/api/faculties/:id` | Lấy thông tin khoa theo ID | ✅ | - |
-| GET | `/api/faculties/:id/classes` | Lấy danh sách lớp của khoa | ✅ | - |
+| GET | `/api/faculties` | Lấy tất cả khoa | ❌ | Public |
+| GET | `/api/faculties/:id` | Lấy thông tin khoa theo ID | ❌ | Public |
+| GET | `/api/faculties/:id/classes` | Lấy danh sách lớp của khoa | ❌ | Public |
 | POST | `/api/faculties` | Tạo khoa mới | ✅ | admin, ctsv |
 | PUT | `/api/faculties/:id` | Cập nhật thông tin khoa | ✅ | admin, ctsv |
 | DELETE | `/api/faculties/:id` | Xóa khoa | ✅ | admin, ctsv |
@@ -226,8 +226,8 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 | Method | Endpoint | Description | Auth Required | Roles |
 |--------|----------|-------------|---------------|-------|
-| GET | `/api/fields` | Lấy tất cả ngành học | ✅ | - |
-| GET | `/api/fields/:id` | Lấy thông tin ngành học theo ID | ✅ | - |
+| GET | `/api/fields` | Lấy tất cả ngành học | ❌ | Public |
+| GET | `/api/fields/:id` | Lấy thông tin ngành học theo ID | ❌ | Public |
 | POST | `/api/fields` | Tạo ngành học mới | ✅ | admin, ctsv |
 | PUT | `/api/fields/:id` | Cập nhật thông tin ngành học | ✅ | admin, ctsv |
 | DELETE | `/api/fields/:id` | Xóa ngành học | ✅ | admin, ctsv |
@@ -247,11 +247,11 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 | Method | Endpoint | Description | Auth Required | Roles |
 |--------|----------|-------------|---------------|-------|
-| GET | `/api/cohorts` | Lấy tất cả khóa học | ✅ | - |
-| GET | `/api/cohorts/:id` | Lấy thông tin khóa học theo ID | ✅ | - |
-| GET | `/api/cohorts/year/:year` | Lấy khóa học theo năm | ✅ | - |
-| GET | `/api/cohorts/:id/classes` | Lấy danh sách lớp của khóa | ✅ | - |
-| GET | `/api/cohorts/:id/students` | Lấy danh sách sinh viên của khóa | ✅ | - |
+| GET | `/api/cohorts` | Lấy tất cả khóa học | ❌ | Public |
+| GET | `/api/cohorts/:id` | Lấy thông tin khóa học theo ID | ❌ | Public |
+| GET | `/api/cohorts/year/:year` | Lấy khóa học theo năm | ❌ | Public |
+| GET | `/api/cohorts/:id/classes` | Lấy danh sách lớp của khóa | ❌ | Public |
+| GET | `/api/cohorts/:id/students` | Lấy danh sách sinh viên của khóa | ❌ | Public |
 | POST | `/api/cohorts` | Tạo khóa học mới | ✅ | admin, ctsv |
 | PUT | `/api/cohorts/:id` | Cập nhật thông tin khóa học | ✅ | admin, ctsv |
 | DELETE | `/api/cohorts/:id` | Xóa khóa học | ✅ | admin, ctsv |
@@ -271,11 +271,11 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 | Method | Endpoint | Description | Auth Required | Roles |
 |--------|----------|-------------|---------------|-------|
-| GET | `/api/classes` | Lấy tất cả lớp học | ✅ | - |
-| GET | `/api/classes/:id` | Lấy thông tin lớp học theo ID | ✅ | - |
-| GET | `/api/classes/faculty/:facultyId/classes` | Lấy danh sách lớp theo khoa | ✅ | - |
-| GET | `/api/classes/cohort/:cohortId/classes` | Lấy danh sách lớp theo khóa | ✅ | - |
-| GET | `/api/classes/:id/students` | Lấy danh sách sinh viên trong lớp | ✅ | - |
+| GET | `/api/classes` | Lấy tất cả lớp học | ❌ | Public |
+| GET | `/api/classes/:id` | Lấy thông tin lớp học theo ID | ❌ | Public |
+| GET | `/api/classes/faculty/:facultyId/classes` | Lấy danh sách lớp theo khoa | ❌ | Public |
+| GET | `/api/classes/cohort/:cohortId/classes` | Lấy danh sách lớp theo khóa | ❌ | Public |
+| GET | `/api/classes/:id/students` | Lấy danh sách sinh viên trong lớp | ❌ | Public |
 | POST | `/api/classes` | Tạo lớp học mới | ✅ | admin, ctsv |
 | PUT | `/api/classes/:id` | Cập nhật thông tin lớp học | ✅ | admin, ctsv |
 | DELETE | `/api/classes/:id` | Xóa lớp học | ✅ | admin, ctsv |
@@ -297,10 +297,10 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 | Method | Endpoint | Description | Auth Required | Roles |
 |--------|----------|-------------|---------------|-------|
-| GET | `/api/org-units` | Lấy tất cả đơn vị tổ chức | ✅ | - |
-| GET | `/api/org-units/:id` | Lấy thông tin đơn vị theo ID | ✅ | - |
-| GET | `/api/org-units/type/:type` | Lấy đơn vị theo loại | ✅ | - |
-| GET | `/api/org-units/:id/staff` | Lấy danh sách cán bộ của đơn vị | ✅ | - |
+| GET | `/api/org-units` | Lấy tất cả đơn vị tổ chức | ❌ | Public |
+| GET | `/api/org-units/:id` | Lấy thông tin đơn vị theo ID | ❌ | Public |
+| GET | `/api/org-units/type/:type` | Lấy đơn vị theo loại | ❌ | Public |
+| GET | `/api/org-units/:id/staff` | Lấy danh sách cán bộ của đơn vị | ❌ | Public |
 | POST | `/api/org-units` | Tạo đơn vị tổ chức mới | ✅ | admin, ctsv |
 | PUT | `/api/org-units/:id` | Cập nhật thông tin đơn vị | ✅ | admin, ctsv |
 | DELETE | `/api/org-units/:id` | Xóa đơn vị tổ chức | ✅ | admin, ctsv |

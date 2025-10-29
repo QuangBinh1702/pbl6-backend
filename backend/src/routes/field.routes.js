@@ -4,17 +4,13 @@ const fieldController = require('../controllers/field.controller');
 const auth = require('../middlewares/auth.middleware');
 const { checkPermission } = require('../middlewares/check_permission.middleware');
 
-// Lấy tất cả ngành học (all users can view)
+// Lấy tất cả ngành học (public)
 router.get('/', 
-  auth, 
-  checkPermission('field', 'READ'),
   fieldController.getAllFields
 );
 
-// Lấy ngành học theo ID
+// Lấy ngành học theo ID (public)
 router.get('/:id', 
-  auth, 
-  checkPermission('field', 'READ'),
   fieldController.getFieldById
 );
 

@@ -4,38 +4,28 @@ const classController = require('../controllers/class.controller');
 const auth = require('../middlewares/auth.middleware');
 const { checkPermission } = require('../middlewares/check_permission.middleware');
 
-// Lấy tất cả lớp học (all users can view)
+// Lấy tất cả lớp học (public)
 router.get('/', 
-  auth, 
-  checkPermission('class', 'READ'),
   classController.getAllClasses
 );
 
-// Lấy lớp học theo ID
+// Lấy lớp học theo ID (public)
 router.get('/:id', 
-  auth, 
-  checkPermission('class', 'READ'),
   classController.getClassById
 );
 
-// Lấy danh sách lớp theo khoa
+// Lấy danh sách lớp theo khoa (public)
 router.get('/faculty/:facultyId/classes', 
-  auth,
-  checkPermission('class', 'READ'),
   classController.getClassesByFaculty
 );
 
-// Lấy danh sách lớp theo khóa
+// Lấy danh sách lớp theo khóa (public)
 router.get('/cohort/:cohortId/classes', 
-  auth,
-  checkPermission('class', 'READ'),
   classController.getClassesByCohort
 );
 
-// Lấy danh sách sinh viên trong lớp
+// Lấy danh sách sinh viên trong lớp (public)
 router.get('/:id/students', 
-  auth,
-  checkPermission('class', 'READ'),
   classController.getClassStudents
 );
 

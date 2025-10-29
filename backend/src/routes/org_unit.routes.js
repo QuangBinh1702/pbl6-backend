@@ -4,31 +4,23 @@ const orgUnitController = require('../controllers/org_unit.controller');
 const auth = require('../middlewares/auth.middleware');
 const { checkPermission } = require('../middlewares/check_permission.middleware');
 
-// Lấy tất cả đơn vị tổ chức
+// Lấy tất cả đơn vị tổ chức (public)
 router.get('/', 
-  auth, 
-  checkPermission('org_unit', 'READ'),
   orgUnitController.getAllOrgUnits
 );
 
-// Lấy đơn vị tổ chức theo ID
+// Lấy đơn vị tổ chức theo ID (public)
 router.get('/:id', 
-  auth, 
-  checkPermission('org_unit', 'READ'),
   orgUnitController.getOrgUnitById
 );
 
-// Lấy đơn vị tổ chức theo loại
+// Lấy đơn vị tổ chức theo loại (public)
 router.get('/type/:type', 
-  auth, 
-  checkPermission('org_unit', 'READ'),
   orgUnitController.getOrgUnitsByType
 );
 
-// Lấy danh sách cán bộ của đơn vị
+// Lấy danh sách cán bộ của đơn vị (public)
 router.get('/:id/staff', 
-  auth, 
-  checkPermission('org_unit', 'READ'),
   orgUnitController.getOrgUnitStaff
 );
 
