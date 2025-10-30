@@ -7,6 +7,19 @@ const { checkPermission } = require('../middlewares/check_permission.middleware'
 
 // Activity routes with new permission system
 router.get('/', activityController.getAllActivities); // Public - list activities
+
+// Specific routes must come before :id route to avoid conflicts
+router.get('/my/activities', 
+  auth, 
+  activityController.getMyActivities
+);
+
+router.get('/student/:studentId', 
+  auth, 
+  checkPermission('activity_registration', 'READ'), 
+  activityController.getStudentActivities
+);
+
 router.get('/:id', activityController.getActivityById); // Public - view activity details
 
 // Protected routes with permission checks

@@ -30,12 +30,13 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 |--------|----------|-------------|---------------|-------|
 | POST | `/api/auth/login` | Đăng nhập | ❌ | Public |
 | POST | `/api/auth/register` | Đăng ký tài khoản mới | ❌ | Public |
+| POST | `/api/auth/create-user` | Admin tạo tài khoản user mới | ✅ | admin |
 | GET | `/api/auth/profile` | Lấy thông tin profile của user hiện tại | ✅ | All authenticated |
 
 **Request Body - Login:**
 ```json
 {
-  "email": "user@example.com",
+  "username": "user1",
   "password": "password123"
 }
 ```
@@ -43,10 +44,17 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 **Request Body - Register:**
 ```json
 {
-  "email": "newuser@stu.ptit.edu.vn",
+  "username": "newuser",
+  "password": "password123"
+}
+```
+
+**Request Body - Admin Create-User:**
+```json
+{
+  "username": "new_username",
   "password": "password123",
-  "firstName": "Nguyen",
-  "lastName": "Van A"
+  "roleName": "student"
 }
 ```
 
@@ -82,18 +90,17 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 **Request Body - Create User:**
 ```json
 {
-  "email": "newuser@stu.ptit.edu.vn",
+  "username": "new_username",
   "password": "password123",
-  "firstName": "Nguyen",
-  "lastName": "Van B",
-  "role": "student"
+  "roleName": "student"
 }
 ```
 
 **Request Body - Assign Role:**
 ```json
 {
-  "roleId": "role_uuid_here"
+  "role_id": "role_uuid_here",
+  "org_unit_id": "org_unit_uuid_here" // nếu cần gán role theo tổ chức
 }
 ```
 
@@ -332,6 +339,8 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 | Method | Endpoint | Description | Auth Required | Permission Required |
 |--------|----------|-------------|---------------|---------------------|
 | GET | `/api/activities` | Lấy tất cả hoạt động | ❌ | - (Public) |
+| GET | `/api/activities/my/activities` | Lấy hoạt động của sinh viên hiện tại | ✅ | - (Own data) |
+| GET | `/api/activities/student/:studentId` | Lấy hoạt động của một sinh viên cụ thể | ✅ | `activity_registration:READ` |
 | GET | `/api/activities/:id` | Lấy chi tiết hoạt động theo ID | ❌ | - (Public) |
 | POST | `/api/activities` | Tạo hoạt động mới | ✅ | `activity:CREATE` |
 | PUT | `/api/activities/:id` | Cập nhật thông tin hoạt động | ✅ | `activity:UPDATE` |
@@ -362,6 +371,41 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
   "reason": "Lý do từ chối hoạt động"
 }
 ```
+
+**Response - Get My Activities (`/api/activities/my/activities`):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "activity_id",
+      "title": "Hoạt động tình nguyện",
+      "description": "Mô tả hoạt động",
+      "location": "P101",
+      "start_time": "2024-01-15T08:00:00.000Z",
+      "end_time": "2024-01-15T12:00:00.000Z",
+      "capacity": 50,
+      "registration": {
+        "id": "registration_id",
+        "status": "approved",
+        "registered_at": "2024-01-10T10:00:00.000Z"
+      },
+      "attendance": {
+        "id": "attendance_id",
+        "scanned_at": "2024-01-15T08:05:00.000Z",
+        "status": "present",
+        "verified": true,
+        "points": 5,
+        "feedback": "Hoàn thành tốt"
+      }
+    }
+  ],
+  "count": 1
+}
+```
+
+**Response - Get Student Activities (`/api/activities/student/:studentId`):**
+Same format as above.
 
 ---
 
@@ -691,16 +735,6 @@ Sau khi chạy `seed_correct_structure.js`, bạn có **10 users** cho đầy đ
   "username": "admin",
   "password": "admin123"
 }
-```
-
-### Reset Database
-```bash
-# Windows
-reset_database.bat
-
-# Mac/Linux
-chmod +x reset_database.sh
-./reset_database.sh
 ```
 
 **Note:** 

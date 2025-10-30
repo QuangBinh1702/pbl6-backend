@@ -1,6 +1,8 @@
 // Quản lý hoạt động
 const Activity = require('../models/activity.model');
 const ActivityRegistration = require('../models/activity_registration.model');
+const Attendance = require('../models/attendance.model');
+const StudentProfile = require('../models/student_profile.model');
 const User = require('../models/user.model');
 
 module.exports = {
@@ -296,6 +298,208 @@ module.exports = {
       res.json({ success: true, data: registrations });
     } catch (err) {
       console.error('Get activity registrations error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  async getStudentActivities(req, res) {
+    try {
+      const { studentId } = req.params;
+      
+      // Get student profile ID if studentId is a user ID
+      let studentProfileId = studentId;
+      
+      // If studentId is a user ID, find the corresponding student profile
+      const studentProfile = await StudentProfile.findOne({ user_id: studentId });
+      if (studentProfile) {
+        studentProfileId = studentProfile._id;
+      }
+      
+      // Get all registrations for this student
+      const registrations = await ActivityRegistration.find({ 
+        student_id: studentProfileId 
+      }).populate('activity_id');
+      
+      // Get all attendance records for this student
+      const attendances = await Attendance.find({ 
+        student_id: studentProfileId 
+      }).populate('activity_id');
+      
+      // Combine both results
+      const activities = [];
+      const activityMap = new Map();
+      
+      // Process registrations
+      registrations.forEach(reg => {
+        if (reg.activity_id) {
+          const activityData = reg.activity_id.toObject();
+          activityMap.set(activityData._id.toString(), {
+            ...activityData,
+            registration: {
+              id: reg._id,
+              status: reg.status,
+              registered_at: reg.registered_at,
+              approval_note: reg.approval_note,
+              approved_by: reg.approved_by,
+              approved_at: reg.approved_at
+            },
+            attendance: null
+          });
+        }
+      });
+      
+      // Process attendances
+      attendances.forEach(att => {
+        if (att.activity_id) {
+          const activityId = att.activity_id._id.toString();
+          if (activityMap.has(activityId)) {
+            // Add attendance info to existing activity
+            activityMap.get(activityId).attendance = {
+              id: att._id,
+              scanned_at: att.scanned_at,
+              status: att.status,
+              verified: att.verified,
+              verified_at: att.verified_at,
+              points: att.points,
+              feedback: att.feedback,
+              feedback_time: att.feedback_time
+            };
+          } else {
+            // Activity with attendance but no registration
+            const activityData = att.activity_id.toObject();
+            activityMap.set(activityId, {
+              ...activityData,
+              registration: null,
+              attendance: {
+                id: att._id,
+                scanned_at: att.scanned_at,
+                status: att.status,
+                verified: att.verified,
+                verified_at: att.verified_at,
+                points: att.points,
+                feedback: att.feedback,
+                feedback_time: att.feedback_time
+              }
+            });
+          }
+        }
+      });
+      
+      // Convert map to array
+      activityMap.forEach(value => {
+        activities.push(value);
+      });
+      
+      // Sort by start_time (most recent first)
+      activities.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+      
+      res.json({ 
+        success: true, 
+        data: activities,
+        count: activities.length
+      });
+    } catch (err) {
+      console.error('Get student activities error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  async getMyActivities(req, res) {
+    try {
+      // Get current user ID
+      const userId = req.user.id;
+      
+      // Get student profile for this user
+      const studentProfile = await StudentProfile.findOne({ user_id: userId });
+      
+      if (!studentProfile) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Student profile not found for this user' 
+        });
+      }
+      
+      // Use the same logic as getStudentActivities
+      const registrations = await ActivityRegistration.find({ 
+        student_id: studentProfile._id 
+      }).populate('activity_id');
+      
+      const attendances = await Attendance.find({ 
+        student_id: studentProfile._id 
+      }).populate('activity_id');
+      
+      const activities = [];
+      const activityMap = new Map();
+      
+      // Process registrations
+      registrations.forEach(reg => {
+        if (reg.activity_id) {
+          const activityData = reg.activity_id.toObject();
+          activityMap.set(activityData._id.toString(), {
+            ...activityData,
+            registration: {
+              id: reg._id,
+              status: reg.status,
+              registered_at: reg.registered_at,
+              approval_note: reg.approval_note,
+              approved_by: reg.approved_by,
+              approved_at: reg.approved_at
+            },
+            attendance: null
+          });
+        }
+      });
+      
+      // Process attendances
+      attendances.forEach(att => {
+        if (att.activity_id) {
+          const activityId = att.activity_id._id.toString();
+          if (activityMap.has(activityId)) {
+            activityMap.get(activityId).attendance = {
+              id: att._id,
+              scanned_at: att.scanned_at,
+              status: att.status,
+              verified: att.verified,
+              verified_at: att.verified_at,
+              points: att.points,
+              feedback: att.feedback,
+              feedback_time: att.feedback_time
+            };
+          } else {
+            const activityData = att.activity_id.toObject();
+            activityMap.set(activityId, {
+              ...activityData,
+              registration: null,
+              attendance: {
+                id: att._id,
+                scanned_at: att.scanned_at,
+                status: att.status,
+                verified: att.verified,
+                verified_at: att.verified_at,
+                points: att.points,
+                feedback: att.feedback,
+                feedback_time: att.feedback_time
+              }
+            });
+          }
+        }
+      });
+      
+      // Convert map to array
+      activityMap.forEach(value => {
+        activities.push(value);
+      });
+      
+      // Sort by start_time (most recent first)
+      activities.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+      
+      res.json({ 
+        success: true, 
+        data: activities,
+        count: activities.length
+      });
+    } catch (err) {
+      console.error('Get my activities error:', err);
       res.status(500).json({ success: false, message: err.message });
     }
   }

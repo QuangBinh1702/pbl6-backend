@@ -159,7 +159,16 @@ module.exports = {
           message: 'user_id and student_number are required' 
         });
       }
-      
+
+      // Kiểm tra user_id có thực sự tồn tại trong bảng user không
+      const userExists = await User.findById(user_id);
+      if (!userExists) {
+        return res.status(400).json({
+          success: false,
+          message: 'User not found with given user_id'
+        });
+      }
+
       // Check if student profile already exists
       const existingProfile = await StudentProfile.findOne({ 
         $or: [{ user_id }, { student_number }] 
