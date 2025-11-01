@@ -32,6 +32,8 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 | POST | `/api/auth/register` | Đăng ký tài khoản mới | ❌ | Public |
 | POST | `/api/auth/create-user` | Admin tạo tài khoản user mới | ✅ | admin |
 | GET | `/api/auth/profile` | Lấy thông tin profile của user hiện tại | ✅ | All authenticated |
+| POST | `/api/auth/forgot-password` | Quên mật khẩu - gửi email reset | ❌ | Public |
+| POST | `/api/auth/reset-password` | Đặt lại mật khẩu bằng token | ❌ | Public |
 
 **Request Body - Login:**
 ```json
@@ -55,6 +57,37 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
   "username": "new_username",
   "password": "password123",
   "roleName": "student"
+}
+```
+
+**Request Body - Forgot Password:**
+```json
+{
+  "username": "user1"
+}
+```
+
+**Response - Forgot Password (Success):**
+```json
+{
+  "success": true,
+  "message": "Password reset link has been sent to your email."
+}
+```
+
+**Request Body - Reset Password:**
+```json
+{
+  "token": "reset_token_from_email",
+  "newPassword": "newpassword123"
+}
+```
+
+**Response - Reset Password (Success):**
+```json
+{
+  "success": true,
+  "message": "Password has been reset successfully"
 }
 ```
 
@@ -541,12 +574,22 @@ Same format as above.
 **Request Body - Create Evidence:**
 ```json
 {
-  "activityId": "activity_uuid_here",
+  "student_id": "student_uuid_here",
   "title": "Minh chứng tham gia hoạt động",
-  "description": "Mô tả minh chứng",
-  "files": ["certificate.pdf", "photo.jpg"]
+  "file_url": "https://example.com/files/certificate.pdf",
+  "self_point": 5
 }
 ```
+
+**Các trường trong Request:**
+- `student_id` (required): ID của sinh viên
+- `title` (required): Tiêu đề minh chứng
+- `file_url` (optional): URL của file minh chứng
+- `self_point` (optional): Điểm tự đánh giá (mặc định: 0)
+
+**Lưu ý:** 
+- `_id` sẽ được tự động sinh bởi MongoDB, không cần truyền từ client
+- Đây là minh chứng cho hoạt động ngoài trường, không liên kết với activity trong hệ thống
 
 **Request Body - Reject Evidence:**
 ```json

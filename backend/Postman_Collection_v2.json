@@ -1234,7 +1234,7 @@
                 "url": "{{baseUrl}}/api/evidences",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"activityId\": \"{{activityId}}\",\n  \"title\": \"Minh chứng\",\n  \"description\": \"Mô tả\",\n  \"files\": [\"file1.jpg\"]\n}"
+                  "raw": "{\n  \"student_id\": \"{{studentId}}\",\n  \"title\": \"Minh chứng tham gia hoạt động\",\n  \"file_url\": \"https://example.com/files/certificate.pdf\",\n  \"self_point\": 5\n}"
                 }
               }
             },

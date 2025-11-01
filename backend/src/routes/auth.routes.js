@@ -17,5 +17,7 @@ router.post('/create-user',
 );
 router.get('/profile', authMiddleware, authController.getProfile);
 router.get('/roles', authController.getAvailableRoles);
+router.post('/forgot-password', authController.forgotPassword);
+router.post('/reset-password', authController.resetPassword);
 
 module.exports = router;

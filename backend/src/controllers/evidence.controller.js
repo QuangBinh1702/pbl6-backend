@@ -40,6 +40,11 @@ module.exports = {
     try {
       const { student_id, title, file_url, self_point, class_point, faculty_point } = req.body;
       
+      // Ensure _id is not passed from request (should be auto-generated)
+      if (req.body._id) {
+        delete req.body._id;
+      }
+      
       // Validate required fields
       if (!student_id || !title) {
         return res.status(400).json({ 
@@ -69,11 +74,17 @@ module.exports = {
 
   async updateEvidence(req, res) {
     try {
+      // Ensure _id is not passed from request (should be auto-generated)
+      if (req.body._id) {
+        delete req.body._id;
+      }
+      
       const evidence = await Evidence.findByIdAndUpdate(
         req.params.id, 
         req.body, 
         { new: true, runValidators: true }
-      ).populate('student_id');
+      )
+        .populate('student_id');
       
       if (!evidence) return res.status(404).json({ success: false, message: 'Evidence not found' });
       res.json({ success: true, data: evidence });
@@ -91,7 +102,8 @@ module.exports = {
           verified_at: new Date() 
         },
         { new: true }
-      ).populate('student_id');
+      )
+        .populate('student_id');
       
       if (!evidence) return res.status(404).json({ success: false, message: 'Evidence not found' });
       res.json({ success: true, data: evidence });
@@ -109,7 +121,8 @@ module.exports = {
           verified_at: new Date() 
         },
         { new: true }
-      ).populate('student_id');
+      )
+        .populate('student_id');
       
       if (!evidence) return res.status(404).json({ success: false, message: 'Evidence not found' });
       res.json({ success: true, data: evidence });

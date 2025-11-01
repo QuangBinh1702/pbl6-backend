@@ -27,7 +27,18 @@ MONGODB_URI=mongodb://localhost:27017/pbl6
 PORT=5000
 JWT_SECRET=your_secret_key
 JWT_EXPIRE=7d
+
+# Email Configuration (for forgot password)
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password
+FRONTEND_URL=http://localhost:5000
 ```
+
+**Lưu ý**: Để sử dụng tính năng quên mật khẩu, bạn cần:
+- Tạo App Password cho Gmail: [Hướng dẫn](https://support.google.com/accounts/answer/185833)
+- Điền EMAIL_USER và EMAIL_PASS vào file .env
+- Đặt FRONTEND_URL là URL của frontend application
+- **Xem chi tiết:** [EMAIL_SETUP.md](./EMAIL_SETUP.md)
 
 ### 3. Test kết nối MongoDB
 ```bash
