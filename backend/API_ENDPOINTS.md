@@ -34,6 +34,8 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 | GET | `/api/auth/profile` | Lấy thông tin profile của user hiện tại | ✅ | All authenticated |
 | POST | `/api/auth/forgot-password` | Quên mật khẩu - gửi email reset | ❌ | Public |
 | POST | `/api/auth/reset-password` | Đặt lại mật khẩu bằng token | ❌ | Public |
+| POST | `/api/auth/change-password` | Đổi mật khẩu (cho học sinh) | ✅ | All authenticated |
+| POST | `/api/auth/admin-update-password` | Admin cập nhật mật khẩu user | ✅ | admin |
 
 **Request Body - Login:**
 ```json
@@ -90,6 +92,45 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
   "message": "Password has been reset successfully"
 }
 ```
+
+**Request Body - Change Password (for students):**
+```json
+{
+  "oldPassword": "oldpass123",
+  "newPassword": "newpass456",
+  "confirmPassword": "newpass456"
+}
+```
+
+**Response - Change Password (Success):**
+```json
+{
+  "success": true,
+  "message": "Đổi mật khẩu thành công"
+}
+```
+
+**Request Body - Admin Update Password:**
+```json
+{
+  "username": "student1",
+  "newPassword": "newpass456",
+  "confirmPassword": "newpass456"
+}
+```
+
+**Response - Admin Update Password (Success):**
+```json
+{
+  "success": true,
+  "message": "Cập nhật mật khẩu thành công"
+}
+```
+
+**Lưu ý về mật khẩu:**
+- Mật khẩu phải có độ dài từ 6 đến 12 ký tự
+- Không được đặt mật khẩu trùng với ngày sinh (DDMMYYYY hoặc YYYYMMDD)
+- Mật khẩu mới phải khác mật khẩu cũ
 
 ---
 

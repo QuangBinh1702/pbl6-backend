@@ -483,5 +483,164 @@ module.exports = {
       console.error('Reset password error:', err);
       res.status(500).json({ success: false, message: err.message });
     }
+  },
+
+  async changePassword(req, res) {
+    try {
+      const { oldPassword, newPassword, confirmPassword } = req.body;
+      const userId = req.user.id; // From auth middleware
+      
+      // Validate input
+      if (!oldPassword || !newPassword || !confirmPassword) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Vui lòng nhập đầy đủ thông tin' 
+        });
+      }
+      
+      // Check new password matches confirmation
+      if (newPassword !== confirmPassword) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Mật khẩu mới và xác nhận mật khẩu không khớp' 
+        });
+      }
+      
+      // Validate password strength (6-12 characters)
+      if (newPassword.length < 6 || newPassword.length > 12) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Mật khẩu phải có độ dài từ 6 đến 12 ký tự' 
+        });
+      }
+      
+      // Find user
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'User not found' 
+        });
+      }
+      
+      // Verify old password
+      const isMatch = await bcrypt.compare(oldPassword, user.password_hash);
+      if (!isMatch) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'Mật khẩu cũ không đúng' 
+        });
+      }
+      
+      // Check if new password is same as old password
+      const isSame = await bcrypt.compare(newPassword, user.password_hash);
+      if (isSame) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Mật khẩu mới phải khác mật khẩu cũ' 
+        });
+      }
+      
+      // Validate against date of birth (for students)
+      const studentProfile = await StudentProfile.findOne({ user_id: userId });
+      if (studentProfile && studentProfile.date_of_birth) {
+        // Format date of birth to check if password matches (DDMMYYYY or YYYYMMDD)
+        const dob = new Date(studentProfile.date_of_birth);
+        const dobDDMMYYYY = `${String(dob.getDate()).padStart(2, '0')}${String(dob.getMonth() + 1).padStart(2, '0')}${dob.getFullYear()}`;
+        const dobYYYYMMDD = `${dob.getFullYear()}${String(dob.getMonth() + 1).padStart(2, '0')}${String(dob.getDate()).padStart(2, '0')}`;
+        
+        if (newPassword === dobDDMMYYYY || newPassword === dobYYYYMMDD) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Không được đặt mật khẩu trùng ngày sinh' 
+          });
+        }
+      }
+      
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      // Update password
+      user.password_hash = hashedPassword;
+      await user.save();
+      
+      res.json({ 
+        success: true,
+        message: 'Đổi mật khẩu thành công' 
+      });
+    } catch (err) {
+      console.error('Change password error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  async adminUpdatePassword(req, res) {
+    try {
+      const { username, newPassword, confirmPassword } = req.body;
+      
+      // Validate input
+      if (!username || !newPassword || !confirmPassword) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Vui lòng nhập đầy đủ thông tin' 
+        });
+      }
+      
+      // Check new password matches confirmation
+      if (newPassword !== confirmPassword) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Mật khẩu mới và xác nhận mật khẩu không khớp' 
+        });
+      }
+      
+      // Validate password strength (6-12 characters)
+      if (newPassword.length < 6 || newPassword.length > 12) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Mật khẩu phải có độ dài từ 6 đến 12 ký tự' 
+        });
+      }
+      
+      // Find user by username
+      const user = await User.findOne({ username });
+      if (!user) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Không tìm thấy người dùng với username này' 
+        });
+      }
+      
+      // Validate against date of birth (for students)
+      const studentProfile = await StudentProfile.findOne({ user_id: user._id });
+      if (studentProfile && studentProfile.date_of_birth) {
+        // Format date of birth to check if password matches (DDMMYYYY or YYYYMMDD)
+        const dob = new Date(studentProfile.date_of_birth);
+        const dobDDMMYYYY = `${String(dob.getDate()).padStart(2, '0')}${String(dob.getMonth() + 1).padStart(2, '0')}${dob.getFullYear()}`;
+        const dobYYYYMMDD = `${dob.getFullYear()}${String(dob.getMonth() + 1).padStart(2, '0')}${String(dob.getDate()).padStart(2, '0')}`;
+        
+        if (newPassword === dobDDMMYYYY || newPassword === dobYYYYMMDD) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Không được đặt mật khẩu trùng ngày sinh' 
+          });
+        }
+      }
+      
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      // Update password
+      user.password_hash = hashedPassword;
+      await user.save();
+      
+      res.json({ 
+        success: true,
+        message: 'Cập nhật mật khẩu thành công' 
+      });
+    } catch (err) {
+      console.error('Admin update password error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
   }
 };

@@ -19,5 +19,11 @@ router.get('/profile', authMiddleware, authController.getProfile);
 router.get('/roles', authController.getAvailableRoles);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);
+router.post('/change-password', authMiddleware, authController.changePassword);
+router.post('/admin-update-password', 
+  authMiddleware,
+  checkPermission('user', 'UPDATE'),
+  authController.adminUpdatePassword
+);
 
 module.exports = router;
