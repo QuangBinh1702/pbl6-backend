@@ -261,6 +261,136 @@ module.exports = {
     }
   },
 
+  async createBulkUsers(req, res) {
+    try {
+      const { users } = req.body;
+      
+      // Validate input
+      if (!users || !Array.isArray(users) || users.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Users array is required and must not be empty' 
+        });
+      }
+      
+      if (users.length > 100) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Maximum 100 users can be created at once' 
+        });
+      }
+      
+      const results = [];
+      const errors = [];
+      
+      // Validate username format
+      const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+      
+      for (let i = 0; i < users.length; i++) {
+        const { username, password, roleName } = users[i];
+        
+        try {
+          // Validate required fields
+          if (!username || !password || !roleName) {
+            errors.push({
+              index: i,
+              username: username || 'N/A',
+              error: 'Username, password and role are required'
+            });
+            continue;
+          }
+          
+          // Validate username format
+          if (!usernameRegex.test(username)) {
+            errors.push({
+              index: i,
+              username,
+              error: 'Username must be 3-20 characters long and contain only letters, numbers, and underscores'
+            });
+            continue;
+          }
+          
+          // Check if username exists
+          const exists = await User.findOne({ username });
+          if (exists) {
+            errors.push({
+              index: i,
+              username,
+              error: 'Username already exists'
+            });
+            continue;
+          }
+          
+          // Validate password strength
+          if (password.length < 6) {
+            errors.push({
+              index: i,
+              username,
+              error: 'Password must be at least 6 characters long'
+            });
+            continue;
+          }
+          
+          // Check if role exists
+          const role = await Role.findOne({ name: roleName });
+          if (!role) {
+            errors.push({
+              index: i,
+              username,
+              error: `Invalid role: ${roleName}. Available roles: admin, teacher, student, staff`
+            });
+            continue;
+          }
+          
+          // Hash password
+          const hashedPassword = await bcrypt.hash(password, 10);
+          
+          // Create user
+          const user = await User.create({
+            username,
+            password_hash: hashedPassword,
+            active: true,
+            isLocked: false
+          });
+          
+          // Assign role
+          await UserRole.create({
+            user_id: user._id,
+            role_id: role._id
+          });
+          
+          results.push({
+            username: user.username,
+            role: roleName,
+            id: user._id
+          });
+        } catch (err) {
+          console.error(`Error creating user ${username}:`, err);
+          errors.push({
+            index: i,
+            username: username || 'N/A',
+            error: err.message
+          });
+        }
+      }
+      
+      res.status(201).json({ 
+        success: true,
+        message: `${results.length} users created successfully${errors.length > 0 ? `, ${errors.length} failed` : ''}`,
+        created: results,
+        failed: errors.length > 0 ? errors : undefined,
+        summary: {
+          total: users.length,
+          created: results.length,
+          failed: errors.length
+        }
+      });
+    } catch (err) {
+      console.error('Create bulk users error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
   async getAvailableRoles(req, res) {
     try {
       const roles = await Role.find({}, 'name description').sort({ name: 1 });

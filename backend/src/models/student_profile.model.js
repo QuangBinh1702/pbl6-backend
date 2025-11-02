@@ -19,7 +19,7 @@ const studentProfileSchema = new mongoose.Schema({
   date_of_birth: Date,
   gender: {
     type: String,
-    enum: ['male', 'female', 'other']
+    enum: ['male', 'female', 'other', 'Nam', 'Nữ']
   },
   email: {
     type: String,

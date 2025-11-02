@@ -211,7 +211,7 @@ module.exports = {
     'student_feedback:submit', 'student_feedback:read',
     
     // Student Profile - Xem hồ sơ của mình
-    'student_profile:read',
+    'student_profile:read','student_profile:update',
     
     // Xem thông tin tổ chức
     'cohort:read', 'faculty:read', 'field:read',

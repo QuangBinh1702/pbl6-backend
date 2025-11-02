@@ -31,6 +31,7 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 | POST | `/api/auth/login` | Đăng nhập | ❌ | Public |
 | POST | `/api/auth/register` | Đăng ký tài khoản mới | ❌ | Public |
 | POST | `/api/auth/create-user` | Admin tạo tài khoản user mới | ✅ | admin |
+| POST | `/api/auth/create-bulk-users` | Admin tạo nhiều tài khoản user cùng lúc | ✅ | admin |
 | GET | `/api/auth/profile` | Lấy thông tin profile của user hiện tại | ✅ | All authenticated |
 | POST | `/api/auth/forgot-password` | Quên mật khẩu - gửi email reset | ❌ | Public |
 | POST | `/api/auth/reset-password` | Đặt lại mật khẩu bằng token | ❌ | Public |
@@ -59,6 +60,76 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
   "username": "new_username",
   "password": "password123",
   "roleName": "student"
+}
+```
+
+**Request Body - Admin Create Bulk Users:**
+```json
+{
+  "users": [
+    {
+      "username": "102220095",
+      "password": "102220095",
+      "roleName": "student"
+    },
+    {
+      "username": "102220112",
+      "password": "102220112",
+      "roleName": "student"
+    }
+  ]
+}
+```
+
+**Response - Create Bulk Users (Success):**
+```json
+{
+  "success": true,
+  "message": "2 users created successfully",
+  "created": [
+    {
+      "username": "102220095",
+      "role": "student",
+      "id": "675e1234567890abcdef1234"
+    },
+    {
+      "username": "102220112",
+      "role": "student",
+      "id": "675e1234567890abcdef5678"
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "created": 2,
+    "failed": 0
+  }
+}
+```
+
+**Response - Create Bulk Users (Partial Success):**
+```json
+{
+  "success": true,
+  "message": "1 users created successfully, 1 failed",
+  "created": [
+    {
+      "username": "102220095",
+      "role": "student",
+      "id": "675e1234567890abcdef1234"
+    }
+  ],
+  "failed": [
+    {
+      "index": 1,
+      "username": "102220112",
+      "error": "Username already exists"
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "created": 1,
+    "failed": 1
+  }
 }
 ```
 
@@ -207,6 +278,19 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
   "cohortId": "cohort_uuid_here",
   "phone": "0123456789",
   "address": "Hà Nội"
+}
+```
+
+**Request Body - Update Student Profile:**
+```json
+{
+  "full_name": "Nguyễn Văn A",
+  "date_of_birth": "2002-01-15",
+  "gender": "male",
+  "email": "student@example.com",
+  "phone": "0987654321",
+  "enrollment_year": 2020,
+  "contact_address": "123 Đường ABC, Quận XYZ, TP. Hà Nội"
 }
 ```
 

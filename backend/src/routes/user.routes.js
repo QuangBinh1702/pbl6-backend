@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/user.controller');
+const authController = require('../controllers/auth.controller');
 
 const auth = require('../middlewares/auth.middleware');
 const { checkPermission } = require('../middlewares/check_permission.middleware');
@@ -18,11 +19,11 @@ router.get('/:id',
   userController.getUserById
 );
 
-// Create user (admin/ctsv only)
+// Create user (admin only)
 router.post('/', 
   auth, 
   checkPermission('user', 'CREATE'), 
-  userController.createUser
+  authController.createUser
 );
 
 // Update user

@@ -15,6 +15,11 @@ router.post('/create-user',
   checkPermission('user', 'CREATE'), 
   authController.createUser
 );
+router.post('/create-bulk-users', 
+  authMiddleware, 
+  checkPermission('user', 'CREATE'), 
+  authController.createBulkUsers
+);
 router.get('/profile', authMiddleware, authController.getProfile);
 router.get('/roles', authController.getAvailableRoles);
 router.post('/forgot-password', authController.forgotPassword);
