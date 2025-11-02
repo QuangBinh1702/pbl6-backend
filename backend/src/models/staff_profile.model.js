@@ -22,7 +22,7 @@ const staffProfileSchema = new mongoose.Schema({
   },
   staff_image: String,
   contact_address: String
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Index for faster queries
 staffProfileSchema.index({ user_id: 1 });

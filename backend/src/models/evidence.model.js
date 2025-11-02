@@ -22,7 +22,7 @@ const evidenceSchema = new mongoose.Schema({
   self_point: Number,
   class_point: Number,
   faculty_point: Number
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Index for faster queries
 evidenceSchema.index({ student_id: 1 });

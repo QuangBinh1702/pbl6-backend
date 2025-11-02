@@ -5,7 +5,7 @@ const falcutySchema = new mongoose.Schema({
     type: String, 
     required: true 
   }
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Index for faster queries
 falcutySchema.index({ name: 1 });

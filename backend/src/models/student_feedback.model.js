@@ -24,7 +24,7 @@ const studentFeedbackSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Index for faster queries
 studentFeedbackSchema.index({ activity_id: 1 });

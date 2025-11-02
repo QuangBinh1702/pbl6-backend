@@ -137,7 +137,7 @@
             "url": "{{baseUrl}}/api/auth/change-password",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"oldPassword\": \"oldpass123\",\n  \"newPassword\": \"newpass456\",\n  \"confirmPassword\": \"newpass456\"\n}"
+              "raw": "{\n  \"oldPassword\": \"oldpass123\",\n  \"newPassword\": \"newpass456\"\n}"
             }
           }
         },
@@ -152,7 +152,7 @@
             "url": "{{baseUrl}}/api/auth/admin-update-password",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"alice\",\n  \"newPassword\": \"newpass456\",\n  \"confirmPassword\": \"newpass456\"\n}"
+              "raw": "{\n  \"username\": \"student1\",\n  \"newPassword\": \"newpass456\"\n}"
             }
           }
         }

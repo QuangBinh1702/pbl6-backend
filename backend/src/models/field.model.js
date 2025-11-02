@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const fieldSchema = new mongoose.Schema({
   name: String
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Index for faster queries
 fieldSchema.index({ name: 1 });

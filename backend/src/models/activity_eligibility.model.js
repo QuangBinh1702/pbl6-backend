@@ -12,7 +12,7 @@ const activityEligibilitySchema = new mongoose.Schema({
   reference_id: { 
     type: mongoose.Schema.Types.ObjectId 
   }
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Index for faster queries
 activityEligibilitySchema.index({ activity_id: 1 });

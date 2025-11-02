@@ -15,7 +15,7 @@ const permissionSchema = new mongoose.Schema({
     type: String,
     trim: true
   }
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Index for faster queries
 permissionSchema.index({ resource: 1 });

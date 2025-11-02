@@ -3,17 +3,19 @@ const mongoose = require('mongoose');
 const classSchema = new mongoose.Schema({
   name: { 
     type: String, 
-    required: true 
+    required: false 
   },
   falcuty_id: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Falcuty' 
+    ref: 'Falcuty',
+    required: false
   },
   cohort_id: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Cohort' 
+    ref: 'Cohort',
+    required: false
   }
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Index for faster queries
 classSchema.index({ falcuty_id: 1 });

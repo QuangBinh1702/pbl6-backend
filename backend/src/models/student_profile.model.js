@@ -38,7 +38,7 @@ const studentProfileSchema = new mongoose.Schema({
     type: Boolean, 
     default: false 
   }
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Index for faster queries (student_number already has unique index)
 studentProfileSchema.index({ user_id: 1 });

@@ -26,7 +26,7 @@ const activityRegistrationSchema = new mongoose.Schema({
     ref: 'User'
   },
   approved_at: Date
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Index for faster queries
 activityRegistrationSchema.index({ activity_id: 1 });

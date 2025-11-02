@@ -15,7 +15,7 @@ const roleActionSchema = new mongoose.Schema({
     type: Boolean, 
     default: true
   }
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Compound index to prevent duplicate role-action pairs
 roleActionSchema.index({ role_id: 1, action_id: 1 }, { unique: true });

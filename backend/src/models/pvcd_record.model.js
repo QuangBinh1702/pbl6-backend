@@ -16,7 +16,7 @@ const pvcdRecordSchema = new mongoose.Schema({
     type: Number, 
     default: 0 
   }
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Index for faster queries
 pvcdRecordSchema.index({ student_id: 1 });

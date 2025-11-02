@@ -133,7 +133,7 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 }
 ```
 
-**Request Body - Forgot Password:**
+<!-- **Request Body - Forgot Password:**
 ```json
 {
   "username": "user1"
@@ -145,31 +145,30 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 {
   "success": true,
   "message": "Password reset link has been sent to your email."
-}
-```
+} -->
+<!-- ``` -->
 
-**Request Body - Reset Password:**
+<!-- **Request Body - Reset Password:**
 ```json
 {
   "token": "reset_token_from_email",
   "newPassword": "newpassword123"
 }
-```
+``` -->
 
-**Response - Reset Password (Success):**
+<!-- **Response - Reset Password (Success):**
 ```json
 {
   "success": true,
   "message": "Password has been reset successfully"
-}
-```
+} 
+``` -->
 
 **Request Body - Change Password (for students):**
 ```json
 {
   "oldPassword": "oldpass123",
-  "newPassword": "newpass456",
-  "confirmPassword": "newpass456"
+  "newPassword": "newpass456"
 }
 ```
 
@@ -185,8 +184,7 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 ```json
 {
   "username": "student1",
-  "newPassword": "newpass456",
-  "confirmPassword": "newpass456"
+  "newPassword": "newpass456"
 }
 ```
 
@@ -199,8 +197,10 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 ```
 
 **Lưu ý về mật khẩu:**
-- Mật khẩu phải có độ dài từ 6 đến 12 ký tự
-- Không được đặt mật khẩu trùng với ngày sinh (DDMMYYYY hoặc YYYYMMDD)
+- **Frontend validation:** Độ dài 6–12 ký tự, password khớp confirm
+- **Backend validation:** Không trùng ngày sinh (tất cả các format có/không có số 0 đứng đầu)
+  - **DDMMYYYY:** 09022004, 0922004, 9022004, 922004
+  - **YYYYMMDD:** 20040902, 2004092, 20049202, 2004922
 - Mật khẩu mới phải khác mật khẩu cũ
 
 ---

@@ -26,7 +26,7 @@ const userActionOverrideSchema = new mongoose.Schema({
     ref: 'User'
   },
   granted_at: Date
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Compound index to prevent duplicate user-action pairs
 userActionOverrideSchema.index({ user_id: 1, action_id: 1 }, { unique: true });

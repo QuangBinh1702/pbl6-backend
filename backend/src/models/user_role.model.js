@@ -15,7 +15,7 @@ const userRoleSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'OrgUnit'
   }
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Index for faster queries
 userRoleSchema.index({ user_id: 1 });

@@ -27,7 +27,7 @@ const attendanceSchema = new mongoose.Schema({
   points: Number,
   feedback: String,
   feedback_time: Date
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Index for faster queries
 attendanceSchema.index({ student_id: 1 });

@@ -16,7 +16,7 @@ const studentCohortSchema = new mongoose.Schema({
     enum: ['official', 'actual'], 
     default: 'official' 
   }
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Index for faster queries
 studentCohortSchema.index({ student_id: 1 });

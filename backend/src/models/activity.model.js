@@ -42,7 +42,7 @@ const activitySchema = new mongoose.Schema({
     type: Boolean, 
     default: false 
   }
-}, { timestamps: true, collection: 'activity' });
+}, { timestamps: false, collection: 'activity' });
 
 // Index for faster queries
 activitySchema.index({ org_unit_id: 1 });

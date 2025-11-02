@@ -26,7 +26,7 @@ const actionSchema = new mongoose.Schema({
     type: Boolean, 
     default: true 
   }
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Compound unique index on permission_id + action_code
 actionSchema.index({ permission_id: 1, action_code: 1 }, { unique: true });

@@ -13,7 +13,7 @@ const orgUnitSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'StaffProfile' 
   }
-}, { timestamps: true });
+}, { timestamps: false });
 
 // Index for faster queries
 orgUnitSchema.index({ type: 1 });

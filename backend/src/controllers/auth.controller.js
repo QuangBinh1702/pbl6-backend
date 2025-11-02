@@ -617,30 +617,14 @@ module.exports = {
 
   async changePassword(req, res) {
     try {
-      const { oldPassword, newPassword, confirmPassword } = req.body;
+      const { oldPassword, newPassword } = req.body;
       const userId = req.user.id; // From auth middleware
       
-      // Validate input
-      if (!oldPassword || !newPassword || !confirmPassword) {
+      // Validate input (basic checks only - FE should do most validation)
+      if (!oldPassword || !newPassword) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Vui lòng nhập đầy đủ thông tin' 
-        });
-      }
-      
-      // Check new password matches confirmation
-      if (newPassword !== confirmPassword) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Mật khẩu mới và xác nhận mật khẩu không khớp' 
-        });
-      }
-      
-      // Validate password strength (6-12 characters)
-      if (newPassword.length < 6 || newPassword.length > 12) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Mật khẩu phải có độ dài từ 6 đến 12 ký tự' 
+          message: 'Mật khẩu cũ và mật khẩu mới là bắt buộc' 
         });
       }
       
@@ -671,15 +655,30 @@ module.exports = {
         });
       }
       
-      // Validate against date of birth (for students)
+      // Validate against date of birth (important security check - must be on backend)
       const studentProfile = await StudentProfile.findOne({ user_id: userId });
       if (studentProfile && studentProfile.date_of_birth) {
-        // Format date of birth to check if password matches (DDMMYYYY or YYYYMMDD)
         const dob = new Date(studentProfile.date_of_birth);
-        const dobDDMMYYYY = `${String(dob.getDate()).padStart(2, '0')}${String(dob.getMonth() + 1).padStart(2, '0')}${dob.getFullYear()}`;
-        const dobYYYYMMDD = `${dob.getFullYear()}${String(dob.getMonth() + 1).padStart(2, '0')}${String(dob.getDate()).padStart(2, '0')}`;
+        const day = dob.getDate();
+        const month = dob.getMonth() + 1;
+        const year = dob.getFullYear();
         
-        if (newPassword === dobDDMMYYYY || newPassword === dobYYYYMMDD) {
+        // Generate all possible date formats (with and without leading zeros)
+        const possiblePasswords = [
+          // DDMMYYYY formats
+          `${String(day).padStart(2, '0')}${String(month).padStart(2, '0')}${year}`, // 09022004
+          `${String(day).padStart(2, '0')}${month}${year}`, // 0922004
+          `${day}${String(month).padStart(2, '0')}${year}`, // 9022004
+          `${day}${month}${year}`, // 922004
+          
+          // YYYYMMDD formats
+          `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}`, // 20040902
+          `${year}${String(month).padStart(2, '0')}${day}`, // 2004092
+          `${year}${month}${String(day).padStart(2, '0')}`, // 20049202
+          `${year}${month}${day}`, // 2004922
+        ];
+        
+        if (possiblePasswords.includes(newPassword)) {
           return res.status(400).json({ 
             success: false, 
             message: 'Không được đặt mật khẩu trùng ngày sinh' 
@@ -706,29 +705,13 @@ module.exports = {
 
   async adminUpdatePassword(req, res) {
     try {
-      const { username, newPassword, confirmPassword } = req.body;
+      const { username, newPassword } = req.body;
       
-      // Validate input
-      if (!username || !newPassword || !confirmPassword) {
+      // Validate input (basic checks only - FE should do most validation)
+      if (!username || !newPassword) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Vui lòng nhập đầy đủ thông tin' 
-        });
-      }
-      
-      // Check new password matches confirmation
-      if (newPassword !== confirmPassword) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Mật khẩu mới và xác nhận mật khẩu không khớp' 
-        });
-      }
-      
-      // Validate password strength (6-12 characters)
-      if (newPassword.length < 6 || newPassword.length > 12) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Mật khẩu phải có độ dài từ 6 đến 12 ký tự' 
+          message: 'Username và mật khẩu mới là bắt buộc' 
         });
       }
       
@@ -741,15 +724,30 @@ module.exports = {
         });
       }
       
-      // Validate against date of birth (for students)
+      // Validate against date of birth (important security check - must be on backend)
       const studentProfile = await StudentProfile.findOne({ user_id: user._id });
       if (studentProfile && studentProfile.date_of_birth) {
-        // Format date of birth to check if password matches (DDMMYYYY or YYYYMMDD)
         const dob = new Date(studentProfile.date_of_birth);
-        const dobDDMMYYYY = `${String(dob.getDate()).padStart(2, '0')}${String(dob.getMonth() + 1).padStart(2, '0')}${dob.getFullYear()}`;
-        const dobYYYYMMDD = `${dob.getFullYear()}${String(dob.getMonth() + 1).padStart(2, '0')}${String(dob.getDate()).padStart(2, '0')}`;
+        const day = dob.getDate();
+        const month = dob.getMonth() + 1;
+        const year = dob.getFullYear();
         
-        if (newPassword === dobDDMMYYYY || newPassword === dobYYYYMMDD) {
+        // Generate all possible date formats (with and without leading zeros)
+        const possiblePasswords = [
+          // DDMMYYYY formats
+          `${String(day).padStart(2, '0')}${String(month).padStart(2, '0')}${year}`, // 09022004
+          `${String(day).padStart(2, '0')}${month}${year}`, // 0922004
+          `${day}${String(month).padStart(2, '0')}${year}`, // 9022004
+          `${day}${month}${year}`, // 922004
+          
+          // YYYYMMDD formats
+          `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}`, // 20040902
+          `${year}${String(month).padStart(2, '0')}${day}`, // 2004092
+          `${year}${month}${String(day).padStart(2, '0')}`, // 20049202
+          `${year}${month}${day}`, // 2004922
+        ];
+        
+        if (possiblePasswords.includes(newPassword)) {
           return res.status(400).json({ 
             success: false, 
             message: 'Không được đặt mật khẩu trùng ngày sinh' 
