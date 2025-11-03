@@ -14,6 +14,12 @@ router.get('/',
   evidenceController.getAllEvidences
 );
 
+// Danh sách minh chứng theo studentId (authenticated)
+router.get('/student/:studentId', 
+  auth,
+  evidenceController.getEvidencesByStudent
+);
+
 // Chi tiết minh chứng
 router.get('/:id', 
   auth, 

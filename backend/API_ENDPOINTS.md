@@ -146,7 +146,7 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
   "success": true,
   "message": "Password reset link has been sent to your email."
 } -->
-<!-- ``` -->
+```
 
 <!-- **Request Body - Reset Password:**
 ```json
@@ -154,15 +154,15 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
   "token": "reset_token_from_email",
   "newPassword": "newpassword123"
 }
-``` -->
+```
 
-<!-- **Response - Reset Password (Success):**
+**Response - Reset Password (Success):**
 ```json
 {
   "success": true,
   "message": "Password has been reset successfully"
-} 
-``` -->
+} -->
+```
 
 **Request Body - Change Password (for students):**
 ```json
@@ -689,6 +689,7 @@ Same format as above.
 | Method | Endpoint | Description | Auth Required | Roles |
 |--------|----------|-------------|---------------|-------|
 | GET | `/api/evidences` | Lấy tất cả minh chứng | ✅ | admin, ctsv, khoa, loptruong |
+| GET | `/api/evidences/student/:studentId` | Lấy minh chứng theo sinh viên | ✅ | - |
 | GET | `/api/evidences/:id` | Lấy chi tiết minh chứng theo ID | ✅ | - |
 | POST | `/api/evidences` | Tạo minh chứng mới | ✅ | student |
 | PUT | `/api/evidences/:id` | Cập nhật minh chứng | ✅ | - |
@@ -720,6 +721,24 @@ Same format as above.
 ```json
 {
   "reason": "Lý do từ chối minh chứng"
+}
+```
+
+**Response - Get Evidences by Student (`/api/evidences/student/:studentId`):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "evidence_id",
+      "student_id": { "_id": "student_id", "name": "Nguyễn Văn A" },
+      "title": "Minh chứng tham gia hoạt động",
+      "file_url": "https://example.com/files/certificate.pdf",
+      "self_point": 5,
+      "status": "pending",
+      "submitted_at": "2024-01-15T10:30:00.000Z"
+    }
+  ]
 }
 ```
 

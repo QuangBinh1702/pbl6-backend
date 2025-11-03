@@ -1285,6 +1285,14 @@
               }
             },
             {
+              "name": "Get Evidences by Student",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/evidences/student/{{studentId}}"
+              }
+            },
+            {
               "name": "Get Evidence by ID",
               "request": {
                 "method": "GET",
