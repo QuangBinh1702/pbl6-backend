@@ -29,7 +29,8 @@ module.exports = {
       if (!user) {
         return res.status(404).json({ 
           success: false, 
-          message: 'Tên đăng nhập không tồn tại' 
+          // message: 'Tên đăng nhập không tồn tại' 
+          message: 'User not found'
         });
       }
       
@@ -38,7 +39,8 @@ module.exports = {
       if (!isMatch) {
         return res.status(401).json({ 
           success: false, 
-          message: 'Mật khẩu không đúng' 
+          // message: 'Mật khẩu không đúng' 
+          message: 'Invalid credentials'
         });
       }
       
@@ -46,7 +48,8 @@ module.exports = {
       if (!user.active) {
         return res.status(403).json({ 
           success: false, 
-          message: 'Account is inactive' 
+          // message: 'Account is inactive' 
+          message: 'User is inactive' 
         });
       }
       
@@ -627,6 +630,14 @@ module.exports = {
           message: 'Mật khẩu cũ và mật khẩu mới là bắt buộc' 
         });
       }
+
+      // Validate password strength
+      if (typeof newPassword !== 'string' || newPassword.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password too short'
+        });
+      }
       
       // Find user
       const user = await User.findById(userId);
@@ -651,7 +662,8 @@ module.exports = {
       if (isSame) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Mật khẩu mới phải khác mật khẩu cũ' 
+          // message: 'Mật khẩu mới phải khác mật khẩu cũ' 
+          message: 'New password must be different from old password' 
         });
       }
       

@@ -23,15 +23,32 @@
             "url": "{{baseUrl}}/api/auth/register",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"stu_102220200\",\n  \"password\": \"123456\"\n}"
+              "raw": "{\n  \"username\": \"{{random_username}}\",\n  \"password\": \"{{random_password}}\"\n}"
             }
           },
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Generate random username/password for register",
+                  "const ts = Date.now();",
+                  "const uname = `stu_${ts}`;",
+                  "const pwd = `Pw${(ts % 1000000).toString().padStart(6,'0')}`;",
+                  "pm.environment.set('random_username', uname);",
+                  "pm.environment.set('random_password', pwd);"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Created 201 or OK 200', function () { pm.expect([200,201]).to.include(pm.response.code); });"
+                  "pm.test('Created 201 or OK 200', function () { pm.expect([200,201]).to.include(pm.response.code); });",
+                  "let json; try { json = pm.response.json(); } catch (e) { json = {}; }",
+                  "pm.test('Has user id/username', function(){ pm.expect(json).to.be.an('object'); });",
+                  "pm.environment.set('userId', (json.data && json.data._id) || pm.environment.get('userId') || '');"
                 ],
                 "type": "text/javascript"
               }
@@ -51,10 +68,24 @@
           },
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Use last random_username to force duplicate",
+                  "const uname = pm.environment.get('random_username') || `dup_${Date.now()}`;",
+                  "pm.environment.set('random_username', uname);",
+                  "pm.request.body.update(JSON.stringify({ username: uname, password: '123456' }, null, 2));"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Duplicate -> 400/409', function () { pm.expect([400,409]).to.include(pm.response.code); });"
+                  "pm.test('Duplicate -> 400/409', function () { pm.expect([400,409]).to.include(pm.response.code); });",
+                  "let json; try { json = pm.response.json(); } catch(e){ json = {}; }",
+                  "pm.test('Has error message', function(){ pm.expect(json).to.be.an('object'); });"
                 ],
                 "type": "text/javascript"
               }
@@ -79,6 +110,7 @@
                 "exec": [
                   "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
                   "var data = pm.response.json();",
+                  "pm.test('Has token', function(){ pm.expect(data).to.have.property('token'); });",
                   "if (data && data.token) { pm.collectionVariables.set('token', data.token); pm.environment.set('token', data.token); }"
                 ],
                 "type": "text/javascript"
@@ -99,7 +131,9 @@
           },
           "event": [
             { "listen": "test", "script": { "type": "text/javascript", "exec": [
-              "pm.test('Unauthorized 401/400', function () { pm.expect([400,401]).to.include(pm.response.code); });"
+              "pm.test('Unauthorized 401/400', function () { pm.expect([400,401]).to.include(pm.response.code); });",
+              "let json; try { json = pm.response.json(); } catch(e){ json = {}; }",
+              "pm.test('Contains error message', function(){ pm.expect(json).to.be.an('object'); });"
             ] } }
           ]
         },
@@ -129,7 +163,9 @@
             "body": { "mode": "raw", "raw": "{\n  \"username\": \"\",\n  \"password\": \"0787546459\"\n}" }
           },
           "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Validation 400', function () { pm.response.to.have.status(400); });"
+            "pm.test('Validation 400', function () { pm.response.to.have.status(400); });",
+            "let json; try { json = pm.response.json(); } catch(e){ json = {}; }",
+            "pm.test('Contains validation error', function(){ pm.expect(json).to.be.an('object'); });"
           ] } } ]
         },
         {
@@ -260,16 +296,33 @@
             "url": "{{baseUrl}}/api/auth/create-user",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"superadmin2\",\n  \"password\": \"password123\",\n  \"roleName\": \"admin\"\n}"
+              "raw": "{\n  \"username\": \"{{cu_username}}\",\n  \"password\": \"{{cu_password}}\",\n  \"roleName\": \"{{cu_roleName}}\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Prepare random admin user (or use defaults)",
+                  "const ts = Date.now();",
+                  "const u = pm.environment.get('cu_username') || `superadmin_${ts}`;",
+                  "const p = pm.environment.get('cu_password') || 'password123';",
+                  "const r = pm.environment.get('cu_roleName') || 'admin';",
+                  "pm.environment.set('cu_username', u);",
+                  "pm.environment.set('cu_password', p);",
+                  "pm.environment.set('cu_roleName', r);"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Created 201 or OK 200', function () { pm.expect([200,201]).to.include(pm.response.code); });",
                   "var data = pm.response.json();",
+                  "pm.test('Response object', function(){ pm.expect(data).to.be.an('object'); });",
                   "if (data && data.data && data.data._id) { pm.collectionVariables.set('userId', data.data._id); pm.environment.set('userId', data.data._id); }"
                 ],
                 "type": "text/javascript"
@@ -296,9 +349,20 @@
             "url": "{{baseUrl}}/api/auth/create-user",
             "body": { "mode": "raw", "raw": "{\n  \"username\": \"superadmin2\",\n  \"password\": \"password123\",\n  \"roleName\": \"admin\"\n}" }
           },
-          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Duplicate -> 400/409', function () { pm.expect([400,409]).to.include(pm.response.code); });"
-          ] } } ]
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "// Ensure duplicate uses same cu_username as previous create",
+              "const u = pm.environment.get('cu_username') || 'superadmin2';",
+              "const p = pm.environment.get('cu_password') || 'password123';",
+              "const r = pm.environment.get('cu_roleName') || 'admin';",
+              "pm.request.body.update(JSON.stringify({ username: u, password: p, roleName: r }, null, 2));"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Duplicate -> 400/409', function () { pm.expect([400,409]).to.include(pm.response.code); });",
+              "let json; try { json = pm.response.json(); } catch(e){ json = {}; }",
+              "pm.test('Has error', function(){ pm.expect(json).to.be.an('object'); });"
+            ] } }
+          ]
         },
         {
           "name": "Create User - Missing Password",
@@ -312,7 +376,9 @@
             "body": { "mode": "raw", "raw": "{\n  \"username\": \"user_missing_pass\",\n  \"roleName\": \"student\"\n}" }
           },
           "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Validation 400', function () { pm.response.to.have.status(400); });"
+            "pm.test('Validation 400', function () { pm.response.to.have.status(400); });",
+            "let json; try { json = pm.response.json(); } catch(e){ json = {}; }",
+            "pm.test('Contains validation error', function(){ pm.expect(json).to.be.an('object'); });"
           ] } } ]
         },
         {
@@ -327,7 +393,9 @@
             "body": { "mode": "raw", "raw": "{\n  \"username\": \"user_shortpw\",\n  \"password\": \"qnbn\",\n  \"roleName\": \"student\"\n}" }
           },
           "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Bad Request 400', function () { pm.response.to.have.status(400); });"
+            "pm.test('Bad Request 400', function () { pm.response.to.have.status(400); });",
+            "let json; try { json = pm.response.json(); } catch(e){ json = {}; }",
+            "pm.test('Contains validation error', function(){ pm.expect(json).to.be.an('object'); });"
           ] } } ]
         },
         {
@@ -342,7 +410,9 @@
             "body": { "mode": "raw", "raw": "{\n  \"username\": \"user!@#\",\n  \"password\": \"password123\",\n  \"roleName\": \"student\"\n}" }
           },
           "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Validation 400', function () { pm.response.to.have.status(400); });"
+            "pm.test('Validation 400', function () { pm.response.to.have.status(400); });",
+            "let json; try { json = pm.response.json(); } catch(e){ json = {}; }",
+            "pm.test('Contains validation error', function(){ pm.expect(json).to.be.an('object'); });"
           ] } } ]
         },
         {

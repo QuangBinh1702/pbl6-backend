@@ -14,9 +14,16 @@ module.exports = {
       
       const studentProfiles = await StudentProfile.find(filter)
         .populate('user_id')
-        .populate('class_id');
+        .populate({ path: 'class_id', populate: [ { path: 'falcuty_id' }, { path: 'cohort_id' } ] })
+        .lean();
+
+      const data = studentProfiles.map(sp => ({
+        ...sp,
+        falcuty_name: sp.class_id?.falcuty_id?.name,
+        cohort_year: sp.class_id?.cohort_id?.year
+      }));
       
-      res.json({ success: true, data: studentProfiles });
+      res.json({ success: true, data });
     } catch (err) {
       console.error('Get all student profiles error:', err);
       res.status(500).json({ success: false, message: err.message });
@@ -27,7 +34,8 @@ module.exports = {
     try {
       const studentProfile = await StudentProfile.findById(req.params.id)
         .populate('user_id')
-        .populate('class_id');
+        .populate({ path: 'class_id', populate: [ { path: 'falcuty_id' }, { path: 'cohort_id' } ] })
+        .lean();
       
       if (!studentProfile) {
         return res.status(404).json({ 
@@ -36,7 +44,14 @@ module.exports = {
         });
       }
       
-      res.json({ success: true, data: studentProfile });
+      res.json({ 
+        success: true, 
+        data: {
+          ...studentProfile,
+          falcuty_name: studentProfile.class_id?.falcuty_id?.name,
+          cohort_year: studentProfile.class_id?.cohort_id?.year
+        }
+      });
     } catch (err) {
       console.error('Get student profile by ID error:', err);
       res.status(500).json({ success: false, message: err.message });
@@ -49,7 +64,8 @@ module.exports = {
         user_id: req.params.userId 
       })
         .populate('user_id')
-        .populate('class_id');
+        .populate({ path: 'class_id', populate: [ { path: 'falcuty_id' }, { path: 'cohort_id' } ] })
+        .lean();
       
       if (!studentProfile) {
         return res.status(404).json({ 
@@ -58,7 +74,11 @@ module.exports = {
         });
       }
       
-      res.json({ success: true, data: studentProfile });
+      res.json({ success: true, data: {
+        ...studentProfile,
+        falcuty_name: studentProfile.class_id?.falcuty_id?.name,
+        cohort_year: studentProfile.class_id?.cohort_id?.year
+      } });
     } catch (err) {
       console.error('Get student profile by user ID error:', err);
       res.status(500).json({ success: false, message: err.message });
@@ -71,7 +91,8 @@ module.exports = {
         student_number: req.params.studentNumber 
       })
         .populate('user_id')
-        .populate('class_id');
+        .populate({ path: 'class_id', populate: [ { path: 'falcuty_id' }, { path: 'cohort_id' } ] })
+        .lean();
       
       if (!studentProfile) {
         return res.status(404).json({ 
@@ -80,7 +101,11 @@ module.exports = {
         });
       }
       
-      res.json({ success: true, data: studentProfile });
+      res.json({ success: true, data: {
+        ...studentProfile,
+        falcuty_name: studentProfile.class_id?.falcuty_id?.name,
+        cohort_year: studentProfile.class_id?.cohort_id?.year
+      } });
     } catch (err) {
       console.error('Get student profile by student number error:', err);
       res.status(500).json({ success: false, message: err.message });
@@ -104,7 +129,8 @@ module.exports = {
         user_id: user._id 
       })
         .populate('user_id')
-        .populate('class_id');
+        .populate({ path: 'class_id', populate: [ { path: 'falcuty_id' }, { path: 'cohort_id' } ] })
+        .lean();
       
       if (!studentProfile) {
         return res.status(404).json({ 
@@ -113,7 +139,11 @@ module.exports = {
         });
       }
       
-      res.json({ success: true, data: studentProfile });
+      res.json({ success: true, data: {
+        ...studentProfile,
+        falcuty_name: studentProfile.class_id?.falcuty_id?.name,
+        cohort_year: studentProfile.class_id?.cohort_id?.year
+      } });
     } catch (err) {
       console.error('Get student profile by username error:', err);
       res.status(500).json({ success: false, message: err.message });
@@ -126,9 +156,16 @@ module.exports = {
         class_id: req.params.classId 
       })
         .populate('user_id')
-        .populate('class_id');
+        .populate({ path: 'class_id', populate: [ { path: 'falcuty_id' }, { path: 'cohort_id' } ] })
+        .lean();
       
-      res.json({ success: true, data: studentProfiles });
+      const data2 = studentProfiles.map(sp => ({
+        ...sp,
+        falcuty_name: sp.class_id?.falcuty_id?.name,
+        cohort_year: sp.class_id?.cohort_id?.year
+      }));
+      
+      res.json({ success: true, data: data2 });
     } catch (err) {
       console.error('Get students by class error:', err);
       res.status(500).json({ success: false, message: err.message });
@@ -197,9 +234,14 @@ module.exports = {
       });
       
       await studentProfile.populate('user_id');
-      await studentProfile.populate('class_id');
+      await studentProfile.populate({ path: 'class_id', populate: [ { path: 'falcuty_id' }, { path: 'cohort_id' } ] });
+      const spLean = studentProfile.toObject();
       
-      res.status(201).json({ success: true, data: studentProfile });
+      res.status(201).json({ success: true, data: {
+        ...spLean,
+        falcuty_name: spLean.class_id?.falcuty_id?.name,
+        cohort_year: spLean.class_id?.cohort_id?.year
+      } });
     } catch (err) {
       console.error('Create student profile error:', err);
       res.status(400).json({ success: false, message: err.message });
@@ -221,7 +263,8 @@ module.exports = {
         { new: true, runValidators: true }
       )
         .populate('user_id')
-        .populate('class_id');
+        .populate({ path: 'class_id', populate: [ { path: 'falcuty_id' }, { path: 'cohort_id' } ] })
+        .lean();
       
       if (!studentProfile) {
         return res.status(404).json({ 
@@ -230,7 +273,11 @@ module.exports = {
         });
       }
       
-      res.json({ success: true, data: studentProfile });
+      res.json({ success: true, data: {
+        ...studentProfile,
+        falcuty_name: studentProfile.class_id?.falcuty_id?.name,
+        cohort_year: studentProfile.class_id?.cohort_id?.year
+      } });
     } catch (err) {
       console.error('Update student profile error:', err);
       res.status(400).json({ success: false, message: err.message });
@@ -259,7 +306,7 @@ module.exports = {
   async setClassMonitor(req, res) {
     try {
       const studentProfile = await StudentProfile.findById(req.params.id)
-        .populate('class_id');
+        .populate({ path: 'class_id', populate: [ { path: 'falcuty_id' }, { path: 'cohort_id' } ] });
       
       if (!studentProfile) {
         return res.status(404).json({ 
@@ -284,11 +331,16 @@ module.exports = {
       await studentProfile.save();
       
       await studentProfile.populate('user_id');
-      await studentProfile.populate('class_id');
+      await studentProfile.populate({ path: 'class_id', populate: [ { path: 'falcuty_id' }, { path: 'cohort_id' } ] });
+      const spMon = studentProfile.toObject();
       
       res.json({ 
         success: true, 
-        data: studentProfile,
+        data: {
+          ...spMon,
+          falcuty_name: spMon.class_id?.falcuty_id?.name,
+          cohort_year: spMon.class_id?.cohort_id?.year
+        },
         message: 'Class monitor set successfully' 
       });
     } catch (err) {
@@ -305,7 +357,8 @@ module.exports = {
         { new: true }
       )
         .populate('user_id')
-        .populate('class_id');
+        .populate({ path: 'class_id', populate: [ { path: 'falcuty_id' }, { path: 'cohort_id' } ] })
+        .lean();
       
       if (!studentProfile) {
         return res.status(404).json({ 
@@ -316,7 +369,11 @@ module.exports = {
       
       res.json({ 
         success: true, 
-        data: studentProfile,
+        data: {
+          ...studentProfile,
+          falcuty_name: studentProfile.class_id?.falcuty_id?.name,
+          cohort_year: studentProfile.class_id?.cohort_id?.year
+        },
         message: 'Class monitor status removed successfully' 
       });
     } catch (err) {
@@ -331,9 +388,16 @@ module.exports = {
         isClassMonitor: true 
       })
         .populate('user_id')
-        .populate('class_id');
+        .populate({ path: 'class_id', populate: [ { path: 'falcuty_id' }, { path: 'cohort_id' } ] })
+        .lean();
       
-      res.json({ success: true, data: classMonitors });
+      const data3 = classMonitors.map(sp => ({
+        ...sp,
+        falcuty_name: sp.class_id?.falcuty_id?.name,
+        cohort_year: sp.class_id?.cohort_id?.year
+      }));
+      
+      res.json({ success: true, data: data3 });
     } catch (err) {
       console.error('Get class monitors error:', err);
       res.status(500).json({ success: false, message: err.message });
