@@ -10,6 +10,70 @@ const crypto = require('crypto');
 const { jwtSecret } = require('../config/app.config');
 const { sendEmail } = require('../utils/email.util');
 
+// Generate common date-of-birth password variants to block
+function generateDobPasswordVariants(date) {
+  if (!date) return [];
+  const dob = new Date(date);
+  if (Number.isNaN(dob.getTime())) return [];
+
+  const day = dob.getDate();
+  const month = dob.getMonth() + 1;
+  const year = dob.getFullYear();
+
+  const d = String(day);
+  const m = String(month);
+  const y = String(year);
+  const dd = String(day).padStart(2, '0');
+  const mm = String(month).padStart(2, '0');
+
+  // Without separators
+  const noSep = [
+    // DDMMYYYY family
+    `${dd}${mm}${y}`,
+    `${dd}${m}${y}`,
+    `${d}${mm}${y}`,
+    `${d}${m}${y}`,
+    // MMDDYYYY family
+    `${mm}${dd}${y}`,
+    `${mm}${d}${y}`,
+    `${m}${dd}${y}`,
+    `${m}${d}${y}`,
+    // YYYYMMDD family
+    `${y}${mm}${dd}`,
+    `${y}${mm}${d}`,
+    `${y}${m}${dd}`,
+    `${y}${m}${d}`
+  ];
+
+  // With separators '/', '-'
+  const withSep = [];
+  ['/', '-'].forEach((sep) => {
+    // DD/MM/YYYY and variants
+    withSep.push(
+      `${dd}${sep}${mm}${sep}${y}`,
+      `${d}${sep}${m}${sep}${y}`,
+      `${dd}${sep}${m}${sep}${y}`,
+      `${d}${sep}${mm}${sep}${y}`
+    );
+    // MM/DD/YYYY and variants
+    withSep.push(
+      `${mm}${sep}${dd}${sep}${y}`,
+      `${m}${sep}${d}${sep}${y}`,
+      `${mm}${sep}${d}${sep}${y}`,
+      `${m}${sep}${dd}${sep}${y}`
+    );
+    // YYYY/MM/DD and variants
+    withSep.push(
+      `${y}${sep}${mm}${sep}${dd}`,
+      `${y}${sep}${m}${sep}${d}`,
+      `${y}${sep}${mm}${sep}${d}`,
+      `${y}${sep}${m}${sep}${dd}`
+    );
+  });
+
+  return Array.from(new Set([...noSep, ...withSep]));
+}
+
 module.exports = {
   async login(req, res) {
     try {
@@ -670,26 +734,7 @@ module.exports = {
       // Validate against date of birth (important security check - must be on backend)
       const studentProfile = await StudentProfile.findOne({ user_id: userId });
       if (studentProfile && studentProfile.date_of_birth) {
-        const dob = new Date(studentProfile.date_of_birth);
-        const day = dob.getDate();
-        const month = dob.getMonth() + 1;
-        const year = dob.getFullYear();
-        
-        // Generate all possible date formats (with and without leading zeros)
-        const possiblePasswords = [
-          // DDMMYYYY formats
-          `${String(day).padStart(2, '0')}${String(month).padStart(2, '0')}${year}`, // 09022004
-          `${String(day).padStart(2, '0')}${month}${year}`, // 0922004
-          `${day}${String(month).padStart(2, '0')}${year}`, // 9022004
-          `${day}${month}${year}`, // 922004
-          
-          // YYYYMMDD formats
-          `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}`, // 20040902
-          `${year}${String(month).padStart(2, '0')}${day}`, // 2004092
-          `${year}${month}${String(day).padStart(2, '0')}`, // 20049202
-          `${year}${month}${day}`, // 2004922
-        ];
-        
+        const possiblePasswords = generateDobPasswordVariants(studentProfile.date_of_birth);
         if (possiblePasswords.includes(newPassword)) {
           return res.status(400).json({ 
             success: false, 
@@ -739,26 +784,7 @@ module.exports = {
       // Validate against date of birth (important security check - must be on backend)
       const studentProfile = await StudentProfile.findOne({ user_id: user._id });
       if (studentProfile && studentProfile.date_of_birth) {
-        const dob = new Date(studentProfile.date_of_birth);
-        const day = dob.getDate();
-        const month = dob.getMonth() + 1;
-        const year = dob.getFullYear();
-        
-        // Generate all possible date formats (with and without leading zeros)
-        const possiblePasswords = [
-          // DDMMYYYY formats
-          `${String(day).padStart(2, '0')}${String(month).padStart(2, '0')}${year}`, // 09022004
-          `${String(day).padStart(2, '0')}${month}${year}`, // 0922004
-          `${day}${String(month).padStart(2, '0')}${year}`, // 9022004
-          `${day}${month}${year}`, // 922004
-          
-          // YYYYMMDD formats
-          `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}`, // 20040902
-          `${year}${String(month).padStart(2, '0')}${day}`, // 2004092
-          `${year}${month}${String(day).padStart(2, '0')}`, // 20049202
-          `${year}${month}${day}`, // 2004922
-        ];
-        
+        const possiblePasswords = generateDobPasswordVariants(studentProfile.date_of_birth);
         if (possiblePasswords.includes(newPassword)) {
           return res.status(400).json({ 
             success: false, 

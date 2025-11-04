@@ -6,13 +6,13 @@ module.exports = {
     try {
       const studentCohorts = await StudentCohort.find()
         .populate({
-          path: 'student',
+          path: 'student_id',
           populate: {
-            path: 'user',
+            path: 'user_id',
             select: '-password'
           }
         })
-        .populate('cohort')
+        .populate('cohort_id')
         .sort({ createdAt: -1 });
       res.json(studentCohorts);
     } catch (err) {
@@ -24,13 +24,13 @@ module.exports = {
     try {
       const studentCohort = await StudentCohort.findById(req.params.id)
         .populate({
-          path: 'student',
+          path: 'student_id',
           populate: {
-            path: 'user',
+            path: 'user_id',
             select: '-password'
           }
         })
-        .populate('cohort');
+        .populate('cohort_id');
       if (!studentCohort) {
         return res.status(404).json({ message: 'Student cohort not found' });
       }
@@ -42,15 +42,15 @@ module.exports = {
 
   async getStudentCohortsByStudent(req, res) {
     try {
-      const studentCohorts = await StudentCohort.find({ student: req.params.studentId })
+      const studentCohorts = await StudentCohort.find({ student_id: req.params.studentId })
         .populate({
-          path: 'student',
+          path: 'student_id',
           populate: {
-            path: 'user',
+            path: 'user_id',
             select: '-password'
           }
         })
-        .populate('cohort')
+        .populate('cohort_id')
         .sort({ createdAt: -1 });
       res.json(studentCohorts);
     } catch (err) {
@@ -60,15 +60,15 @@ module.exports = {
 
   async getStudentCohortsByCohort(req, res) {
     try {
-      const studentCohorts = await StudentCohort.find({ cohort: req.params.cohortId })
+      const studentCohorts = await StudentCohort.find({ cohort_id: req.params.cohortId })
         .populate({
-          path: 'student',
+          path: 'student_id',
           populate: {
-            path: 'user',
+            path: 'user_id',
             select: '-password'
           }
         })
-        .populate('cohort')
+        .populate('cohort_id')
         .sort({ createdAt: -1 });
       res.json(studentCohorts);
     } catch (err) {
@@ -78,16 +78,19 @@ module.exports = {
 
   async createStudentCohort(req, res) {
     try {
-      const studentCohort = new StudentCohort(req.body);
+      const payload = { ...req.body };
+      if (payload.studentId && !payload.student_id) payload.student_id = payload.studentId;
+      if (payload.cohortId && !payload.cohort_id) payload.cohort_id = payload.cohortId;
+      const studentCohort = new StudentCohort(payload);
       await studentCohort.save();
       await studentCohort.populate({
-        path: 'student',
+        path: 'student_id',
         populate: {
-          path: 'user',
+          path: 'user_id',
           select: '-password'
         }
       });
-      await studentCohort.populate('cohort');
+      await studentCohort.populate('cohort_id');
       res.status(201).json(studentCohort);
     } catch (err) {
       res.status(400).json({ message: err.message });
@@ -96,19 +99,22 @@ module.exports = {
 
   async updateStudentCohort(req, res) {
     try {
+      const payload = { ...req.body };
+      if (payload.studentId && !payload.student_id) payload.student_id = payload.studentId;
+      if (payload.cohortId && !payload.cohort_id) payload.cohort_id = payload.cohortId;
       const studentCohort = await StudentCohort.findByIdAndUpdate(
         req.params.id,
-        req.body,
+        payload,
         { new: true, runValidators: true }
       )
         .populate({
-          path: 'student',
+          path: 'student_id',
           populate: {
-            path: 'user',
+            path: 'user_id',
             select: '-password'
           }
         })
-        .populate('cohort');
+        .populate('cohort_id');
       if (!studentCohort) {
         return res.status(404).json({ message: 'Student cohort not found' });
       }

@@ -335,6 +335,21 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 | PUT | `/api/student-cohorts/:id` | Cập nhật mối quan hệ | ✅ | admin, ctsv |
 | DELETE | `/api/student-cohorts/:id` | Xóa mối quan hệ | ✅ | admin, ctsv |
 
+**Request Body - Create Student Cohort:**
+```json
+{
+  "student_id": "student_uuid_here",
+  "cohort_id": "cohort_uuid_here"
+}
+```
+
+**Request Body - Update Student Cohort:**
+```json
+{
+  "cohort_id": "cohort_uuid_here"
+}
+```
+
 ---
 
 ### PVCD Record Routes (`/api/pvcd-records`)
@@ -353,11 +368,22 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 **Request Body - Create PVCD Record:**
 ```json
 {
-  "studentId": "student_uuid_here",
+  "student_id": "student_uuid_here",
   "year": 2024,
-  "semester": 1,
-  "points": 15,
-  "note": "Điểm PVCD học kỳ 1"
+  "start_year": "2024-09-01T00:00:00.000Z",
+  "end_year": "2025-06-30T00:00:00.000Z",
+  "total_point": 15
+}
+```
+
+**Request Body - Update PVCD Record:**
+```json
+{
+  "student_id": "student_uuid_here",
+  "year": 2025,
+  "start_year": "2024-09-01T00:00:00.000Z",
+  "end_year": "2025-06-30T00:00:00.000Z",
+  "total_point": 20
 }
 ```
 

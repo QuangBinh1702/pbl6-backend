@@ -1482,7 +1482,7 @@
                 "url": "{{baseUrl}}/api/pvcd-records",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"year\": 2024,\n  \"semester\": 1,\n  \"points\": 15\n}"
+                  "raw": "{\n  \"student_id\": \"{{studentId}}\",\n  \"year\": 2024,\n  \"start_year\": \"2024-09-01T00:00:00.000Z\",\n  \"end_year\": \"2025-06-30T00:00:00.000Z\",\n  \"total_point\": 15\n}"
                 }
               }
             },
@@ -1497,7 +1497,7 @@
                 "url": "{{baseUrl}}/api/pvcd-records/{{pvcdRecordId}}",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"points\": 20\n}"
+                  "raw": "{\n  \"total_point\": 20\n}"
                 }
               }
             },
@@ -1572,7 +1572,7 @@
                 "url": "{{baseUrl}}/api/student-cohorts",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"cohortId\": \"{{cohortId}}\"\n}"
+                  "raw": "{\n  \"student_id\": \"{{studentId}}\",\n  \"cohort_id\": \"{{cohortId}}\"\n}"
                 }
               }
             },
@@ -1587,7 +1587,7 @@
                 "url": "{{baseUrl}}/api/student-cohorts/{{studentCohortId}}",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"cohortId\": \"{{cohortId}}\"\n}"
+                  "raw": "{\n  \"cohort_id\": \"{{cohortId}}\"\n}"
                 }
               }
             },

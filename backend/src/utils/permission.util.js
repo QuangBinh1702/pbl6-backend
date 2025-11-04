@@ -42,8 +42,13 @@ async function hasPermission(userId, resource, actionCode, orgUnitId = null) {
     }
 
     // Step 2: Check role-based permissions
-    // Get user's roles
-    const userRoles = await UserRole.getRolesForUser(userId, orgUnitId);
+    // Get user's roles (scoped by orgUnitId if provided)
+    let userRoles = await UserRole.getRolesForUser(userId, orgUnitId);
+    
+    // Fallback: if requesting with orgUnitId but no roles found, try global roles (orgUnitId = null)
+    if ((!userRoles || userRoles.length === 0) && orgUnitId) {
+      userRoles = await UserRole.getRolesForUser(userId, null);
+    }
     
     if (!userRoles || userRoles.length === 0) {
       console.log(`No roles found for user: ${userId}`);
