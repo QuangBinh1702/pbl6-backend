@@ -38,7 +38,20 @@ const studentProfileSchema = new mongoose.Schema({
     type: Boolean, 
     default: false 
   }
-}, { timestamps: false });
+}, { 
+  timestamps: false,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Virtual fields: derive falcuty_id and cohort_id from populated class
+studentProfileSchema.virtual('falcuty_id').get(function deriveFacultyId() {
+  return this.class_id && this.class_id.falcuty_id ? this.class_id.falcuty_id : undefined;
+});
+
+studentProfileSchema.virtual('cohort_id').get(function deriveCohortId() {
+  return this.class_id && this.class_id.cohort_id ? this.class_id.cohort_id : undefined;
+});
 
 // Index for faster queries (student_number already has unique index)
 studentProfileSchema.index({ user_id: 1 });

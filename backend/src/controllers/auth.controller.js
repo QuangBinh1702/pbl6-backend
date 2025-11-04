@@ -27,9 +27,9 @@ module.exports = {
       const user = await User.findOne({ username });
       
       if (!user) {
-        return res.status(401).json({ 
+        return res.status(404).json({ 
           success: false, 
-          message: 'Invalid credentials' 
+          message: 'Tên đăng nhập không tồn tại' 
         });
       }
       
@@ -38,7 +38,7 @@ module.exports = {
       if (!isMatch) {
         return res.status(401).json({ 
           success: false, 
-          message: 'Invalid credentials' 
+          message: 'Mật khẩu không đúng' 
         });
       }
       

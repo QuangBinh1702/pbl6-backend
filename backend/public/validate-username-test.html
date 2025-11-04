@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test validateUsername</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
+    .card { max-width: 720px; padding: 20px; border: 1px solid #ccc; border-radius: 10px; }
+    label { display: block; font-weight: 600; margin-top: 12px; }
+    input { width: 100%; padding: 10px; margin-top: 6px; border-radius: 8px; border: 1px solid #bbb; }
+    button { margin-top: 16px; padding: 10px 16px; border-radius: 8px; border: 1px solid #2c7; background: #2c7; color: #fff; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .row { display: grid; grid-template-columns: 1fr auto; gap: 12px; }
+    .status { margin-top: 12px; font-weight: 600; }
+    pre { background: #1111; padding: 12px; border-radius: 8px; overflow: auto; }
+    .ok { color: #2a6; }
+    .err { color: #c33; }
+  </style>
+  <script>
+    async function validateUsername() {
+      const baseUrlInput = document.getElementById('baseUrl');
+      const usernameInput = document.getElementById('username');
+      const statusEl = document.getElementById('status');
+      const outputEl = document.getElementById('output');
+
+      const baseUrl = baseUrlInput.value.replace(/\/$/, '');
+      const username = usernameInput.value.trim();
+      statusEl.textContent = '';
+      outputEl.textContent = '';
+
+      if (!username) {
+        statusEl.textContent = 'Vui lòng nhập username';
+        statusEl.className = 'status err';
+        return;
+      }
+
+      const btn = document.getElementById('btn');
+      btn.disabled = true;
+      btn.textContent = 'Đang kiểm tra...';
+      try {
+        const url = `${baseUrl}/auth/validate-username?username=${encodeURIComponent(username)}`;
+        const res = await fetch(url, { method: 'GET' });
+        const data = await res.json().catch(() => ({ raw: 'Không parse được JSON' }));
+
+        outputEl.textContent = JSON.stringify(data, null, 2);
+        if (res.ok && data && typeof data.available !== 'undefined') {
+          statusEl.textContent = data.available ? 'Username khả dụng (chưa tồn tại)' : 'Username đã tồn tại';
+          statusEl.className = data.available ? 'status ok' : 'status err';
+        } else {
+          statusEl.textContent = `Lỗi: ${data && data.message ? data.message : 'Yêu cầu không thành công'}`;
+          statusEl.className = 'status err';
+        }
+      } catch (e) {
+        statusEl.textContent = 'Không thể kết nối API (CORS hoặc URL không đúng)';
+        statusEl.className = 'status err';
+        outputEl.textContent = String(e);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Kiểm tra';
+      }
+    }
+  </script>
+  </head>
+  <body>
+    <div class="card">
+      <h2>Test API: /auth/validate-username</h2>
+      <label for="baseUrl">API Base URL</label>
+      <input id="baseUrl" type="text" value="http://localhost:5000/api" placeholder="http://localhost:5000/api" />
+
+      <label for="username">Username</label>
+      <div class="row">
+        <input id="username" type="text" placeholder="nhập username..." />
+        <button id="btn" onclick="validateUsername()">Kiểm tra</button>
+      </div>
+
+      <div id="status" class="status"></div>
+      <h4>Kết quả (JSON)</h4>
+      <pre id="output"></pre>
+      <p style="opacity:.7; margin-top:8px">Gợi ý: Base URL cần bao gồm tiền tố <code>/api</code> (ví dụ: <code>http://localhost:5000/api</code>). Nếu mở bằng file:// có thể gặp CORS, hãy mở qua server tĩnh hoặc bật CORS ở API.</p>
+    </div>
+  </body>
+</html>
+
+
