@@ -146,6 +146,37 @@ module.exports = {
         }
       }
       
+      // Validate: registration_open cannot be in the past (if provided)
+      if (registrationOpenDate && registrationOpenDate < now) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Registration open time cannot be in the past' 
+        });
+      }
+      
+      // Validate: registration_close cannot be in the past (if provided)
+      if (registrationCloseDate && registrationCloseDate < now) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Registration close time cannot be in the past' 
+        });
+      }
+      
+      // Validate: registration_open and registration_close must be before start_time (if provided)
+      if (registrationOpenDate && registrationOpenDate >= startTimeDate) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Registration open time must be before activity start time' 
+        });
+      }
+      
+      if (registrationCloseDate && registrationCloseDate >= startTimeDate) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Registration close time must be before activity start time' 
+        });
+      }
+      
       const activity = await Activity.create({
         title,
         description,
