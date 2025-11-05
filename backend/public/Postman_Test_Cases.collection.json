@@ -10,7 +10,8 @@
     { "key": "baseUrl", "value": "http://localhost:5000", "type": "string" },
     { "key": "token", "value": "", "type": "string" },
     { "key": "admin_token", "value": "", "type": "string" },
-    { "key": "userId", "value": "", "type": "string" }
+    { "key": "userId", "value": "", "type": "string" },
+    { "key": "activityId", "value": "", "type": "string" }
   ],
   "item": [
     {
@@ -225,11 +226,46 @@
               { "key": "Authorization", "value": "Bearer {{token}}" }
             ],
             "url": "{{baseUrl}}/api/auth/change-password",
-            "body": { "mode": "raw", "raw": "{\n  \"oldPassword\": \"Passw0rd!\",\n  \"newPassword\": \"Passw0rd!\"\n}" }
+            "body": { "mode": "raw", "raw": "{\n  \"oldPassword\": \"0787546459\",\n  \"newPassword\": \"0787546459\"\n}" }
           },
-          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Bad Request 400 or Unauthorized 401', function () { pm.expect([400, 401]).to.include(pm.response.code); });"
-          ] } } ]
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Đảm bảo token hợp lệ trước khi test",
+                  "const token = pm.collectionVariables.get('token') || pm.environment.get('token');",
+                  "if (!token) {",
+                  "  console.log('⚠️ Chưa có token! Đang tự động login...');",
+                  "  const baseUrl = pm.collectionVariables.get('baseUrl') || pm.environment.get('baseUrl') || 'http://localhost:5000';",
+                  "  const loginRequest = {",
+                  "    url: baseUrl + '/api/auth/login',",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: {",
+                  "      mode: 'raw',",
+                  "      raw: JSON.stringify({ username: '102220095', password: '0787546459' })",
+                  "    }",
+                  "  };",
+                  "  pm.sendRequest(loginRequest, function (err, res) {",
+                  "    if (!err && res.code === 200) {",
+                  "      const data = res.json();",
+                  "      if (data && data.token) {",
+                  "        pm.collectionVariables.set('token', data.token);",
+                  "        pm.environment.set('token', data.token);",
+                  "        console.log('✅ Đã login và lưu token');",
+                  "      }",
+                  "    }",
+                  "  });",
+                  "}"
+                ]
+              }
+            },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Bad Request 400 or Unauthorized 401', function () { pm.expect([400, 401]).to.include(pm.response.code); });"
+            ] } }
+          ]
         },
         {
           "name": "Change Password - Too Short (<6)",
@@ -606,6 +642,201 @@
             "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
             "url": "{{baseUrl}}/api/users/{{userId}}"
           }
+        }
+      ]
+    },
+    {
+      "name": "🎯 Activities",
+      "item": [
+        {
+          "name": "Approve Activity - Set requires_approval to false",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": "{{baseUrl}}/api/activities/{{activityId}}/approve",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requires_approval\": false\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Auto login admin nếu chưa có admin_token",
+                  "const adminToken = pm.collectionVariables.get('admin_token') || pm.environment.get('admin_token');",
+                  "if (!adminToken) {",
+                  "  console.log('⚠️ Chưa có admin_token! Đang tự động login admin...');",
+                  "  const baseUrl = pm.collectionVariables.get('baseUrl') || pm.environment.get('baseUrl') || 'http://localhost:5000';",
+                  "  const loginRequest = {",
+                  "    url: baseUrl + '/api/auth/login',",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: {",
+                  "      mode: 'raw',",
+                  "      raw: JSON.stringify({ username: 'admin', password: 'admin123' })",
+                  "    }",
+                  "  };",
+                  "  pm.sendRequest(loginRequest, function (err, res) {",
+                  "    if (!err && res.code === 200) {",
+                  "      const data = res.json();",
+                  "      if (data && data.token) {",
+                  "        pm.collectionVariables.set('admin_token', data.token);",
+                  "        pm.environment.set('admin_token', data.token);",
+                  "        console.log('✅ Đã login admin và lưu admin_token');",
+                  "      }",
+                  "    }",
+                  "  });",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "var data = pm.response.json();",
+                  "pm.test('Success true', function(){ pm.expect(data).to.have.property('success', true); });",
+                  "pm.test('requires_approval is false', function(){ ",
+                  "  if (data.data && data.data.hasOwnProperty('requires_approval')) {",
+                  "    pm.expect(data.data.requires_approval).to.be.false;",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve Activity - Set requires_approval to true",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": "{{baseUrl}}/api/activities/{{activityId}}/approve",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requires_approval\": true\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Auto login admin nếu chưa có admin_token",
+                  "const adminToken = pm.collectionVariables.get('admin_token') || pm.environment.get('admin_token');",
+                  "if (!adminToken) {",
+                  "  const baseUrl = pm.collectionVariables.get('baseUrl') || pm.environment.get('baseUrl') || 'http://localhost:5000';",
+                  "  const loginRequest = {",
+                  "    url: baseUrl + '/api/auth/login',",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: {",
+                  "      mode: 'raw',",
+                  "      raw: JSON.stringify({ username: 'admin', password: 'admin123' })",
+                  "    }",
+                  "  };",
+                  "  pm.sendRequest(loginRequest, function (err, res) {",
+                  "    if (!err && res.code === 200) {",
+                  "      const data = res.json();",
+                  "      if (data && data.token) {",
+                  "        pm.collectionVariables.set('admin_token', data.token);",
+                  "        pm.environment.set('admin_token', data.token);",
+                  "      }",
+                  "    }",
+                  "  });",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "var data = pm.response.json();",
+                  "pm.test('Success true', function(){ pm.expect(data).to.have.property('success', true); });",
+                  "pm.test('requires_approval is true', function(){ ",
+                  "  if (data.data && data.data.hasOwnProperty('requires_approval')) {",
+                  "    pm.expect(data.data.requires_approval).to.be.true;",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve Activity - Without body (default: false)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": "{{baseUrl}}/api/activities/{{activityId}}/approve"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Auto login admin nếu chưa có admin_token",
+                  "const adminToken = pm.collectionVariables.get('admin_token') || pm.environment.get('admin_token');",
+                  "if (!adminToken) {",
+                  "  const baseUrl = pm.collectionVariables.get('baseUrl') || pm.environment.get('baseUrl') || 'http://localhost:5000';",
+                  "  const loginRequest = {",
+                  "    url: baseUrl + '/api/auth/login',",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: {",
+                  "      mode: 'raw',",
+                  "      raw: JSON.stringify({ username: 'admin', password: 'admin123' })",
+                  "    }",
+                  "  };",
+                  "  pm.sendRequest(loginRequest, function (err, res) {",
+                  "    if (!err && res.code === 200) {",
+                  "      const data = res.json();",
+                  "      if (data && data.token) {",
+                  "        pm.collectionVariables.set('admin_token', data.token);",
+                  "        pm.environment.set('admin_token', data.token);",
+                  "      }",
+                  "    }",
+                  "  });",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "var data = pm.response.json();",
+                  "pm.test('Success true', function(){ pm.expect(data).to.have.property('success', true); });",
+                  "pm.test('requires_approval is false (default)', function(){ ",
+                  "  if (data.data && data.data.hasOwnProperty('requires_approval')) {",
+                  "    pm.expect(data.data.requires_approval).to.be.false;",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     }

@@ -266,14 +266,23 @@ module.exports = {
         });
       }
       
-      // Update activity status (note: new schema doesn't have status field)
-      // You may need to add a status field or use a different approach
-      activity.approved = true;
-      activity.approved_by = req.user.id;
-      activity.approved_at = new Date();
+      // Update requires_approval from body (default: false when approving)
+      // Example: { "requires_approval": false } to approve
+      // Example: { "requires_approval": true } to mark as requiring approval
+      if (req.body.hasOwnProperty('requires_approval')) {
+        activity.requires_approval = req.body.requires_approval;
+      } else {
+        // Default: set to false when approving (activity has been approved)
+        activity.requires_approval = false;
+      }
+      
       await activity.save();
       
-      res.json({ success: true, data: activity });
+      res.json({ 
+        success: true, 
+        message: `Activity ${activity.requires_approval ? 'marked as requiring approval' : 'approved successfully'}`,
+        data: activity 
+      });
     } catch (err) {
       console.error('Approve activity error:', err);
       res.status(400).json({ success: false, message: err.message });
@@ -290,14 +299,17 @@ module.exports = {
         });
       }
       
-      activity.approved = false;
-      activity.rejected = true;
-      activity.rejected_by = req.user.id;
-      activity.rejected_at = new Date();
-      activity.rejection_reason = req.body.reason || '';
+      // When rejecting, we can set requires_approval to true to indicate it needs review again
+      // or keep it as is. Based on business logic, we'll keep the current value.
+      // The rejection is mainly tracked through the reason in the request body
+      
       await activity.save();
       
-      res.json({ success: true, data: activity });
+      res.json({ 
+        success: true, 
+        message: req.body.reason ? `Activity rejected: ${req.body.reason}` : 'Activity rejected',
+        data: activity 
+      });
     } catch (err) {
       console.error('Reject activity error:', err);
       res.status(400).json({ success: false, message: err.message });

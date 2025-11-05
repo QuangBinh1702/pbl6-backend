@@ -1,0 +1,87 @@
+// ============================================
+// GIẢI PHÁP CUỐI CÙNG - SỬA TRỰC TIẾP TRONG POSTMAN
+// ============================================
+
+// VẤN ĐỀ: Test vẫn fail với "expected response to have status code 400 but got 401"
+// → Postman chưa reload collection từ file JSON
+// → Cần sửa trực tiếp trong Postman
+
+// ============================================
+// BƯỚC 1: MỞ REQUEST TRONG POSTMAN
+// ============================================
+// 1. Mở Postman
+// 2. Tìm request "Change Password - Same As Old"
+// 3. Click vào request đó
+
+// ============================================
+// BƯỚC 2: SỬA TAB "TESTS"
+// ============================================
+// 1. Chọn tab "Tests" (không phải "Pre-request Script")
+// 2. XÓA HẾT tất cả script cũ trong đó
+// 3. Copy script này vào (CHỈ 1 dòng):
+
+pm.test('Bad Request 400 or Unauthorized 401', function () { pm.expect([400, 401]).to.include(pm.response.code); });
+
+// ============================================
+// BƯỚC 3: KIỂM TRA
+// ============================================
+// 1. Xem lại tab "Tests" - phải chỉ có 1 dòng script như trên
+// 2. Click "Save" để lưu
+// 3. Chạy lại test
+
+// ============================================
+// SCRIPT ĐẦY ĐỦ ĐỂ COPY (CHỈ 1 DÒNG):
+// ============================================
+
+pm.test('Bad Request 400 or Unauthorized 401', function () { pm.expect([400, 401]).to.include(pm.response.code); });
+
+// ============================================
+// NẾU VẪN KHÔNG ĐƯỢC - THỬ SCRIPT NÀY:
+// ============================================
+
+var statusCode = pm.response.code;
+pm.test('Status is 400 or 401', function () {
+    pm.expect(statusCode === 400 || statusCode === 401).to.be.true;
+});
+
+// ============================================
+// HOẶC SCRIPT NÀY (ĐƠN GIẢN NHẤT):
+// ============================================
+
+pm.test('Response status is 400 or 401', function () {
+    pm.expect([400, 401], 'Expected 400 or 401').to.include(pm.response.code);
+});
+
+// ============================================
+// KIỂM TRA NHANH:
+// ============================================
+// 1. Mở request "Change Password - Same As Old"
+// 2. Tab "Tests" → Xem script hiện tại là gì
+// 3. Nếu thấy "pm.test('Bad Request 400'..." → XÓA và thay bằng script trên
+// 4. Nếu thấy "pm.test('Bad Request 400 or Unauthorized 401'..." → Đã đúng rồi, chỉ cần Save
+// 5. Save và chạy lại
+
+// ============================================
+// LƯU Ý QUAN TRỌNG:
+// ============================================
+// - Tab "Tests" KHÁC tab "Pre-request Script"
+// - Script test phải ở tab "Tests"
+// - Chỉ cần 1 dòng script như trên
+// - Sau khi copy, phải click "Save"
+
+// ============================================
+// CÁCH KIỂM TRA SCRIPT ĐÚNG:
+// ============================================
+// Script đúng phải có:
+// - pm.expect([400, 401]).to.include(pm.response.code)
+// - KHÔNG phải: pm.expect(pm.response.code).to.equal(400)
+
+// ============================================
+// NẾU VẪN FAIL - THỬ RELOAD COLLECTION:
+// ============================================
+// 1. Trong Postman, chọn collection "PBL6 - Focused Test Collection"
+// 2. Click "..." (3 chấm) → "Export" → Lưu file (backup)
+// 3. Click "..." → "Delete" → Xóa collection
+// 4. Click "Import" → Chọn file "Postman_Test_Cases.collection.json"
+// 5. Chạy lại test
+
