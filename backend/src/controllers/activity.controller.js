@@ -87,17 +87,76 @@ module.exports = {
         });
       }
       
+      // Convert to Date objects for validation
+      const startTimeDate = new Date(start_time);
+      const endTimeDate = new Date(end_time);
+      const registrationOpenDate = registration_open ? new Date(registration_open) : null;
+      const registrationCloseDate = registration_close ? new Date(registration_close) : null;
+      const now = new Date();
+      
+      // Validate: Check if dates are valid
+      if (isNaN(startTimeDate.getTime())) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid start_time format' 
+        });
+      }
+      if (isNaN(endTimeDate.getTime())) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid end_time format' 
+        });
+      }
+      if (registrationOpenDate && isNaN(registrationOpenDate.getTime())) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid registration_open format' 
+        });
+      }
+      if (registrationCloseDate && isNaN(registrationCloseDate.getTime())) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid registration_close format' 
+        });
+      }
+      
+      // Validate: start_time cannot be in the past
+      if (startTimeDate < now) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Start time cannot be in the past' 
+        });
+      }
+      
+      // Validate: end_time must be after start_time
+      if (endTimeDate <= startTimeDate) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'End time must be after start time' 
+        });
+      }
+      
+      // Validate: registration_close must be after registration_open (if both provided)
+      if (registrationOpenDate && registrationCloseDate) {
+        if (registrationCloseDate < registrationOpenDate) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Registration close time must be after registration open time' 
+          });
+        }
+      }
+      
       const activity = await Activity.create({
         title,
         description,
         location,
-        start_time: new Date(start_time),
-        end_time: new Date(end_time),
-        start_time_updated: new Date(start_time),
-        end_time_updated: new Date(end_time),
+        start_time: startTimeDate,
+        end_time: endTimeDate,
+        start_time_updated: startTimeDate,
+        end_time_updated: endTimeDate,
         capacity: capacity || 0,
-        registration_open: registration_open ? new Date(registration_open) : null,
-        registration_close: registration_close ? new Date(registration_close) : null,
+        registration_open: registrationOpenDate,
+        registration_close: registrationCloseDate,
         requires_approval: requires_approval || false,
         org_unit_id,
         field_id,

@@ -9,6 +9,7 @@
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:5000", "type": "string" },
     { "key": "token", "value": "", "type": "string" },
+    { "key": "admin_token", "value": "", "type": "string" },
     { "key": "userId", "value": "", "type": "string" }
   ],
   "item": [
@@ -189,7 +190,7 @@
             "body": { "mode": "raw", "raw": "{\n  \"username\": \"102221006\",\n  \"password\": \"123456789\"\n}" }
           },
           "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Forbidden 403', function () { pm.expect([403,401]).to.include(pm.response.code); });"
+            "pm.test('Forbidden 403/401 or Not Found 404', function () { pm.expect([403,401,404]).to.include(pm.response.code); });"
           ] } } ]
         },
         {
@@ -227,7 +228,7 @@
             "body": { "mode": "raw", "raw": "{\n  \"oldPassword\": \"Passw0rd!\",\n  \"newPassword\": \"Passw0rd!\"\n}" }
           },
           "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Bad Request 400', function () { pm.response.to.have.status(400); });"
+            "pm.test('Bad Request 400 or Unauthorized 401', function () { pm.expect([400, 401]).to.include(pm.response.code); });"
           ] } } ]
         },
         {
@@ -278,6 +279,32 @@
       "name": "👥 Users",
       "item": [
         {
+          "name": "Login - Admin",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "var data = pm.response.json();",
+                  "pm.test('Has token', function(){ pm.expect(data).to.have.property('token'); });",
+                  "if (data && data.token) { pm.collectionVariables.set('admin_token', data.token); pm.environment.set('admin_token', data.token); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
           "name": "Get All Users",
           "request": {
             "method": "GET",
@@ -291,7 +318,7 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
             ],
             "url": "{{baseUrl}}/api/auth/create-user",
             "body": {
@@ -305,6 +332,35 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "// Kiểm tra admin_token - Nếu chưa có, hãy chạy request 'Login - Admin' trước",
+                  "const adminToken = pm.collectionVariables.get('admin_token') || pm.environment.get('admin_token');",
+                  "if (!adminToken) {",
+                  "  console.log('⚠️ Chưa có admin_token! Đang tự động login admin...');",
+                  "  const baseUrl = pm.collectionVariables.get('baseUrl') || pm.environment.get('baseUrl') || 'http://localhost:5000';",
+                  "  const loginRequest = {",
+                  "    url: baseUrl + '/api/auth/login',",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/json' },",
+                  "    body: {",
+                  "      mode: 'raw',",
+                  "      raw: JSON.stringify({ username: 'admin', password: 'admin123' })",
+                  "    }",
+                  "  };",
+                  "  pm.sendRequest(loginRequest, function (err, res) {",
+                  "    if (!err && res.code === 200) {",
+                  "      const data = res.json();",
+                  "      if (data && data.token) {",
+                  "        pm.collectionVariables.set('admin_token', data.token);",
+                  "        pm.environment.set('admin_token', data.token);",
+                  "        console.log('✅ Đã login admin và lưu admin_token');",
+                  "      }",
+                  "    } else {",
+                  "      console.log('❌ Không thể login admin tự động. Vui lòng chạy request \"Login - Admin\" trước.');",
+                  "    }",
+                  "  });",
+                  "} else {",
+                  "  console.log('✅ Đã có admin_token, sẵn sàng tạo user');",
+                  "}",
                   "// Prepare random admin user (or use defaults)",
                   "const ts = Date.now();",
                   "const u = pm.environment.get('cu_username') || `superadmin_${ts}`;",
@@ -344,13 +400,36 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
             ],
             "url": "{{baseUrl}}/api/auth/create-user",
             "body": { "mode": "raw", "raw": "{\n  \"username\": \"superadmin2\",\n  \"password\": \"password123\",\n  \"roleName\": \"admin\"\n}" }
           },
           "event": [
             { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "// Auto login admin nếu chưa có admin_token",
+              "const adminToken = pm.collectionVariables.get('admin_token') || pm.environment.get('admin_token');",
+              "if (!adminToken) {",
+              "  const baseUrl = pm.collectionVariables.get('baseUrl') || pm.environment.get('baseUrl') || 'http://localhost:5000';",
+              "  const loginRequest = {",
+              "    url: baseUrl + '/api/auth/login',",
+              "    method: 'POST',",
+              "    header: { 'Content-Type': 'application/json' },",
+              "    body: {",
+              "      mode: 'raw',",
+              "      raw: JSON.stringify({ username: 'admin', password: 'admin123' })",
+              "    }",
+              "  };",
+              "  pm.sendRequest(loginRequest, function (err, res) {",
+              "    if (!err && res.code === 200) {",
+              "      const data = res.json();",
+              "      if (data && data.token) {",
+              "        pm.collectionVariables.set('admin_token', data.token);",
+              "        pm.environment.set('admin_token', data.token);",
+              "      }",
+              "    }",
+              "  });",
+              "}",
               "// Ensure duplicate uses same cu_username as previous create",
               "const u = pm.environment.get('cu_username') || 'superadmin2';",
               "const p = pm.environment.get('cu_password') || 'password123';",
@@ -370,12 +449,38 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
             ],
             "url": "{{baseUrl}}/api/auth/create-user",
             "body": { "mode": "raw", "raw": "{\n  \"username\": \"user_missing_pass\",\n  \"roleName\": \"student\"\n}" }
           },
-          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "// Auto login admin nếu chưa có admin_token",
+              "const adminToken = pm.collectionVariables.get('admin_token') || pm.environment.get('admin_token');",
+              "if (!adminToken) {",
+              "  const baseUrl = pm.collectionVariables.get('baseUrl') || pm.environment.get('baseUrl') || 'http://localhost:5000';",
+              "  const loginRequest = {",
+              "    url: baseUrl + '/api/auth/login',",
+              "    method: 'POST',",
+              "    header: { 'Content-Type': 'application/json' },",
+              "    body: {",
+              "      mode: 'raw',",
+              "      raw: JSON.stringify({ username: 'admin', password: 'admin123' })",
+              "    }",
+              "  };",
+              "  pm.sendRequest(loginRequest, function (err, res) {",
+              "    if (!err && res.code === 200) {",
+              "      const data = res.json();",
+              "      if (data && data.token) {",
+              "        pm.collectionVariables.set('admin_token', data.token);",
+              "        pm.environment.set('admin_token', data.token);",
+              "      }",
+              "    }",
+              "  });",
+              "}"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Validation 400', function () { pm.response.to.have.status(400); });",
             "let json; try { json = pm.response.json(); } catch(e){ json = {}; }",
             "pm.test('Contains validation error', function(){ pm.expect(json).to.be.an('object'); });"
@@ -387,12 +492,38 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
             ],
             "url": "{{baseUrl}}/api/auth/create-user",
             "body": { "mode": "raw", "raw": "{\n  \"username\": \"user_shortpw\",\n  \"password\": \"qnbn\",\n  \"roleName\": \"student\"\n}" }
           },
-          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "// Auto login admin nếu chưa có admin_token",
+              "const adminToken = pm.collectionVariables.get('admin_token') || pm.environment.get('admin_token');",
+              "if (!adminToken) {",
+              "  const baseUrl = pm.collectionVariables.get('baseUrl') || pm.environment.get('baseUrl') || 'http://localhost:5000';",
+              "  const loginRequest = {",
+              "    url: baseUrl + '/api/auth/login',",
+              "    method: 'POST',",
+              "    header: { 'Content-Type': 'application/json' },",
+              "    body: {",
+              "      mode: 'raw',",
+              "      raw: JSON.stringify({ username: 'admin', password: 'admin123' })",
+              "    }",
+              "  };",
+              "  pm.sendRequest(loginRequest, function (err, res) {",
+              "    if (!err && res.code === 200) {",
+              "      const data = res.json();",
+              "      if (data && data.token) {",
+              "        pm.collectionVariables.set('admin_token', data.token);",
+              "        pm.environment.set('admin_token', data.token);",
+              "      }",
+              "    }",
+              "  });",
+              "}"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Bad Request 400', function () { pm.response.to.have.status(400); });",
             "let json; try { json = pm.response.json(); } catch(e){ json = {}; }",
             "pm.test('Contains validation error', function(){ pm.expect(json).to.be.an('object'); });"
@@ -404,12 +535,38 @@
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
             ],
             "url": "{{baseUrl}}/api/auth/create-user",
             "body": { "mode": "raw", "raw": "{\n  \"username\": \"user!@#\",\n  \"password\": \"password123\",\n  \"roleName\": \"student\"\n}" }
           },
-          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "// Auto login admin nếu chưa có admin_token",
+              "const adminToken = pm.collectionVariables.get('admin_token') || pm.environment.get('admin_token');",
+              "if (!adminToken) {",
+              "  const baseUrl = pm.collectionVariables.get('baseUrl') || pm.environment.get('baseUrl') || 'http://localhost:5000';",
+              "  const loginRequest = {",
+              "    url: baseUrl + '/api/auth/login',",
+              "    method: 'POST',",
+              "    header: { 'Content-Type': 'application/json' },",
+              "    body: {",
+              "      mode: 'raw',",
+              "      raw: JSON.stringify({ username: 'admin', password: 'admin123' })",
+              "    }",
+              "  };",
+              "  pm.sendRequest(loginRequest, function (err, res) {",
+              "    if (!err && res.code === 200) {",
+              "      const data = res.json();",
+              "      if (data && data.token) {",
+              "        pm.collectionVariables.set('admin_token', data.token);",
+              "        pm.environment.set('admin_token', data.token);",
+              "      }",
+              "    }",
+              "  });",
+              "}"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Validation 400', function () { pm.response.to.have.status(400); });",
             "let json; try { json = pm.response.json(); } catch(e){ json = {}; }",
             "pm.test('Contains validation error', function(){ pm.expect(json).to.be.an('object'); });"

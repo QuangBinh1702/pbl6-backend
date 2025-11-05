@@ -743,6 +743,31 @@ Same format as above.
 - `_id` sẽ được tự động sinh bởi MongoDB, không cần truyền từ client
 - Đây là minh chứng cho hoạt động ngoài trường, không liên kết với activity trong hệ thống
 
+**Request Body - Update Evidence:**
+```json
+{
+  "title": "Minh chứng tham gia hoạt động (đã cập nhật)",
+  "file_url": "https://example.com/files/certificate_updated.pdf",
+  "self_point": 7,
+  "class_point": 8,
+  "faculty_point": 9
+}
+```
+
+**Các trường trong Request:**
+- `title` (optional): Tiêu đề minh chứng
+- `file_url` (optional): URL của file minh chứng
+- `self_point` (optional): Điểm tự đánh giá
+- `class_point` (optional): Điểm của lớp trưởng
+- `faculty_point` (optional): Điểm của khoa
+
+**Lưu ý:** 
+- `_id` sẽ không được cập nhật từ request body
+- `student_id` không thể thay đổi sau khi tạo
+- `status` nên được cập nhật qua endpoint `/api/evidences/:id/approve` hoặc `/api/evidences/:id/reject`
+- `submitted_at` và `verified_at` được quản lý tự động bởi hệ thống
+- Tất cả các trường đều optional, chỉ cập nhật các trường được gửi trong request
+
 **Request Body - Reject Evidence:**
 ```json
 {
