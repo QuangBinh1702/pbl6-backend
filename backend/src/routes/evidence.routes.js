@@ -3,7 +3,7 @@ const router = express.Router();
 const evidenceController = require('../controllers/evidence.controller');
 
 const auth = require('../middlewares/auth.middleware');
-const { checkPermission } = require('../middlewares/check_permission.middleware');
+const { checkPermission, checkPermissionOrClassMonitor } = require('../middlewares/check_permission.middleware');
 
 // Quản lý minh chứng hoạt động ngoài trường
 
@@ -49,14 +49,14 @@ router.put('/:id',
 // Duyệt minh chứng (staff/teacher)
 router.put('/:id/approve', 
   auth, 
-  checkPermission('evidence', 'APPROVE'),
+  checkPermissionOrClassMonitor('evidence', 'APPROVE'),
   evidenceController.approveEvidence
 );
 
 // Từ chối minh chứng (staff/teacher)
 router.put('/:id/reject', 
   auth, 
-  checkPermission('evidence', 'REJECT'),
+  checkPermissionOrClassMonitor('evidence', 'REJECT'),
   evidenceController.rejectEvidence
 );
 

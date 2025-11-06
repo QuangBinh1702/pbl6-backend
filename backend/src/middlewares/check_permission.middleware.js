@@ -56,6 +56,55 @@ const checkPermission = (resource, actionCode) => {
 };
 
 /**
+ * Middleware cho phép nếu (có permission) HOẶC (là lớp trưởng)
+ * Dùng khi bạn không muốn tạo role riêng cho lớp trưởng
+ * 
+ * @param {string} resource
+ * @param {string} actionCode
+ */
+const checkPermissionOrClassMonitor = (resource, actionCode) => {
+  return async (req, res, next) => {
+    try {
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ 
+          success: false,
+          message: 'Bạn cần đăng nhập để thực hiện hành động này' 
+        });
+      }
+
+      const userId = req.user.id;
+      const orgUnitId = req.body.org_unit_id || req.query.org_unit_id || null;
+
+      const allowed = await hasPermission(userId, resource, actionCode, orgUnitId);
+      if (allowed) {
+        req.resource = resource;
+        req.actionCode = actionCode;
+        return next();
+      }
+
+      // Nếu không có permission, cho phép nếu là lớp trưởng
+      const isMonitor = await checkIsClassMonitor(userId);
+      if (isMonitor) {
+        req.isClassMonitor = true;
+        return next();
+      }
+
+      return res.status(403).json({ 
+        success: false,
+        message: `Bạn không có quyền thực hiện hành động "${actionCode}" trên "${resource}"`,
+        required_permission: `${resource}:${actionCode}`
+      });
+    } catch (error) {
+      console.error('Error in checkPermissionOrClassMonitor middleware:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Lỗi khi kiểm tra quyền truy cập' 
+      });
+    }
+  };
+};
+
+/**
  * Middleware kiểm tra user có bất kỳ permission nào trong danh sách
  * @param {Array<{resource: string, action: string}>} permissionList
  * @returns {Function} Express middleware
@@ -212,6 +261,7 @@ module.exports = {
   checkAnyPermission,
   checkAllPermissions,
   checkClassMonitor,
+  checkPermissionOrClassMonitor,
   attachUserActions
 };
 

@@ -201,6 +201,36 @@ module.exports = {
     }
   },
 
+  async getAttendedActivitiesByStudent(req, res) {
+    try {
+      const { studentId } = req.params;
+      const attendances = await Attendance.find({ student_id: studentId })
+        .populate('activity_id')
+        .sort({ scanned_at: -1 });
+
+      // Deduplicate by activity_id
+      const activitiesMap = new Map();
+      attendances.forEach(att => {
+        if (att.activity_id) {
+          const act = att.activity_id.toObject();
+          const key = act._id.toString();
+          if (!activitiesMap.has(key)) {
+            activitiesMap.set(key, act);
+          }
+        }
+      });
+
+      const activities = Array.from(activitiesMap.values());
+
+      // Sort by start_time desc if available
+      activities.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+
+      res.json({ success: true, data: activities, count: activities.length });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
   async scanQRCode(req, res) {
     try {
       const { qrData } = req.body;

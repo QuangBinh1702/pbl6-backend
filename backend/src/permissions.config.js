@@ -180,8 +180,9 @@ module.exports = {
   
   // ============================================
   // STUDENT - Sinh viên
-  // Lớp trưởng: isClassMonitor=true có thêm class:attendance và class:report
-  // Sử dụng middleware checkClassMonitor() để kiểm tra 2 quyền đặc biệt này
+  // Lớp trưởng (isClassMonitor=true) có thêm:
+  // - class:attendance, class:report (dùng middleware checkClassMonitor())
+  // - evidence:approve, evidence:reject (dùng middleware checkPermissionOrClassMonitor())
   // ============================================
   student: [
     // Activity - Xem hoạt động

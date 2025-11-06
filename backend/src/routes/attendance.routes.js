@@ -31,6 +31,12 @@ router.get('/student/:studentId',
   attendanceController.getAttendancesByStudent
 );
 
+// Lấy danh sách hoạt động đã tham gia theo sinh viên (dựa vào attendance)
+router.get('/student/:studentId/activities', 
+  auth,
+  attendanceController.getAttendedActivitiesByStudent
+);
+
 // Tạo điểm danh mới
 router.post('/', 
   auth, 

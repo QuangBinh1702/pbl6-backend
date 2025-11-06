@@ -672,6 +672,7 @@ Same format as above.
 | GET | `/api/attendances/:id` | Lấy chi tiết điểm danh theo ID | ✅ | - |
 | GET | `/api/attendances/activity/:activityId` | Lấy điểm danh theo hoạt động | ✅ | - |
 | GET | `/api/attendances/student/:studentId` | Lấy điểm danh theo sinh viên | ✅ | - |
+| GET | `/api/attendances/student/:studentId/activities` | Lấy tất cả hoạt động đã tham gia (theo attendance) | ✅ | - |
 | POST | `/api/attendances` | Tạo bản ghi điểm danh mới | ✅ | admin, ctsv, teacher, union |
 | PUT | `/api/attendances/:id` | Cập nhật điểm danh | ✅ | admin, ctsv, teacher, union |
 | DELETE | `/api/attendances/:id` | Xóa điểm danh | ✅ | admin, ctsv, teacher, union |

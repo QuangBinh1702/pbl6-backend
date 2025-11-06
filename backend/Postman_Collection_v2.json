@@ -557,6 +557,15 @@
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": "{{baseUrl}}/api/attendances/student/{{studentId}}"
           }
+            ,
+            {
+              "name": "Get Attended Activities by Student (via attendance)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/attendances/student/{{studentId}}/activities"
+              }
+            }
         },
         {
           "name": "Create Attendance",
