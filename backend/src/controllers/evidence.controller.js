@@ -14,6 +14,30 @@ module.exports = {
     }
   },
 
+  async getEvidencesByClass(req, res) {
+    try {
+      const { classId } = req.params;
+      if (!classId) {
+        return res.status(400).json({ success: false, message: 'classId is required' });
+      }
+
+      const studentsInClass = await StudentProfile.find({ class_id: classId }).select('_id');
+      const studentIds = studentsInClass.map((s) => s._id);
+
+      if (studentIds.length === 0) {
+        return res.json({ success: true, data: [] });
+      }
+
+      const evidences = await Evidence.find({ student_id: { $in: studentIds } })
+        .populate('student_id')
+        .sort({ submitted_at: -1 });
+
+      res.json({ success: true, data: evidences });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
   async getEvidenceById(req, res) {
     try {
       const evidence = await Evidence.findById(req.params.id)

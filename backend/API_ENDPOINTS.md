@@ -268,6 +268,7 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 | DELETE | `/api/student-profiles/:id` | Xóa hồ sơ sinh viên | ✅ | `student_profile:DELETE` |
 | PUT | `/api/student-profiles/:id/set-monitor` | Đặt làm lớp trưởng | ✅ | `student_profile:UPDATE` |
 | PUT | `/api/student-profiles/:id/unset-monitor` | Hủy chức lớp trưởng | ✅ | `student_profile:UPDATE` |
+| PUT | `/api/student-profiles/:id/toggle-monitor` | Toggle trạng thái lớp trưởng (với body) | ✅ | `student_profile:UPDATE` |
 
 **Request Body - Create Student Profile:**
 ```json
@@ -291,6 +292,32 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
   "phone": "0987654321",
   "enrollment_year": 2020,
   "contact_address": "123 Đường ABC, Quận XYZ, TP. Hà Nội"
+}
+```
+
+**Request Body - Toggle Class Monitor (`/api/student-profiles/:id/toggle-monitor`):**
+```json
+{
+  "isClassMonitor": true  // hoặc false
+}
+```
+
+**Lưu ý về Toggle Class Monitor:**
+- Nếu gửi body với `isClassMonitor: true`, sẽ đặt sinh viên làm lớp trưởng và tự động hủy lớp trưởng cũ trong cùng lớp
+- Nếu gửi body với `isClassMonitor: false`, sẽ hủy chức lớp trưởng
+- Nếu không gửi body, sẽ tự động toggle giá trị hiện tại (true → false, false → true)
+
+**Response - Toggle Class Monitor:**
+```json
+{
+  "success": true,
+  "message": "Class monitor set successfully" hoặc "Class monitor status removed successfully",
+  "data": {
+    "_id": "...",
+    "isClassMonitor": true,
+    "full_name": "...",
+    ...
+  }
 }
 ```
 
@@ -556,6 +583,17 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 }
 ```
 
+**Request Body - Approve Activity (tùy chọn):**
+```json
+{
+  "requires_approval": false  // hoặc true
+}
+```
+
+**Lưu ý:**
+- Nếu không gửi body, hệ thống mặc định đặt `requires_approval = false` (coi như đã duyệt)
+- Nếu gửi `requires_approval = true`, đánh dấu hoạt động cần duyệt lại
+
 **Response - Get My Activities (`/api/activities/my/activities`):**
 ```json
 {
@@ -715,6 +753,7 @@ Same format as above.
 | Method | Endpoint | Description | Auth Required | Roles |
 |--------|----------|-------------|---------------|-------|
 | GET | `/api/evidences` | Lấy tất cả minh chứng | ✅ | admin, ctsv, khoa, loptruong |
+| GET | `/api/evidences/class/:classId` | Lấy tất cả minh chứng trong lớp | ✅ | admin, ctsv, khoa, loptruong |
 | GET | `/api/evidences/student/:studentId` | Lấy minh chứng theo sinh viên | ✅ | - |
 | GET | `/api/evidences/:id` | Lấy chi tiết minh chứng theo ID | ✅ | - |
 | POST | `/api/evidences` | Tạo minh chứng mới | ✅ | student |

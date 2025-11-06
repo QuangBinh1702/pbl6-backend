@@ -382,6 +382,65 @@ module.exports = {
     }
   },
 
+  // Toggle class monitor status with body (similar to approve activity)
+  async toggleClassMonitor(req, res) {
+    try {
+      const studentProfile = await StudentProfile.findById(req.params.id)
+        .populate({ path: 'class_id', populate: [ { path: 'falcuty_id' }, { path: 'cohort_id' } ] });
+      
+      if (!studentProfile) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Student profile not found' 
+        });
+      }
+      
+      // Get isClassMonitor from body (default: toggle current value)
+      let newStatus;
+      if (req.body.hasOwnProperty('isClassMonitor')) {
+        newStatus = req.body.isClassMonitor;
+      } else {
+        // Default: toggle current value
+        newStatus = !studentProfile.isClassMonitor;
+      }
+      
+      // If setting to true, remove existing class monitor in the same class
+      if (newStatus === true && studentProfile.class_id) {
+        await StudentProfile.updateMany(
+          { 
+            class_id: studentProfile.class_id._id,
+            isClassMonitor: true,
+            _id: { $ne: studentProfile._id } // Exclude current student
+          },
+          { isClassMonitor: false }
+        );
+      }
+      
+      // Set new status
+      studentProfile.isClassMonitor = newStatus;
+      await studentProfile.save();
+      
+      await studentProfile.populate('user_id');
+      await studentProfile.populate({ path: 'class_id', populate: [ { path: 'falcuty_id' }, { path: 'cohort_id' } ] });
+      const spMon = studentProfile.toObject();
+      
+      res.json({ 
+        success: true, 
+        data: {
+          ...spMon,
+          falcuty_name: spMon.class_id?.falcuty_id?.name,
+          cohort_year: spMon.class_id?.cohort_id?.year
+        },
+        message: newStatus 
+          ? 'Class monitor set successfully' 
+          : 'Class monitor status removed successfully'
+      });
+    } catch (err) {
+      console.error('Toggle class monitor error:', err);
+      res.status(400).json({ success: false, message: err.message });
+    }
+  },
+
   async getClassMonitors(req, res) {
     try {
       const classMonitors = await StudentProfile.find({ 

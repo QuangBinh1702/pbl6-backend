@@ -84,4 +84,11 @@ router.put('/:id/unset-monitor',
   studentProfileController.unsetClassMonitor
 );
 
+// Toggle class monitor status with body (similar to approve activity)
+router.put('/:id/toggle-monitor', 
+  auth, 
+  checkPermission('student_profile', 'UPDATE'), 
+  studentProfileController.toggleClassMonitor
+);
+
 module.exports = router;

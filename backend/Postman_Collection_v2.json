@@ -345,11 +345,33 @@
           }
         },
         {
-          "name": "Approve Activity",
+          "name": "Approve Activity (requires_approval=false)",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": "{{baseUrl}}/api/activities/{{activityId}}/approve"
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/activities/{{activityId}}/approve",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requires_approval\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Approve Activity (requires_approval=true)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/activities/{{activityId}}/approve",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requires_approval\": true\n}"
+            }
           }
         },
         {
@@ -718,6 +740,36 @@
             "method": "PUT",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": "{{baseUrl}}/api/student-profiles/{{studentId}}/unset-monitor"
+          }
+        },
+        {
+          "name": "Toggle Class Monitor (isClassMonitor=true)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/student-profiles/{{studentId}}/toggle-monitor",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isClassMonitor\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Toggle Class Monitor (isClassMonitor=false)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/student-profiles/{{studentId}}/toggle-monitor",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isClassMonitor\": false\n}"
+            }
           }
         }
       ]
@@ -1282,6 +1334,14 @@
                 "method": "GET",
                 "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
                 "url": "{{baseUrl}}/api/evidences"
+              }
+            },
+            {
+              "name": "Get Evidences by Class",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": "{{baseUrl}}/api/evidences/class/{{classId}}"
               }
             },
             {
