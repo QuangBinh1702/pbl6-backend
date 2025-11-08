@@ -20,6 +20,10 @@ const staffProfileSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'OrgUnit' 
   },
+  position: {
+    type: String,
+    trim: true
+  },
   staff_image: String,
   contact_address: String
 }, { timestamps: false });

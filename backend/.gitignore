@@ -22,4 +22,5 @@ Thumbs.db
 *.swp
 *.swo
 
+.gitignore
 

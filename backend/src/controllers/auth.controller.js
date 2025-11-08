@@ -249,7 +249,25 @@ module.exports = {
 
   async createUser(req, res) {
     try {
-      const { username, password, roleName } = req.body;
+      let { 
+        username, 
+        password, 
+        roleName,
+        // Staff profile fields - các trường từ form UI
+        staff_number,
+        full_name,
+        org_unit_id,
+        position,
+        // Student profile fields - các trường từ form UI
+        student_number,
+        class_id,
+        enrollment_year,
+        date_of_birth,
+        gender,
+        email,
+        phone,
+        contact_address
+      } = req.body;
       
       // Validate required fields
       if (!username || !password || !roleName) {
@@ -257,6 +275,18 @@ module.exports = {
           success: false, 
           message: 'Username, password and role are required' 
         });
+      }
+      
+      // Nếu role là staff và không có staff_number, tự động dùng username làm staff_number
+      // Vì theo form UI, username chính là mã cán bộ
+      if (roleName === 'staff' && !staff_number) {
+        staff_number = username;
+      }
+      
+      // Nếu role là student và không có student_number, tự động dùng username làm student_number
+      // Vì theo form UI, username chính là mã sinh viên
+      if (roleName === 'student' && !student_number) {
+        student_number = username;
       }
       
       // Validate username format
@@ -294,6 +324,28 @@ module.exports = {
         });
       }
       
+      // Check if staff_number already exists (if creating staff)
+      if (roleName === 'staff') {
+        const existingStaff = await StaffProfile.findOne({ staff_number });
+        if (existingStaff) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Staff number already exists' 
+          });
+        }
+      }
+      
+      // Check if student_number already exists (if creating student)
+      if (roleName === 'student') {
+        const existingStudent = await StudentProfile.findOne({ student_number });
+        if (existingStudent) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Student number already exists' 
+          });
+        }
+      }
+      
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
       
@@ -311,7 +363,61 @@ module.exports = {
         role_id: role._id
       });
       
-      res.status(201).json({ 
+      // If role is staff, create staff profile với các trường từ form
+      // Tự động dùng username làm staff_number nếu không có
+      let staffProfile = null;
+      if (roleName === 'staff') {
+        try {
+          staffProfile = await StaffProfile.create({
+            user_id: user._id,
+            staff_number: staff_number || username,
+            full_name: full_name || null,
+            org_unit_id: org_unit_id || null,
+            position: position || null
+          });
+          await staffProfile.populate('org_unit_id');
+        } catch (staffError) {
+          console.error('Error creating staff profile:', staffError);
+          // Optionally delete the user if staff profile creation fails
+          // await User.findByIdAndDelete(user._id);
+          // return res.status(400).json({ success: false, message: 'Failed to create staff profile: ' + staffError.message });
+        }
+      }
+      
+      // If role is student, create student profile với các trường từ form
+      // Tự động dùng username làm student_number nếu không có
+      let studentProfile = null;
+      if (roleName === 'student') {
+        try {
+          studentProfile = await StudentProfile.create({
+            user_id: user._id,
+            student_number: student_number || username,
+            full_name: full_name || null,
+            class_id: class_id || null,
+            enrollment_year: enrollment_year || null,
+            date_of_birth: date_of_birth ? new Date(date_of_birth) : null,
+            gender: gender || null,
+            email: email || null,
+            phone: phone || null,
+            contact_address: contact_address || null,
+            isClassMonitor: false
+          });
+          await studentProfile.populate({ 
+            path: 'class_id', 
+            populate: [
+              { path: 'falcuty_id' }, 
+              { path: 'cohort_id' } 
+            ] 
+          });
+        } catch (studentError) {
+          console.error('Error creating student profile:', studentError);
+          // Optionally delete the user if student profile creation fails
+          // await User.findByIdAndDelete(user._id);
+          // return res.status(400).json({ success: false, message: 'Failed to create student profile: ' + studentError.message });
+        }
+      }
+      
+      const responseData = {
         success: true,
         message: 'User created successfully by admin',
         user: {
@@ -321,7 +427,32 @@ module.exports = {
           role: roleName,
           createdBy: req.user.username
         }
-      });
+      };
+      
+      // Include staff profile info if created
+      if (staffProfile) {
+        responseData.staffProfile = {
+          id: staffProfile._id,
+          staff_number: staffProfile.staff_number,
+          full_name: staffProfile.full_name,
+          org_unit_id: staffProfile.org_unit_id,
+          position: staffProfile.position
+        };
+      }
+      
+      // Include student profile info if created
+      if (studentProfile) {
+        const spLean = studentProfile.toObject();
+        responseData.studentProfile = {
+          id: studentProfile._id,
+          student_number: studentProfile.student_number,
+          full_name: studentProfile.full_name,
+          class_id: studentProfile.class_id,
+          enrollment_year: studentProfile.enrollment_year
+        };
+      }
+      
+      res.status(201).json(responseData);
     } catch (err) {
       console.error('Create user error:', err);
       res.status(500).json({ success: false, message: err.message });
@@ -354,7 +485,25 @@ module.exports = {
       const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
       
       for (let i = 0; i < users.length; i++) {
-        const { username, password, roleName } = users[i];
+        let { 
+          username, 
+          password, 
+          roleName,
+          // Staff profile fields - các trường từ form UI
+          staff_number,
+          full_name,
+          org_unit_id,
+          position,
+          // Student profile fields - các trường từ form UI
+          student_number,
+          class_id,
+          enrollment_year,
+          date_of_birth,
+          gender,
+          email,
+          phone,
+          contact_address
+        } = users[i];
         
         try {
           // Validate required fields
@@ -365,6 +514,18 @@ module.exports = {
               error: 'Username, password and role are required'
             });
             continue;
+          }
+          
+          // Nếu role là staff và không có staff_number, tự động dùng username làm staff_number
+          // Vì theo form UI, username chính là mã cán bộ
+          if (roleName === 'staff' && !staff_number) {
+            staff_number = username;
+          }
+          
+          // Nếu role là student và không có student_number, tự động dùng username làm student_number
+          // Vì theo form UI, username chính là mã sinh viên
+          if (roleName === 'student' && !student_number) {
+            student_number = username;
           }
           
           // Validate username format
@@ -409,6 +570,34 @@ module.exports = {
             continue;
           }
           
+          // Check if staff_number already exists (if creating staff)
+          if (roleName === 'staff') {
+            const finalStaffNumber = staff_number || username;
+            const existingStaff = await StaffProfile.findOne({ staff_number: finalStaffNumber });
+            if (existingStaff) {
+              errors.push({
+                index: i,
+                username: username || 'N/A',
+                error: 'Staff number already exists'
+              });
+              continue;
+            }
+          }
+          
+          // Check if student_number already exists (if creating student)
+          if (roleName === 'student') {
+            const finalStudentNumber = student_number || username;
+            const existingStudent = await StudentProfile.findOne({ student_number: finalStudentNumber });
+            if (existingStudent) {
+              errors.push({
+                index: i,
+                username: username || 'N/A',
+                error: 'Student number already exists'
+              });
+              continue;
+            }
+          }
+          
           // Hash password
           const hashedPassword = await bcrypt.hash(password, 10);
           
@@ -426,11 +615,87 @@ module.exports = {
             role_id: role._id
           });
           
-          results.push({
+          // If role is staff, create staff profile với các trường từ form
+          // Tự động dùng username làm staff_number nếu không có
+          let staffProfile = null;
+          if (roleName === 'staff') {
+            try {
+              staffProfile = await StaffProfile.create({
+                user_id: user._id,
+                staff_number: staff_number || username,
+                full_name: full_name || null,
+                org_unit_id: org_unit_id || null,
+                position: position || null
+              });
+              await staffProfile.populate('org_unit_id');
+            } catch (staffError) {
+              console.error(`Error creating staff profile for ${username}:`, staffError);
+              // Note: User is already created, but staff profile creation failed
+              // You might want to handle this differently (e.g., delete user or mark as error)
+            }
+          }
+          
+          // If role is student, create student profile với các trường từ form
+          // Tự động dùng username làm student_number nếu không có
+          let studentProfile = null;
+          if (roleName === 'student') {
+            try {
+              studentProfile = await StudentProfile.create({
+                user_id: user._id,
+                student_number: student_number || username,
+                full_name: full_name || null,
+                class_id: class_id || null,
+                enrollment_year: enrollment_year || null,
+                date_of_birth: date_of_birth ? new Date(date_of_birth) : null,
+                gender: gender || null,
+                email: email || null,
+                phone: phone || null,
+                contact_address: contact_address || null,
+                isClassMonitor: false
+              });
+              await studentProfile.populate({ 
+                path: 'class_id', 
+                populate: [
+                  { path: 'falcuty_id' }, 
+                  { path: 'cohort_id' } 
+                ] 
+              });
+            } catch (studentError) {
+              console.error(`Error creating student profile for ${username}:`, studentError);
+              // Note: User is already created, but student profile creation failed
+              // You might want to handle this differently (e.g., delete user or mark as error)
+            }
+          }
+          
+          const resultItem = {
             username: user.username,
             role: roleName,
             id: user._id
-          });
+          };
+          
+          // Include staff profile info if created
+          if (staffProfile) {
+            resultItem.staffProfile = {
+              id: staffProfile._id,
+              staff_number: staffProfile.staff_number,
+              full_name: staffProfile.full_name,
+              org_unit_id: staffProfile.org_unit_id,
+              position: staffProfile.position
+            };
+          }
+          
+          // Include student profile info if created
+          if (studentProfile) {
+            resultItem.studentProfile = {
+              id: studentProfile._id,
+              student_number: studentProfile.student_number,
+              full_name: studentProfile.full_name,
+              class_id: studentProfile.class_id,
+              enrollment_year: studentProfile.enrollment_year
+            };
+          }
+          
+          results.push(resultItem);
         } catch (err) {
           console.error(`Error creating user ${username}:`, err);
           errors.push({

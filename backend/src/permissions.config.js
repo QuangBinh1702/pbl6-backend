@@ -74,8 +74,14 @@ module.exports = {
   ],
   
   // ============================================
-  // STAFF - Cán bộ (CTSV, Đoàn, Hội SV, Khoa, CLB)
+  // STAFF - Cán bộ/giảng viên/sinh viên tham gia tổ chức
   // Phân biệt qua org_unit_id trong user_role
+  // 
+  // Bao gồm:
+  // - Phòng CTSV: Duyệt hoạt động, quản lý PVCD toàn trường, tạo hoạt động không cần duyệt, xem thống kê
+  // - Đoàn trường: Duyệt hoạt động do Khoa/CLB/Liên chi đoàn đề xuất, quản lý PVCD toàn trường, xem thống kê
+  // - Khoa: Duyệt minh chứng ngoài trường (sau lớp trưởng), quản lý lớp và sinh viên
+  // - CLB, Hội SV, Liên chi đoàn: Đề xuất hoạt động, quản lý sinh viên đăng ký tham gia
   // ============================================
   staff: [
     // Activity - Quản lý hoạt động
@@ -133,56 +139,57 @@ module.exports = {
   // ============================================
   // TEACHER - Giảng viên
   // ============================================
-  teacher: [
-    // Activity - Tạo và quản lý hoạt động
-    'activity:create', 'activity:read', 'activity:update', 'activity:approve',
+  // teacher: [
+  //   // Activity - Tạo và quản lý hoạt động
+  //   'activity:create', 'activity:read', 'activity:update', 'activity:approve',
     
-    // User - Xem thông tin sinh viên
-    'user:read',
+  //   // User - Xem thông tin sinh viên
+  //   'user:read',
     
-    // Attendance - Điểm danh
-    'attendance:scan', 'attendance:read', 'attendance:verify',
+  //   // Attendance - Điểm danh
+  //   'attendance:scan', 'attendance:read', 'attendance:verify',
     
-    // Evidence - Duyệt minh chứng
-    'evidence:read', 'evidence:approve', 'evidence:reject',
+  //   // Evidence - Duyệt minh chứng
+  //   'evidence:read', 'evidence:approve', 'evidence:reject',
     
-    // Report - Xem báo cáo
-    'report:view_overview', 'report:view_detail', 'report:export',
+  //   // Report - Xem báo cáo
+  //   'report:view_overview', 'report:view_detail', 'report:export',
     
-    // Class - Quản lý lớp
-    'class:read', 'class:manage_students', 'class:attendance', 'class:report',
+  //   // Class - Quản lý lớp
+  //   'class:read', 'class:manage_students', 'class:attendance', 'class:report',
     
-    // PVCD Record - Xem và chấm điểm
-    'pvcd_record:read', 'pvcd_record:update',
+  //   // PVCD Record - Xem và chấm điểm
+  //   'pvcd_record:read', 'pvcd_record:update',
     
-    // Activity Registration - Duyệt đăng ký
-    'activity_registration:read', 'activity_registration:approve', 
-    'activity_registration:reject',
+  //   // Activity Registration - Duyệt đăng ký
+  //   'activity_registration:read', 'activity_registration:approve', 
+  //   'activity_registration:reject',
     
-    // Student Feedback - Xem phản hồi
-    'student_feedback:read',
+  //   // Student Feedback - Xem phản hồi
+  //   'student_feedback:read',
     
-    // Student Profile - Xem và cập nhật sinh viên
-    'student_profile:read', 'student_profile:update',
+  //   // Student Profile - Xem và cập nhật sinh viên
+  //   'student_profile:read', 'student_profile:update',
     
-    // Staff Profile - Xem đồng nghiệp
-    'staff_profile:read',
+  //   // Staff Profile - Xem đồng nghiệp
+  //   'staff_profile:read',
     
-    // Xem thông tin tổ chức
-    'cohort:read', 'faculty:read', 'org_unit:read', 'field:read',
+  //   // Xem thông tin tổ chức
+  //   'cohort:read', 'faculty:read', 'org_unit:read', 'field:read',
     
-    // Post - Đọc và tạo bài đăng
-    'post:read', 'post:create',
+  //   // Post - Đọc và tạo bài đăng
+  //   'post:read', 'post:create',
     
-    // Activity Eligibility
-    'activity_eligibility:read'
-  ],
+  //   // Activity Eligibility
+  //   'activity_eligibility:read'
+  // ],
   
   // ============================================
   // STUDENT - Sinh viên
   // Lớp trưởng (isClassMonitor=true) có thêm:
   // - class:attendance, class:report (dùng middleware checkClassMonitor())
   // - evidence:approve, evidence:reject (dùng middleware checkPermissionOrClassMonitor())
+  //   → Xác nhận minh chứng hoạt động ngoài trường của sinh viên trong lớp
   // ============================================
   student: [
     // Activity - Xem hoạt động
@@ -200,7 +207,6 @@ module.exports = {
     // Class - Xem lớp
     'class:read',
     // Lớp trưởng có thêm: class:attendance, class:report (cần middleware checkClassMonitor)
-    'class:attendance', 'class:report',
     
     // PVCD Record - Xem điểm rèn luyện của mình
     'pvcd_record:read',
@@ -208,11 +214,11 @@ module.exports = {
     // Activity Registration - Đăng ký hoạt động
     'activity_registration:create', 'activity_registration:read', 'activity_registration:cancel',
     
-    // Student Feedback - Gửi phản hồi
+    // Student Feedback - Gửi đánh giá hoạt động đã tham gia, phản hồi điểm PVCD
     'student_feedback:submit', 'student_feedback:read',
     
     // Student Profile - Xem hồ sơ của mình
-    'student_profile:read','student_profile:update',
+    'student_profile:read', 'student_profile:update',
     
     // Xem thông tin tổ chức
     'cohort:read', 'faculty:read', 'field:read',

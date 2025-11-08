@@ -19,6 +19,7 @@
     { "key": "baseUrl", "value": "http://localhost:5000", "type": "string" },
     { "key": "token", "value": "", "type": "string" },
     { "key": "userId", "value": "", "type": "string" },
+    { "key": "username", "value": "", "type": "string" },
     { "key": "activityId", "value": "", "type": "string" },
     { "key": "roleId", "value": "", "type": "string" },
     { "key": "studentId", "value": "", "type": "string" },
@@ -80,6 +81,36 @@
           }
         },
         {
+          "name": "Create User (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/auth/create-user",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"103190205\",\n  \"password\": \"password123\",\n  \"roleName\": \"staff\",\n  \"full_name\": \"Nguyễn Văn A\",\n  \"org_unit_id\": \"{{orgUnitId}}\",\n  \"position\": \"Trưởng phòng\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Create User - Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/auth/create-user",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"102220095\",\n  \"password\": \"password123\",\n  \"roleName\": \"student\",\n  \"full_name\": \"Nguyễn Văn A\",\n  \"class_id\": \"{{classId}}\"\n}"
+            }
+          }
+        },
+        {
           "name": "Create Bulk Users",
           "request": {
             "method": "POST",
@@ -90,7 +121,7 @@
             "url": "{{baseUrl}}/api/auth/create-bulk-users",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"users\": [\n    {\n      \"username\": \"102220095\",\n      \"password\": \"102220095\",\n      \"roleName\": \"student\"\n    },\n    {\n      \"username\": \"102220112\",\n      \"password\": \"102220112\",\n      \"roleName\": \"student\"\n    }\n  ]\n}"
+              "raw": "{\n  \"users\": [\n    {\n      \"username\": \"102220095\",\n      \"password\": \"102220095\",\n      \"roleName\": \"student\",\n      \"full_name\": \"Nguyễn Văn A\",\n      \"class_id\": \"{{classId}}\"\n    },\n    {\n      \"username\": \"103190205\",\n      \"password\": \"103190205\",\n      \"roleName\": \"staff\",\n      \"full_name\": \"Nguyễn Văn A\",\n      \"org_unit_id\": \"{{orgUnitId}}\",\n      \"position\": \"Trưởng phòng\"\n    }\n  ]\n}"
             }
           }
         },
@@ -557,15 +588,14 @@
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": "{{baseUrl}}/api/attendances/student/{{studentId}}"
           }
-            ,
-            {
-              "name": "Get Attended Activities by Student (via attendance)",
-              "request": {
-                "method": "GET",
-                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-                "url": "{{baseUrl}}/api/attendances/student/{{studentId}}/activities"
-              }
-            }
+        },
+        {
+          "name": "Get Attended Activities by Student (via attendance)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/attendances/student/{{studentId}}/activities"
+          }
         },
         {
           "name": "Create Attendance",
@@ -820,6 +850,14 @@
           }
         },
         {
+          "name": "Get by Username",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/staff-profiles/username/{{username}}"
+          }
+        },
+        {
           "name": "Get Staff by Org Unit",
           "request": {
             "method": "GET",
@@ -838,7 +876,7 @@
             "url": "{{baseUrl}}/api/staff-profiles",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"staffNumber\": \"STAFF002\",\n  \"orgUnitId\": \"{{orgUnitId}}\",\n  \"position\": \"Giảng viên\"\n}"
+              "raw": "{\n  \"user_id\": \"{{userId}}\",\n  \"staff_number\": \"STAFF002\",\n  \"full_name\": \"Nguyễn Văn A\",\n  \"org_unit_id\": \"{{orgUnitId}}\",\n  \"position\": \"Trưởng phòng\",\n  \"email\": \"staff@example.com\",\n  \"phone\": \"0123456789\",\n  \"date_of_birth\": \"1980-01-15\",\n  \"gender\": \"male\",\n  \"contact_address\": \"123 Đường ABC, Hà Nội\"\n}"
             }
           }
         },
@@ -853,7 +891,7 @@
             "url": "{{baseUrl}}/api/staff-profiles/{{staffId}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"position\": \"Phó trưởng khoa\"\n}"
+              "raw": "{\n  \"full_name\": \"Nguyễn Văn B\",\n  \"position\": \"Phó phòng\",\n  \"org_unit_id\": \"{{orgUnitId}}\",\n  \"email\": \"staff2@example.com\",\n  \"phone\": \"0987654321\",\n  \"date_of_birth\": \"1985-05-20\",\n  \"gender\": \"female\",\n  \"contact_address\": \"456 Đường XYZ, Hà Nội\",\n  \"staff_image\": \"https://example.com/images/staff.jpg\"\n}"
             }
           }
         },

@@ -54,14 +54,49 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 }
 ```
 
-**Request Body - Admin Create-User:**
+**Request Body - Admin Create-User (Student):**
 ```json
 {
-  "username": "new_username",
+  "username": "102220095",
   "password": "password123",
-  "roleName": "student"
+  "roleName": "student",
+  "full_name": "Nguyễn Văn A",
+  "class_id": "class_id_here"
 }
 ```
+
+**Request Body - Admin Create-User (Student with more fields):**
+```json
+{
+  "username": "102220095",
+  "password": "password123",
+  "roleName": "student",
+  "full_name": "Nguyễn Văn A",
+  "class_id": "class_id_here",
+  "enrollment_year": 2022,
+  "date_of_birth": "2004-01-15",
+  "gender": "male",
+  "email": "student@example.com",
+  "phone": "0123456789",
+  "contact_address": "123 Đường ABC, Hà Nội"
+}
+```
+
+**Note:** When creating a student account (`roleName: "student"`), the `student_number` field is optional. If not provided, the system will automatically use `username` as `student_number` (because in the form UI, username is the student ID). The `full_name`, `class_id`, and other fields are optional.
+
+**Request Body - Admin Create-User (Staff with Profile):**
+```json
+{
+  "username": "103190205",
+  "password": "password123",
+  "roleName": "staff",
+  "full_name": "Nguyễn Văn A",
+  "org_unit_id": "org_unit_id_here",
+  "position": "Trưởng phòng"
+}
+```
+
+**Note:** When creating a staff account (`roleName: "staff"`), the `staff_number` field is optional. If not provided, the system will automatically use `username` as `staff_number` (because in the form UI, username is the staff ID). The `full_name`, `org_unit_id`, and `position` fields are optional. Common position values include: "Trưởng phòng", "Phó phòng", "Thư kí", "Giảng viên", "Nhân viên", etc.
 
 **Request Body - Admin Create Bulk Users:**
 ```json
@@ -70,16 +105,23 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
     {
       "username": "102220095",
       "password": "102220095",
-      "roleName": "student"
+      "roleName": "student",
+      "full_name": "Nguyễn Văn A",
+      "class_id": "class_id_here"
     },
     {
-      "username": "102220112",
-      "password": "102220112",
-      "roleName": "student"
+      "username": "103190205",
+      "password": "103190205",
+      "roleName": "staff",
+      "full_name": "Nguyễn Văn A",
+      "org_unit_id": "org_unit_id_here",
+      "position": "Trưởng phòng"
     }
   ]
 }
 ```
+
+**Note:** For staff accounts in bulk creation, `staff_number` is optional. If not provided, the system will automatically use `username` as `staff_number`. Optionally include `full_name`, `org_unit_id`, and `position` to match the form UI.
 
 **Response - Create Bulk Users (Success):**
 ```json
@@ -331,6 +373,7 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 | GET | `/api/staff-profiles/:id` | Lấy hồ sơ cán bộ theo ID | ✅ | - |
 | GET | `/api/staff-profiles/user/:userId` | Lấy hồ sơ cán bộ theo User ID | ✅ | - |
 | GET | `/api/staff-profiles/staff-number/:staffNumber` | Lấy hồ sơ theo mã cán bộ | ✅ | - |
+| GET | `/api/staff-profiles/username/:username` | Lấy hồ sơ cán bộ theo username | ✅ | - |
 | GET | `/api/staff-profiles/org-unit/:orgUnitId/staff` | Lấy danh sách cán bộ theo đơn vị | ✅ | - |
 | POST | `/api/staff-profiles` | Tạo hồ sơ cán bộ mới | ✅ | admin, ctsv |
 | PUT | `/api/staff-profiles/:id` | Cập nhật hồ sơ cán bộ | ✅ | - |
@@ -339,14 +382,40 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 **Request Body - Create Staff Profile:**
 ```json
 {
-  "userId": "user_uuid_here",
-  "staffNumber": "STAFF001",
-  "orgUnitId": "org_unit_uuid_here",
-  "position": "Giảng viên",
+  "user_id": "user_uuid_here",
+  "staff_number": "STAFF001",
+  "full_name": "Nguyễn Văn A",
+  "org_unit_id": "org_unit_uuid_here",
+  "position": "Trưởng phòng",
+  "email": "staff@example.com",
   "phone": "0123456789",
-  "address": "Hà Nội"
+  "date_of_birth": "1980-01-15",
+  "gender": "male",
+  "contact_address": "123 Đường ABC, Hà Nội",
+  "staff_image": "https://example.com/images/staff.jpg"
 }
 ```
+
+**Request Body - Update Staff Profile:**
+```json
+{
+  "full_name": "Nguyễn Văn B",
+  "position": "Phó phòng",
+  "org_unit_id": "org_unit_uuid_here",
+  "email": "staff2@example.com",
+  "phone": "0987654321",
+  "date_of_birth": "1985-05-20",
+  "gender": "female",
+  "contact_address": "456 Đường XYZ, Hà Nội",
+  "staff_image": "https://example.com/images/staff.jpg"
+}
+```
+
+**Note:** 
+- The `position` field (chức vụ) is optional. Common values include: "Trưởng phòng", "Phó phòng", "Thư kí", "Giảng viên", "Nhân viên", "Trưởng khoa", "Phó trưởng khoa", etc.
+- Both camelCase (userId, staffNumber, orgUnitId, fullName, dateOfBirth, contactAddress, staffImage) and snake_case (user_id, staff_number, org_unit_id, full_name, date_of_birth, contact_address, staff_image) field names are supported.
+- Required fields for Create: `user_id` (or `userId`) and `staff_number` (or `staffNumber`).
+- All other fields are optional.
 
 ---
 
