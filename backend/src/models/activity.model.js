@@ -41,7 +41,14 @@ const activitySchema = new mongoose.Schema({
   requires_approval: { 
     type: Boolean, 
     default: false 
-  }
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'in_progress', 'completed', 'rejected', 'cancelled'],
+    default: 'pending'
+  },
+  completed_at: Date,
+  approved_at: Date
 }, { timestamps: false, collection: 'activity' });
 
 // Index for faster queries
@@ -49,5 +56,6 @@ activitySchema.index({ org_unit_id: 1 });
 activitySchema.index({ field_id: 1 });
 activitySchema.index({ start_time: 1 });
 activitySchema.index({ registration_open: 1, registration_close: 1 });
+activitySchema.index({ status: 1 });
 
 module.exports = mongoose.model('Activity', activitySchema);

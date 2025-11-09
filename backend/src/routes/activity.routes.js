@@ -8,7 +8,16 @@ const { checkPermission } = require('../middlewares/check_permission.middleware'
 // Activity routes with new permission system
 router.get('/', activityController.getAllActivities); // Public - list activities
 
-// Specific routes must come before :id route to avoid conflicts
+// IMPORTANT: Specific routes MUST come before :id route to avoid conflicts
+// Order matters in Express routing!
+
+// Activity Rejection routes (MUST be before /:id to avoid "rejections" being treated as an ID)
+router.get('/rejections', 
+  auth, 
+  checkPermission('activity', 'READ'), 
+  activityController.getActivityRejections
+);
+
 router.get('/my/activities', 
   auth, 
   activityController.getMyActivities
@@ -20,13 +29,18 @@ router.get('/student/:studentId',
   activityController.getStudentActivities
 );
 
-router.get('/:id', activityController.getActivityById); // Public - view activity details
+router.get('/:id', activityController.getActivityById); // Public - view activity details (MUST be last)
 
 // Protected routes with permission checks
 router.post('/', 
   auth, 
   checkPermission('activity', 'CREATE'), 
   activityController.createActivity
+);
+
+router.post('/suggest', 
+  auth, 
+  activityController.suggestActivity
 );
 
 router.put('/:id', 
@@ -59,6 +73,12 @@ router.put('/:id/complete',
   activityController.completeActivity
 );
 
+router.put('/:id/cancel', 
+  auth, 
+  checkPermission('activity', 'UPDATE'), 
+  activityController.cancelActivity
+);
+
 // Registration
 router.post('/:id/register', 
   auth, 
@@ -70,6 +90,19 @@ router.get('/:id/registrations',
   auth, 
   checkPermission('activity_registration', 'READ'), 
   activityController.getActivityRegistrations
+);
+
+// Activity Rejection routes
+router.get('/:id/rejection', 
+  auth, 
+  checkPermission('activity', 'READ'), 
+  activityController.getRejectionByActivityId
+);
+
+router.delete('/:id/rejection', 
+  auth, 
+  checkPermission('activity', 'DELETE'), 
+  activityController.deleteRejection
 );
 
 module.exports = router;

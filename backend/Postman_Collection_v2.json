@@ -331,6 +331,175 @@
           }
         },
         {
+          "name": "Get Activities by Org Unit",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/activities?org_unit_id={{orgUnitId}}",
+              "query": [
+                { "key": "org_unit_id", "value": "{{orgUnitId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Activities by Status (Pending)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/activities?status=pending",
+              "query": [
+                { "key": "status", "value": "pending" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Activities by Status (Chờ duyệt - Vietnamese)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/activities?status=chờ duyệt",
+              "query": [
+                { "key": "status", "value": "chờ duyệt" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Activities by Status (Approved)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/activities?status=approved",
+              "query": [
+                { "key": "status", "value": "approved" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Activities by Status (Chưa tổ chức - Vietnamese)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/activities?status=chưa tổ chức",
+              "query": [
+                { "key": "status", "value": "chưa tổ chức" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Activities by Status (In Progress)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/activities?status=in_progress",
+              "query": [
+                { "key": "status", "value": "in_progress" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Activities by Status (Đang tổ chức - Vietnamese)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/activities?status=đang tổ chức",
+              "query": [
+                { "key": "status", "value": "đang tổ chức" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Activities by Status (Completed)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/activities?status=completed",
+              "query": [
+                { "key": "status", "value": "completed" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Activities by Status (Đã tổ chức - Vietnamese)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/activities?status=đã tổ chức",
+              "query": [
+                { "key": "status", "value": "đã tổ chức" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Activities by Status (Rejected)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/activities?status=rejected",
+              "query": [
+                { "key": "status", "value": "rejected" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Activities by Status (Từ chối - Vietnamese)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/activities?status=từ chối",
+              "query": [
+                { "key": "status", "value": "từ chối" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Activities by Status (Cancelled)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/activities?status=cancelled",
+              "query": [
+                { "key": "status", "value": "cancelled" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Activities by Status (Hủy hoạt động - Vietnamese)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/activities?status=hủy hoạt động",
+              "query": [
+                { "key": "status", "value": "hủy hoạt động" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Activities by Org Unit and Status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/activities?org_unit_id={{orgUnitId}}&status=pending",
+              "query": [
+                { "key": "org_unit_id", "value": "{{orgUnitId}}" },
+                { "key": "status", "value": "pending" }
+              ]
+            }
+          }
+        },
+        {
           "name": "Get Activity by ID",
           "request": {
             "method": "GET",
@@ -348,7 +517,22 @@
             "url": "{{baseUrl}}/api/activities",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Hoạt động tình nguyện\",\n  \"description\": \"Mô tả hoạt động\",\n  \"type\": \"faculty\",\n  \"time\": \"2024-01-15T00:00:00.000Z\",\n  \"location\": \"P101\",\n  \"points\": 5,\n  \"maxParticipants\": 50\n}"
+              "raw": "{\n  \"title\": \"Hoạt động tình nguyện\",\n  \"description\": \"Mô tả hoạt động\",\n  \"location\": \"P101\",\n  \"start_time\": \"2024-01-15T08:00:00.000Z\",\n  \"end_time\": \"2024-01-15T12:00:00.000Z\",\n  \"capacity\": 50,\n  \"registration_open\": \"2024-01-10T00:00:00.000Z\",\n  \"registration_close\": \"2024-01-14T23:59:59.000Z\",\n  \"requires_approval\": false,\n  \"org_unit_id\": \"{{orgUnitId}}\",\n  \"field_id\": \"{{fieldId}}\",\n  \"activity_image\": \"https://example.com/image.jpg\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Suggest Activity",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/activities/suggest",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Hoạt động tình nguyện\",\n  \"description\": \"Mô tả hoạt động\",\n  \"location\": \"P101\",\n  \"start_time\": \"2024-01-15T08:00:00.000Z\",\n  \"end_time\": \"2024-01-15T12:00:00.000Z\",\n  \"capacity\": 50,\n  \"registration_open\": \"2024-01-10T00:00:00.000Z\",\n  \"registration_close\": \"2024-01-14T23:59:59.000Z\",\n  \"requires_approval\": true,\n  \"org_unit_id\": \"{{orgUnitId}}\",\n  \"field_id\": \"{{fieldId}}\",\n  \"activity_image\": \"https://example.com/image.jpg\"\n}"
             }
           }
         },
@@ -363,7 +547,7 @@
             "url": "{{baseUrl}}/api/activities/{{activityId}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Hoạt động đã cập nhật\",\n  \"points\": 10\n}"
+              "raw": "{\n  \"title\": \"Hoạt động đã cập nhật\",\n  \"description\": \"Mô tả đã cập nhật\",\n  \"capacity\": 100\n}"
             }
           }
         },
@@ -416,7 +600,7 @@
             "url": "{{baseUrl}}/api/activities/{{activityId}}/reject",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reason\": \"Lý do từ chối\"\n}"
+              "raw": "{\n  \"reason\": \"Lý do từ chối hoạt động\"\n}"
             }
           }
         },
@@ -426,6 +610,38 @@
             "method": "PUT",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": "{{baseUrl}}/api/activities/{{activityId}}/complete"
+          }
+        },
+        {
+          "name": "Cancel Activity",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/activities/{{activityId}}/cancel"
+          }
+        },
+        {
+          "name": "Get All Activity Rejections",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/activities/rejections"
+          }
+        },
+        {
+          "name": "Get Activity Rejection by Activity ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/activities/{{activityId}}/rejection"
+          }
+        },
+        {
+          "name": "Delete Activity Rejection",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/activities/{{activityId}}/rejection"
           }
         },
         {

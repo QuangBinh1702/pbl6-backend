@@ -1,30 +1,175 @@
 // Quản lý hoạt động
 const Activity = require('../models/activity.model');
 const ActivityRegistration = require('../models/activity_registration.model');
+const ActivityRejection = require('../models/activity_rejection.model');
 const Attendance = require('../models/attendance.model');
 const StudentProfile = require('../models/student_profile.model');
 const User = require('../models/user.model');
 
+// Mapping status từ tiếng Anh (database) sang tiếng Việt (response)
+const statusMapping = {
+  'pending': 'chờ duyệt',
+  'approved': 'chưa tổ chức',
+  'in_progress': 'đang tổ chức',
+  'completed': 'đã tổ chức',
+  'rejected': 'từ chối',
+  'cancelled': 'hủy hoạt động'
+};
+
+// Reverse mapping: từ tiếng Việt sang tiếng Anh (cho query)
+const statusReverseMapping = {
+  'chờ duyệt': 'pending',
+  'chưa tổ chức': 'approved',
+  'đang tổ chức': 'in_progress',
+  'đã tổ chức': 'completed',
+  'từ chối': 'rejected',
+  'hủy hoạt động': 'cancelled'
+};
+
+// Helper function to get Vietnamese status
+function getStatusVi(status) {
+  return statusMapping[status] || status;
+}
+
+// Helper function to get English status from Vietnamese
+function getStatusEn(status) {
+  return statusReverseMapping[status] || status;
+}
+
+// Helper function to transform activity object - chỉ trả về status tiếng Việt
+function transformActivity(activity) {
+  if (!activity) return activity;
+  
+  const activityObj = activity.toObject ? activity.toObject() : activity;
+  
+  // Thay thế status tiếng Anh bằng tiếng Việt
+  activityObj.status = getStatusVi(activityObj.status);
+  
+  return activityObj;
+}
+
+// Helper function to transform array of activities
+function transformActivities(activities) {
+  if (Array.isArray(activities)) {
+    return activities.map(activity => transformActivity(activity));
+  }
+  return transformActivity(activities);
+}
+
+// Helper function to check if activity is rejected
+async function checkActivityRejection(activity) {
+  if (!activity) return activity;
+  
+  const rejection = await ActivityRejection.findOne({ activity_id: activity._id });
+  if (rejection) {
+    // If activity has rejection, set status to rejected
+    if (activity.status !== 'rejected') {
+      activity.status = 'rejected';
+      await activity.save();
+    }
+  }
+  
+  return activity;
+}
+
+// Helper function to update activity status based on time
+async function updateActivityStatusBasedOnTime(activity) {
+  if (!activity) return activity;
+  
+  // Don't update if activity is rejected or cancelled - these statuses take priority
+  if (activity.status === 'rejected' || activity.status === 'cancelled') {
+    return activity;
+  }
+  
+  // Only update if activity is approved (not pending or already completed)
+  if (activity.status === 'pending' || activity.status === 'completed') {
+    return activity;
+  }
+  
+  const now = new Date();
+  const startTime = new Date(activity.start_time);
+  const endTime = new Date(activity.end_time);
+  
+  let newStatus = activity.status;
+  
+  // If end_time has passed, set to completed
+  if (endTime < now) {
+    newStatus = 'completed';
+  }
+  // If activity is currently happening (start_time <= now <= end_time)
+  else if (startTime <= now && now <= endTime) {
+    newStatus = 'in_progress';
+  }
+  // If start_time is in the future, keep as approved (chưa tổ chức)
+  else if (startTime > now) {
+    newStatus = 'approved';
+  }
+  
+  // Only update if status changed
+  if (newStatus !== activity.status) {
+    activity.status = newStatus;
+    if (newStatus === 'completed') {
+      activity.completed_at = new Date();
+    }
+    await activity.save();
+  }
+  
+  return activity;
+}
+
+// Helper function to update activity status (check rejection first, then time)
+async function updateActivityStatus(activity) {
+  if (!activity) return activity;
+  
+  // First check if activity is rejected
+  await checkActivityRejection(activity);
+  
+  // If not rejected, update based on time
+  if (activity.status !== 'rejected') {
+    await updateActivityStatusBasedOnTime(activity);
+  }
+  
+  return activity;
+}
+
 module.exports = {
   async getAllActivities(req, res) {
     try {
-      const { org_unit_id, field_id, start_date, end_date } = req.query;
+      const { org_unit_id, field_id, status, start_date, end_date } = req.query;
       
       const filter = {};
       if (org_unit_id) filter.org_unit_id = org_unit_id;
       if (field_id) filter.field_id = field_id;
+      if (status) {
+        // Accept both English and Vietnamese status
+        const statusEn = getStatusEn(status);
+        const validStatuses = ['pending', 'approved', 'in_progress', 'completed', 'rejected', 'cancelled'];
+        if (validStatuses.includes(statusEn)) {
+          filter.status = statusEn;
+        } else if (validStatuses.includes(status)) {
+          filter.status = status;
+        }
+      }
       if (start_date || end_date) {
         filter.start_time = {};
         if (start_date) filter.start_time.$gte = new Date(start_date);
         if (end_date) filter.start_time.$lte = new Date(end_date);
       }
       
-      const activities = await Activity.find(filter)
+      let activities = await Activity.find(filter)
         .populate('org_unit_id')
         .populate('field_id')
         .sort({ start_time: -1 });
       
-      res.json({ success: true, data: activities });
+      // Auto-update status (check rejection first, then time) for each activity
+      activities = await Promise.all(
+        activities.map(activity => updateActivityStatus(activity))
+      );
+      
+      // Transform activities to return Vietnamese status
+      const transformedActivities = transformActivities(activities);
+      
+      res.json({ success: true, data: transformedActivities });
     } catch (err) {
       console.error('Get all activities error:', err);
       res.status(500).json({ success: false, message: err.message });
@@ -33,7 +178,7 @@ module.exports = {
 
   async getActivityById(req, res) {
     try {
-      const activity = await Activity.findById(req.params.id)
+      let activity = await Activity.findById(req.params.id)
         .populate('org_unit_id')
         .populate('field_id');
       
@@ -44,16 +189,27 @@ module.exports = {
         });
       }
       
+      // Auto-update status (check rejection first, then time)
+      activity = await updateActivityStatus(activity);
+      
       // Get registration count
       const registrationCount = await ActivityRegistration.countDocuments({ 
         activity_id: activity._id 
       });
       
+      // Get rejection info if exists
+      const rejection = await ActivityRejection.findOne({ activity_id: activity._id })
+        .populate('rejected_by', 'username');
+      
+      // Transform activity to return Vietnamese status
+      const transformedActivity = transformActivity(activity);
+      
       res.json({ 
         success: true, 
         data: {
-          ...activity.toObject(),
-          registrationCount
+          ...transformedActivity,
+          registrationCount,
+          rejection: rejection || null
         }
       });
     } catch (err) {
@@ -177,6 +333,18 @@ module.exports = {
         });
       }
       
+      // Determine status based on time
+      // If start_time is in the past, set to completed
+      // If start_time is now or in the future but end_time is in the past, set to completed
+      // If start_time <= now <= end_time, set to in_progress
+      // Otherwise, set to approved (chưa tổ chức)
+      let activityStatus = 'approved';
+      if (endTimeDate < now) {
+        activityStatus = 'completed';
+      } else if (startTimeDate <= now && now <= endTimeDate) {
+        activityStatus = 'in_progress';
+      }
+      
       const activity = await Activity.create({
         title,
         description,
@@ -191,12 +359,141 @@ module.exports = {
         requires_approval: requires_approval || false,
         org_unit_id,
         field_id,
-        activity_image
+        activity_image,
+        status: activityStatus,
+        approved_at: activityStatus === 'approved' || activityStatus === 'in_progress' ? new Date() : null
       });
       
-      res.status(201).json({ success: true, data: activity });
+      // Transform activity to return Vietnamese status
+      const transformedActivity = transformActivity(activity);
+      
+      res.status(201).json({ success: true, data: transformedActivity });
     } catch (err) {
       console.error('Create activity error:', err);
+      res.status(400).json({ success: false, message: err.message });
+    }
+  },
+
+  async suggestActivity(req, res) {
+    try {
+      const {
+        title,
+        description,
+        location,
+        start_time,
+        end_time,
+        capacity,
+        registration_open,
+        registration_close,
+        requires_approval,
+        org_unit_id,
+        field_id,
+        activity_image
+      } = req.body;
+      
+      // Validate required fields
+      if (!title || !start_time || !end_time) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Title, start_time, and end_time are required' 
+        });
+      }
+      
+      // Convert to Date objects for validation
+      const startTimeDate = new Date(start_time);
+      const endTimeDate = new Date(end_time);
+      const registrationOpenDate = registration_open ? new Date(registration_open) : null;
+      const registrationCloseDate = registration_close ? new Date(registration_close) : null;
+      const now = new Date();
+      
+      // Validate: Check if dates are valid
+      if (isNaN(startTimeDate.getTime())) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid start_time format' 
+        });
+      }
+      if (isNaN(endTimeDate.getTime())) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid end_time format' 
+        });
+      }
+      if (registrationOpenDate && isNaN(registrationOpenDate.getTime())) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid registration_open format' 
+        });
+      }
+      if (registrationCloseDate && isNaN(registrationCloseDate.getTime())) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid registration_close format' 
+        });
+      }
+      
+      // Validate: end_time must be after start_time
+      if (endTimeDate <= startTimeDate) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'End time must be after start time' 
+        });
+      }
+      
+      // Validate: registration_close must be after registration_open (if both provided)
+      if (registrationOpenDate && registrationCloseDate) {
+        if (registrationCloseDate < registrationOpenDate) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Registration close time must be after registration open time' 
+          });
+        }
+      }
+      
+      // Validate: registration_open and registration_close must be before start_time (if provided)
+      if (registrationOpenDate && registrationOpenDate >= startTimeDate) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Registration open time must be before activity start time' 
+        });
+      }
+      
+      if (registrationCloseDate && registrationCloseDate >= startTimeDate) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Registration close time must be before activity start time' 
+        });
+      }
+      
+      // Suggest activity always has status = pending (chờ duyệt)
+      const activity = await Activity.create({
+        title,
+        description,
+        location,
+        start_time: startTimeDate,
+        end_time: endTimeDate,
+        start_time_updated: startTimeDate,
+        end_time_updated: endTimeDate,
+        capacity: capacity || 0,
+        registration_open: registrationOpenDate,
+        registration_close: registrationCloseDate,
+        requires_approval: requires_approval !== undefined ? requires_approval : true,
+        org_unit_id,
+        field_id,
+        activity_image,
+        status: 'pending' // Đề xuất hoạt động luôn có status = pending
+      });
+      
+      // Transform activity to return Vietnamese status
+      const transformedActivity = transformActivity(activity);
+      
+      res.status(201).json({ 
+        success: true, 
+        message: 'Activity suggested successfully. Waiting for approval.',
+        data: transformedActivity 
+      });
+    } catch (err) {
+      console.error('Suggest activity error:', err);
       res.status(400).json({ success: false, message: err.message });
     }
   },
@@ -228,7 +525,10 @@ module.exports = {
         });
       }
       
-      res.json({ success: true, data: activity });
+      // Transform activity to return Vietnamese status
+      const transformedActivity = transformActivity(activity);
+      
+      res.json({ success: true, data: transformedActivity });
     } catch (err) {
       console.error('Update activity error:', err);
       res.status(400).json({ success: false, message: err.message });
@@ -276,42 +576,32 @@ module.exports = {
         activity.requires_approval = false;
       }
       
+      // Determine status based on time when approving
+      const now = new Date();
+      let newStatus = 'approved';
+      if (activity.end_time < now) {
+        newStatus = 'completed';
+      } else if (activity.start_time <= now && now <= activity.end_time) {
+        newStatus = 'in_progress';
+      }
+      
+      // Update status to approved/in_progress/completed based on time
+      activity.status = newStatus;
+      activity.approved_at = new Date();
+      
       await activity.save();
+      
+      // Transform activity to return Vietnamese status
+      const transformedActivity = transformActivity(activity);
+      const statusVi = getStatusVi(newStatus);
       
       res.json({ 
         success: true, 
-        message: `Activity ${activity.requires_approval ? 'marked as requiring approval' : 'approved successfully'}`,
-        data: activity 
+        message: `Hoạt động đã được phê duyệt. Trạng thái: ${statusVi}`,
+        data: transformedActivity 
       });
     } catch (err) {
       console.error('Approve activity error:', err);
-      res.status(400).json({ success: false, message: err.message });
-    }
-  },
-
-  async rejectActivity(req, res) {
-    try {
-      const activity = await Activity.findById(req.params.id);
-      if (!activity) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Activity not found' 
-        });
-      }
-      
-      // When rejecting, we can set requires_approval to true to indicate it needs review again
-      // or keep it as is. Based on business logic, we'll keep the current value.
-      // The rejection is mainly tracked through the reason in the request body
-      
-      await activity.save();
-      
-      res.json({ 
-        success: true, 
-        message: req.body.reason ? `Activity rejected: ${req.body.reason}` : 'Activity rejected',
-        data: activity 
-      });
-    } catch (err) {
-      console.error('Reject activity error:', err);
       res.status(400).json({ success: false, message: err.message });
     }
   },
@@ -326,11 +616,15 @@ module.exports = {
         });
       }
       
-      activity.completed = true;
+      // Update status to completed
+      activity.status = 'completed';
       activity.completed_at = new Date();
       await activity.save();
       
-      res.json({ success: true, data: activity });
+      // Transform activity to return Vietnamese status
+      const transformedActivity = transformActivity(activity);
+      
+      res.json({ success: true, data: transformedActivity });
     } catch (err) {
       console.error('Complete activity error:', err);
       res.status(400).json({ success: false, message: err.message });
@@ -427,6 +721,24 @@ module.exports = {
         student_id: studentProfileId 
       }).populate('activity_id');
       
+      // Get all activity IDs to check for rejections
+      const activityIds = new Set();
+      registrations.forEach(reg => {
+        if (reg.activity_id) activityIds.add(reg.activity_id._id);
+      });
+      attendances.forEach(att => {
+        if (att.activity_id) activityIds.add(att.activity_id._id);
+      });
+      
+      // Check rejections for all activities
+      const rejections = await ActivityRejection.find({
+        activity_id: { $in: Array.from(activityIds) }
+      });
+      const rejectionMap = new Map();
+      rejections.forEach(rej => {
+        rejectionMap.set(rej.activity_id.toString(), rej);
+      });
+      
       // Combine both results
       const activities = [];
       const activityMap = new Map();
@@ -435,6 +747,30 @@ module.exports = {
       registrations.forEach(reg => {
         if (reg.activity_id) {
           const activityData = reg.activity_id.toObject();
+          
+          // Check if activity is rejected and update status
+          if (rejectionMap.has(activityData._id.toString())) {
+            activityData.status = 'rejected';
+          } else {
+            // Update status based on time if not rejected
+            // Note: We don't save here, just update for response
+            const now = new Date();
+            const startTime = new Date(activityData.start_time);
+            const endTime = new Date(activityData.end_time);
+            
+            if (activityData.status !== 'pending' && activityData.status !== 'rejected' && activityData.status !== 'cancelled') {
+              if (endTime < now) {
+                activityData.status = 'completed';
+              } else if (startTime <= now && now <= endTime) {
+                activityData.status = 'in_progress';
+              } else if (startTime > now) {
+                activityData.status = 'approved';
+              }
+            }
+          }
+          
+          // Convert status to Vietnamese
+          activityData.status = getStatusVi(activityData.status);
           activityMap.set(activityData._id.toString(), {
             ...activityData,
             registration: {
@@ -469,6 +805,29 @@ module.exports = {
           } else {
             // Activity with attendance but no registration
             const activityData = att.activity_id.toObject();
+            
+            // Check if activity is rejected and update status
+            if (rejectionMap.has(activityId)) {
+              activityData.status = 'rejected';
+            } else {
+              // Update status based on time if not rejected
+              const now = new Date();
+              const startTime = new Date(activityData.start_time);
+              const endTime = new Date(activityData.end_time);
+              
+              if (activityData.status !== 'pending' && activityData.status !== 'rejected' && activityData.status !== 'cancelled') {
+                if (endTime < now) {
+                  activityData.status = 'completed';
+                } else if (startTime <= now && now <= endTime) {
+                  activityData.status = 'in_progress';
+                } else if (startTime > now) {
+                  activityData.status = 'approved';
+                }
+              }
+            }
+            
+            // Convert status to Vietnamese
+            activityData.status = getStatusVi(activityData.status);
             activityMap.set(activityId, {
               ...activityData,
               registration: null,
@@ -530,6 +889,24 @@ module.exports = {
         student_id: studentProfile._id 
       }).populate('activity_id');
       
+      // Get all activity IDs to check for rejections
+      const activityIds = new Set();
+      registrations.forEach(reg => {
+        if (reg.activity_id) activityIds.add(reg.activity_id._id);
+      });
+      attendances.forEach(att => {
+        if (att.activity_id) activityIds.add(att.activity_id._id);
+      });
+      
+      // Check rejections for all activities
+      const rejections = await ActivityRejection.find({
+        activity_id: { $in: Array.from(activityIds) }
+      });
+      const rejectionMap = new Map();
+      rejections.forEach(rej => {
+        rejectionMap.set(rej.activity_id.toString(), rej);
+      });
+      
       const activities = [];
       const activityMap = new Map();
       
@@ -537,6 +914,29 @@ module.exports = {
       registrations.forEach(reg => {
         if (reg.activity_id) {
           const activityData = reg.activity_id.toObject();
+          
+          // Check if activity is rejected and update status
+          if (rejectionMap.has(activityData._id.toString())) {
+            activityData.status = 'rejected';
+          } else {
+            // Update status based on time if not rejected
+            const now = new Date();
+            const startTime = new Date(activityData.start_time);
+            const endTime = new Date(activityData.end_time);
+            
+            if (activityData.status !== 'pending' && activityData.status !== 'rejected' && activityData.status !== 'cancelled') {
+              if (endTime < now) {
+                activityData.status = 'completed';
+              } else if (startTime <= now && now <= endTime) {
+                activityData.status = 'in_progress';
+              } else if (startTime > now) {
+                activityData.status = 'approved';
+              }
+            }
+          }
+          
+          // Convert status to Vietnamese
+          activityData.status = getStatusVi(activityData.status);
           activityMap.set(activityData._id.toString(), {
             ...activityData,
             registration: {
@@ -569,6 +969,29 @@ module.exports = {
             };
           } else {
             const activityData = att.activity_id.toObject();
+            
+            // Check if activity is rejected and update status
+            if (rejectionMap.has(activityId)) {
+              activityData.status = 'rejected';
+            } else {
+              // Update status based on time if not rejected
+              const now = new Date();
+              const startTime = new Date(activityData.start_time);
+              const endTime = new Date(activityData.end_time);
+              
+              if (activityData.status !== 'pending' && activityData.status !== 'rejected' && activityData.status !== 'cancelled') {
+                if (endTime < now) {
+                  activityData.status = 'completed';
+                } else if (startTime <= now && now <= endTime) {
+                  activityData.status = 'in_progress';
+                } else if (startTime > now) {
+                  activityData.status = 'approved';
+                }
+              }
+            }
+            
+            // Convert status to Vietnamese
+            activityData.status = getStatusVi(activityData.status);
             activityMap.set(activityId, {
               ...activityData,
               registration: null,
@@ -603,6 +1026,203 @@ module.exports = {
     } catch (err) {
       console.error('Get my activities error:', err);
       res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  async rejectActivity(req, res) {
+    try {
+      const activity = await Activity.findById(req.params.id);
+      if (!activity) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Activity not found' 
+        });
+      }
+
+      // Debug: Log request body
+      console.log('Reject Activity - Request Body:', req.body);
+      console.log('Reject Activity - Content-Type:', req.headers['content-type']);
+
+      const { reason } = req.body;
+      
+      // Check if reason exists and is not empty after trimming
+      if (!reason || (typeof reason === 'string' && reason.trim() === '')) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Lý do từ chối là bắt buộc',
+          debug: {
+            receivedBody: req.body,
+            reasonValue: reason,
+            reasonType: typeof reason
+          }
+        });
+      }
+
+      // Check if activity already rejected
+      const existingRejection = await ActivityRejection.findOne({ activity_id: activity._id });
+      if (existingRejection) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Hoạt động đã bị từ chối trước đó' 
+        });
+      }
+
+      // Get current user ID
+      const rejectedBy = req.user.id;
+
+      // Create rejection record
+      const rejection = await ActivityRejection.create({
+        activity_id: activity._id,
+        reason: reason.trim(),
+        rejected_by: rejectedBy,
+        rejected_at: new Date()
+      });
+
+      // Update activity status to rejected
+      activity.status = 'rejected';
+      await activity.save();
+
+      // Populate rejection data
+      const populatedRejection = await ActivityRejection.findById(rejection._id)
+        .populate('activity_id', 'title description status')
+        .populate('rejected_by', 'username');
+
+      // Transform activity status to Vietnamese in response
+      if (populatedRejection.activity_id) {
+        populatedRejection.activity_id.status = getStatusVi('rejected');
+      }
+
+      res.json({ 
+        success: true, 
+        message: 'Hoạt động đã được từ chối',
+        data: populatedRejection 
+      });
+    } catch (err) {
+      console.error('Reject activity error:', err);
+      if (err.code === 11000) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Hoạt động đã bị từ chối trước đó' 
+        });
+      }
+      res.status(400).json({ success: false, message: err.message });
+    }
+  },
+
+  async getActivityRejections(req, res) {
+    try {
+      const rejections = await ActivityRejection.find()
+        .populate('activity_id')
+        .populate('rejected_by', 'username')
+        .sort({ rejected_at: -1 });
+
+      // Transform activity status to Vietnamese in each rejection
+      const transformedRejections = rejections.map(rejection => {
+        const rejectionObj = rejection.toObject();
+        if (rejectionObj.activity_id) {
+          rejectionObj.activity_id.status = getStatusVi(rejectionObj.activity_id.status);
+        }
+        return rejectionObj;
+      });
+
+      res.json({ success: true, data: transformedRejections });
+    } catch (err) {
+      console.error('Get activity rejections error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  async getRejectionByActivityId(req, res) {
+    try {
+      const { id } = req.params;
+      
+      const rejection = await ActivityRejection.findOne({ activity_id: id })
+        .populate('activity_id')
+        .populate('rejected_by', 'username');
+
+      if (!rejection) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Không tìm thấy thông tin từ chối cho hoạt động này' 
+        });
+      }
+
+      // Transform activity status to Vietnamese
+      const rejectionObj = rejection.toObject();
+      if (rejectionObj.activity_id) {
+        rejectionObj.activity_id.status = getStatusVi(rejectionObj.activity_id.status);
+      }
+
+      res.json({ success: true, data: rejectionObj });
+    } catch (err) {
+      console.error('Get rejection by activity ID error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  async deleteRejection(req, res) {
+    try {
+      const { id } = req.params;
+      
+      const rejection = await ActivityRejection.findOneAndDelete({ activity_id: id });
+
+      if (!rejection) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Không tìm thấy thông tin từ chối' 
+        });
+      }
+
+      // Update activity status back to pending (since rejection is removed)
+      const activity = await Activity.findById(id);
+      if (activity && activity.status === 'rejected') {
+        activity.status = 'pending';
+        await activity.save();
+      }
+
+      res.json({ 
+        success: true, 
+        message: 'Đã xóa thông tin từ chối hoạt động. Status đã được cập nhật về "chờ duyệt"' 
+      });
+    } catch (err) {
+      console.error('Delete rejection error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  async cancelActivity(req, res) {
+    try {
+      const activity = await Activity.findById(req.params.id);
+      if (!activity) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Activity not found' 
+        });
+      }
+
+      // Check if activity is already cancelled
+      if (activity.status === 'cancelled') {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Hoạt động đã bị hủy trước đó' 
+        });
+      }
+
+      // Update activity status to cancelled
+      activity.status = 'cancelled';
+      await activity.save();
+
+      // Transform activity to return Vietnamese status
+      const transformedActivity = transformActivity(activity);
+
+      res.json({ 
+        success: true, 
+        message: 'Hoạt động đã được hủy',
+        data: transformedActivity 
+      });
+    } catch (err) {
+      console.error('Cancel activity error:', err);
+      res.status(400).json({ success: false, message: err.message });
     }
   }
 };

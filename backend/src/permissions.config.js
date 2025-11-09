@@ -89,7 +89,8 @@ module.exports = {
     'activity:approve', 'activity:reject', 'activity:export',
     
     // User - Quản lý người dùng sinh viên
-    'user:create', 'user:read', 'user:update', 'user:lock', 'user:unlock',
+    // 'user:create', 'user:read', 'user:update', 'user:lock', 'user:unlock',
+    'user:read', 'user:update',
     
     // Attendance - Quản lý điểm danh
     'attendance:scan', 'attendance:read', 'attendance:verify', 'attendance:export',

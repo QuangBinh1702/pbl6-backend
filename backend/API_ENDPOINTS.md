@@ -423,7 +423,7 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 | Method | Endpoint | Description | Auth Required | Roles |
 |--------|----------|-------------|---------------|-------|
-| GET | `/api/student-cohorts` | Lấy tất cả mối quan hệ sinh viên-khóa | ✅ | admin, ctsv, teacher |
+| GET | `/api/student-cohorts` | Lấy tất cả mối quan hệ sinh viên-khóa | ✅ | admin, ctsv, staff |
 | GET | `/api/student-cohorts/:id` | Lấy quan hệ sinh viên-khóa theo ID | ✅ | - |
 | GET | `/api/student-cohorts/student/:studentId` | Lấy các khóa của sinh viên | ✅ | - |
 | GET | `/api/student-cohorts/cohort/:cohortId` | Lấy sinh viên theo khóa | ✅ | - |
@@ -452,10 +452,10 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 | Method | Endpoint | Description | Auth Required | Roles |
 |--------|----------|-------------|---------------|-------|
-| GET | `/api/pvcd-records` | Lấy tất cả bản ghi PVCD | ✅ | admin, ctsv, teacher |
+| GET | `/api/pvcd-records` | Lấy tất cả bản ghi PVCD | ✅ | admin, ctsv, staff |
 | GET | `/api/pvcd-records/:id` | Lấy bản ghi PVCD theo ID | ✅ | - |
 | GET | `/api/pvcd-records/student/:studentId` | Lấy bản ghi PVCD theo sinh viên | ✅ | - |
-| GET | `/api/pvcd-records/year/:year` | Lấy bản ghi PVCD theo năm | ✅ | admin, ctsv, teacher |
+| GET | `/api/pvcd-records/year/:year` | Lấy bản ghi PVCD theo năm | ✅ | admin, ctsv, staff |
 | POST | `/api/pvcd-records` | Tạo bản ghi PVCD mới | ✅ | admin, ctsv |
 | PUT | `/api/pvcd-records/:id` | Cập nhật bản ghi PVCD | ✅ | admin, ctsv |
 | PUT | `/api/pvcd-records/:id/points` | Cập nhật điểm PVCD | ✅ | admin, ctsv |
@@ -618,37 +618,113 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 | Method | Endpoint | Description | Auth Required | Permission Required |
 |--------|----------|-------------|---------------|---------------------|
-| GET | `/api/activities` | Lấy tất cả hoạt động | ❌ | - (Public) |
+| GET | `/api/activities` | Lấy tất cả hoạt động (có thể filter theo org_unit_id, field_id, status, start_date, end_date) | ❌ | - (Public) |
 | GET | `/api/activities/my/activities` | Lấy hoạt động của sinh viên hiện tại | ✅ | - (Own data) |
 | GET | `/api/activities/student/:studentId` | Lấy hoạt động của một sinh viên cụ thể | ✅ | `activity_registration:READ` |
 | GET | `/api/activities/:id` | Lấy chi tiết hoạt động theo ID | ❌ | - (Public) |
-| POST | `/api/activities` | Tạo hoạt động mới | ✅ | `activity:CREATE` |
+| POST | `/api/activities` | Tạo hoạt động mới (status = chưa tổ chức/đang tổ chức/đã tổ chức tùy thời gian) | ✅ | `activity:CREATE` |
+| POST | `/api/activities/suggest` | Đề xuất hoạt động (status = chờ duyệt) | ✅ | - (Authenticated) |
 | PUT | `/api/activities/:id` | Cập nhật thông tin hoạt động | ✅ | `activity:UPDATE` |
 | DELETE | `/api/activities/:id` | Xóa hoạt động | ✅ | `activity:DELETE` |
-| PUT | `/api/activities/:id/approve` | Phê duyệt hoạt động | ✅ | `activity:APPROVE` |
-| PUT | `/api/activities/:id/reject` | Từ chối hoạt động | ✅ | `activity:REJECT` |
-| PUT | `/api/activities/:id/complete` | Đánh dấu hoàn thành hoạt động | ✅ | `activity:UPDATE` |
+| PUT | `/api/activities/:id/approve` | Phê duyệt hoạt động (chuyển từ chờ duyệt -> chưa tổ chức/đang tổ chức/đã tổ chức) | ✅ | `activity:APPROVE` |
+| PUT | `/api/activities/:id/reject` | Từ chối hoạt động (tạo bản ghi trong bảng activity_rejection) | ✅ | `activity:REJECT` |
+| PUT | `/api/activities/:id/complete` | Đánh dấu hoàn thành hoạt động (status = đã tổ chức) | ✅ | `activity:UPDATE` |
+| PUT | `/api/activities/:id/cancel` | Hủy hoạt động (status = hủy hoạt động) | ✅ | `activity:UPDATE` |
 | POST | `/api/activities/:id/register` | Đăng ký tham gia hoạt động | ✅ | `activity_registration:CREATE` |
 | GET | `/api/activities/:id/registrations` | Lấy danh sách đăng ký của hoạt động | ✅ | `activity_registration:READ` |
+| GET | `/api/activities/rejections` | Lấy tất cả các hoạt động bị từ chối | ✅ | `activity:READ` |
+| GET | `/api/activities/:id/rejection` | Lấy thông tin từ chối của hoạt động | ✅ | `activity:READ` |
+| DELETE | `/api/activities/:id/rejection` | Xóa thông tin từ chối hoạt động | ✅ | `activity:DELETE` |
 
 **Request Body - Create Activity:**
 ```json
 {
-  "name": "Hoạt động tình nguyện",
+  "title": "Hoạt động tình nguyện",
   "description": "Mô tả hoạt động",
-  "type": "faculty",
-  "time": "2024-01-15T00:00:00.000Z",
   "location": "P101",
-  "points": 5,
-  "maxParticipants": 50,
-  "requirements": "Yêu cầu tham gia"
+  "start_time": "2024-01-15T08:00:00.000Z",
+  "end_time": "2024-01-15T12:00:00.000Z",
+  "capacity": 50,
+  "registration_open": "2024-01-10T00:00:00.000Z",
+  "registration_close": "2024-01-14T23:59:59.000Z",
+  "requires_approval": false,
+  "org_unit_id": "org_unit_id_here",
+  "field_id": "field_id_here",
+  "activity_image": "https://example.com/image.jpg"
 }
 ```
+
+**Lưu ý - Create Activity:**
+- Status sẽ được tự động set dựa trên thời gian:
+  - Nếu `end_time < now`: status = `đã tổ chức`
+  - Nếu `start_time <= now <= end_time`: status = `đang tổ chức`
+  - Nếu `start_time > now`: status = `chưa tổ chức`
+- Hoạt động được tạo sẽ có status = `chưa tổ chức` (nếu start_time trong tương lai) hoặc `đang tổ chức`/`đã tổ chức` (nếu đang diễn ra hoặc đã kết thúc)
+- Yêu cầu permission: `activity:CREATE`
+
+**Request Body - Suggest Activity (Đề xuất hoạt động):**
+```json
+{
+  "title": "Hoạt động tình nguyện",
+  "description": "Mô tả hoạt động",
+  "location": "P101",
+  "start_time": "2024-01-15T08:00:00.000Z",
+  "end_time": "2024-01-15T12:00:00.000Z",
+  "capacity": 50,
+  "registration_open": "2024-01-10T00:00:00.000Z",
+  "registration_close": "2024-01-14T23:59:59.000Z",
+  "requires_approval": true,
+  "org_unit_id": "org_unit_id_here",
+  "field_id": "field_id_here",
+  "activity_image": "https://example.com/image.jpg"
+}
+```
+
+**Lưu ý - Suggest Activity:**
+- Status sẽ luôn là `chờ duyệt`
+- Hoạt động cần được phê duyệt qua endpoint `/api/activities/:id/approve` trước khi có thể tổ chức
+- Không yêu cầu permission đặc biệt, chỉ cần authenticated
+- Sau khi được phê duyệt, status sẽ tự động chuyển thành `chưa tổ chức`/`đang tổ chức`/`đã tổ chức` dựa trên thời gian
 
 **Request Body - Reject Activity:**
 ```json
 {
   "reason": "Lý do từ chối hoạt động"
+}
+```
+
+**Lưu ý - Reject Activity:**
+- Khi từ chối hoạt động, hệ thống sẽ:
+  1. Tạo bản ghi mới trong bảng `activity_rejection`
+  2. **Tự động set status của activity = `từ chối` (rejected)**
+- Thông tin từ chối bao gồm: `activity_id`, `reason`, `rejected_by`, `rejected_at`
+- Mỗi hoạt động chỉ có thể bị từ chối một lần (unique constraint trên activity_id)
+- **Status của activity sẽ tự động chuyển thành `từ chối` khi bị từ chối**
+- Yêu cầu permission: `activity:REJECT`
+- Field `reason` là bắt buộc và không được để trống
+- Khi xóa rejection, status sẽ được cập nhật về `chờ duyệt` (pending)
+
+**Error Response - Reject Activity (Activity not found):**
+```json
+{
+  "success": false,
+  "message": "Activity not found"
+}
+```
+
+**Error Response - Reject Activity (Missing reason):**
+```json
+{
+  "success": false,
+  "message": "Lý do từ chối là bắt buộc"
+}
+```
+
+**Error Response - Reject Activity (Already rejected):**
+```json
+{
+  "success": false,
+  "message": "Hoạt động đã bị từ chối trước đó"
 }
 ```
 
@@ -659,9 +735,78 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 }
 ```
 
-**Lưu ý:**
+**Lưu ý - Approve Activity:**
+- Khi phê duyệt hoạt động có status = `chờ duyệt`, hệ thống sẽ tự động set status dựa trên thời gian:
+  - Nếu `end_time < now`: status = `đã tổ chức`
+  - Nếu `start_time <= now <= end_time`: status = `đang tổ chức`
+  - Nếu `start_time > now`: status = `chưa tổ chức`
 - Nếu không gửi body, hệ thống mặc định đặt `requires_approval = false` (coi như đã duyệt)
 - Nếu gửi `requires_approval = true`, đánh dấu hoạt động cần duyệt lại
+
+**Query Parameters - Get All Activities (`GET /api/activities`):**
+- `org_unit_id` (optional): Lọc hoạt động theo đơn vị tổ chức
+- `field_id` (optional): Lọc hoạt động theo ngành học
+- `status` (optional): Lọc hoạt động theo trạng thái (có thể dùng tiếng Anh: `pending`, `approved`, `in_progress`, `completed`, `rejected`, `cancelled` hoặc tiếng Việt: `chờ duyệt`, `chưa tổ chức`, `đang tổ chức`, `đã tổ chức`, `từ chối`, `hủy hoạt động`)
+- `start_date` (optional): Lọc hoạt động từ ngày bắt đầu (ISO format: `2024-01-15`)
+- `end_date` (optional): Lọc hoạt động đến ngày kết thúc (ISO format: `2024-12-31`)
+
+**Trạng thái hoạt động (Activity Status):**
+- `chờ duyệt`: Hoạt động được đề xuất, đang chờ phê duyệt
+- `chưa tổ chức`: Hoạt động đã được phê duyệt nhưng chưa đến thời gian bắt đầu
+- `đang tổ chức`: Hoạt động đang diễn ra (start_time <= now <= end_time)
+- `đã tổ chức`: Hoạt động đã kết thúc (end_time < now)
+- `từ chối`: Hoạt động đã bị từ chối (có bản ghi trong bảng activity_rejection)
+- `hủy hoạt động`: Hoạt động đã bị hủy
+
+**Lưu ý:** 
+- Hệ thống sẽ tự động cập nhật trạng thái từ `chưa tổ chức` -> `đang tổ chức` -> `đã tổ chức` dựa trên thời gian khi truy vấn hoạt động.
+- **Status `từ chối` và `hủy hoạt động` có priority cao nhất:** Không bị thay đổi bởi thời gian.
+- Trong response, field `status` sẽ trả về bằng tiếng Việt.
+- Query parameter `status` có thể nhận cả tiếng Việt (ví dụ: `chờ duyệt`, `chưa tổ chức`, `từ chối`, `hủy hoạt động`) hoặc tiếng Anh (ví dụ: `pending`, `approved`, `rejected`, `cancelled`)
+
+**Ví dụ:**
+- Lấy tất cả hoạt động: `GET /api/activities`
+- Lấy hoạt động của tổ chức: `GET /api/activities?org_unit_id=<org_unit_id>`
+- Lấy hoạt động theo trạng thái: `GET /api/activities?status=chưa tổ chức`
+- Lấy hoạt động chờ duyệt: `GET /api/activities?status=chờ duyệt` hoặc `GET /api/activities?status=pending`
+- Lấy hoạt động chưa tổ chức: `GET /api/activities?status=chưa tổ chức` hoặc `GET /api/activities?status=approved`
+- Lấy hoạt động đang tổ chức: `GET /api/activities?status=đang tổ chức` hoặc `GET /api/activities?status=in_progress`
+- Lấy hoạt động đã tổ chức: `GET /api/activities?status=đã tổ chức` hoặc `GET /api/activities?status=completed`
+- Lấy hoạt động bị từ chối: `GET /api/activities?status=từ chối` hoặc `GET /api/activities?status=rejected`
+- Lấy hoạt động bị hủy: `GET /api/activities?status=hủy hoạt động` hoặc `GET /api/activities?status=cancelled`
+- Lấy hoạt động của tổ chức và trạng thái: `GET /api/activities?org_unit_id=<org_unit_id>&status=chờ duyệt`
+- Lấy hoạt động trong khoảng thời gian: `GET /api/activities?start_date=2024-01-01&end_date=2024-12-31`
+
+**Response - Get All Activities (`GET /api/activities`):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "activity_id",
+      "title": "Hoạt động tình nguyện",
+      "description": "Mô tả hoạt động",
+      "org_unit_id": {
+        "_id": "org_unit_id",
+        "name": "Phòng CTSV",
+        "code": "CTSV"
+      },
+      "field_id": {
+        "_id": "field_id",
+        "name": "Công nghệ thông tin",
+        "code": "CNTT"
+      },
+      "location": "P101",
+      "start_time": "2024-01-15T08:00:00.000Z",
+      "end_time": "2024-01-15T12:00:00.000Z",
+      "capacity": 50,
+      "status": "chưa tổ chức",
+      "requires_approval": false,
+      "approved_at": "2024-01-10T10:00:00.000Z"
+    }
+  ]
+}
+```
 
 **Response - Get My Activities (`/api/activities/my/activities`):**
 ```json
@@ -697,6 +842,189 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 **Response - Get Student Activities (`/api/activities/student/:studentId`):**
 Same format as above.
+
+**Response - Get Activity by ID (`GET /api/activities/:id`):**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "activity_id",
+    "title": "Hoạt động tình nguyện",
+    "description": "Mô tả hoạt động",
+    "status": "từ chối",
+    "registrationCount": 10,
+    "rejection": {
+      "_id": "rejection_id",
+      "activity_id": "activity_id",
+      "reason": "Lý do từ chối",
+      "rejected_by": {
+        "_id": "user_id",
+        "username": "admin"
+      },
+      "rejected_at": "2024-01-10T10:00:00.000Z"
+    }
+  }
+}
+```
+
+**Lưu ý:** 
+- Field `rejection` sẽ là `null` nếu hoạt động chưa bị từ chối.
+- **Khi activity bị từ chối, `status` sẽ tự động là `từ chối` (rejected).**
+
+**Response - Suggest Activity (`POST /api/activities/suggest`):**
+```json
+{
+  "success": true,
+  "message": "Activity suggested successfully. Waiting for approval.",
+  "data": {
+    "_id": "activity_id",
+    "title": "Hoạt động tình nguyện",
+    "description": "Mô tả hoạt động",
+    "location": "P101",
+    "start_time": "2024-01-15T08:00:00.000Z",
+    "end_time": "2024-01-15T12:00:00.000Z",
+    "capacity": 50,
+    "status": "chờ duyệt",
+    "requires_approval": true,
+    "org_unit_id": {
+      "_id": "org_unit_id",
+      "name": "Phòng CTSV",
+      "code": "CTSV"
+    },
+    "field_id": {
+      "_id": "field_id",
+      "name": "Công nghệ thông tin",
+      "code": "CNTT"
+    }
+  }
+}
+```
+
+**Response - Create Activity (`POST /api/activities`):**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "activity_id",
+    "title": "Hoạt động tình nguyện",
+    "description": "Mô tả hoạt động",
+    "location": "P101",
+    "start_time": "2024-01-15T08:00:00.000Z",
+    "end_time": "2024-01-15T12:00:00.000Z",
+    "capacity": 50,
+    "status": "chưa tổ chức",
+    "requires_approval": false,
+    "approved_at": "2024-01-10T10:00:00.000Z",
+    "org_unit_id": {
+      "_id": "org_unit_id",
+      "name": "Phòng CTSV",
+      "code": "CTSV"
+    }
+  }
+}
+```
+
+**Response - Reject Activity (`PUT /api/activities/:id/reject`):**
+```json
+{
+  "success": true,
+  "message": "Hoạt động đã được từ chối",
+  "data": {
+    "_id": "rejection_id",
+    "activity_id": {
+      "_id": "activity_id",
+      "title": "Hoạt động tình nguyện",
+      "description": "Mô tả hoạt động",
+      "status": "từ chối"
+    },
+    "reason": "Lý do từ chối hoạt động",
+    "rejected_by": {
+      "_id": "user_id",
+      "username": "admin"
+    },
+    "rejected_at": "2024-01-10T10:00:00.000Z"
+  }
+}
+```
+
+**Lưu ý:** Sau khi reject, activity status sẽ tự động là `từ chối` (rejected).
+
+**Response - Get All Rejections (`GET /api/activities/rejections`):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "rejection_id",
+      "activity_id": {
+        "_id": "activity_id",
+        "title": "Hoạt động tình nguyện",
+        "status": "từ chối"
+      },
+      "reason": "Lý do từ chối",
+      "rejected_by": {
+        "_id": "user_id",
+        "username": "admin"
+      },
+      "rejected_at": "2024-01-10T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Lưu ý:** Tất cả activities trong response sẽ có `status: "từ chối"` (rejected).
+
+**Response - Get Rejection by Activity ID (`GET /api/activities/:id/rejection`):**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "rejection_id",
+    "activity_id": {
+      "_id": "activity_id",
+      "title": "Hoạt động tình nguyện",
+      "status": "từ chối"
+    },
+    "reason": "Lý do từ chối",
+    "rejected_by": {
+      "_id": "user_id",
+      "username": "admin"
+    },
+    "rejected_at": "2024-01-10T10:00:00.000Z"
+  }
+}
+```
+
+**Lưu ý:** Activity trong response sẽ có `status: "từ chối"` (rejected).
+
+**Response - Delete Rejection (`DELETE /api/activities/:id/rejection`):**
+```json
+{
+  "success": true,
+  "message": "Đã xóa thông tin từ chối hoạt động"
+}
+```
+
+**Lưu ý - Delete Rejection:**
+- Xóa bản ghi từ chối khỏi bảng `activity_rejection`
+- Sau khi xóa, hoạt động có thể được từ chối lại (nếu cần)
+- Yêu cầu permission: `activity:DELETE`
+
+**Error Response - Get Rejection by Activity ID (Not found):**
+```json
+{
+  "success": false,
+  "message": "Không tìm thấy thông tin từ chối cho hoạt động này"
+}
+```
+
+**Error Response - Delete Rejection (Not found):**
+```json
+{
+  "success": false,
+  "message": "Không tìm thấy thông tin từ chối"
+}
+```
 
 ---
 
@@ -737,15 +1065,15 @@ Same format as above.
 
 | Method | Endpoint | Description | Auth Required | Roles |
 |--------|----------|-------------|---------------|-------|
-| GET | `/api/attendances` | Lấy tất cả bản ghi điểm danh | ✅ | admin, ctsv, teacher |
+| GET | `/api/attendances` | Lấy tất cả bản ghi điểm danh | ✅ | admin, ctsv, staff |
 | GET | `/api/attendances/:id` | Lấy chi tiết điểm danh theo ID | ✅ | - |
 | GET | `/api/attendances/activity/:activityId` | Lấy điểm danh theo hoạt động | ✅ | - |
 | GET | `/api/attendances/student/:studentId` | Lấy điểm danh theo sinh viên | ✅ | - |
 | GET | `/api/attendances/student/:studentId/activities` | Lấy tất cả hoạt động đã tham gia (theo attendance) | ✅ | - |
-| POST | `/api/attendances` | Tạo bản ghi điểm danh mới | ✅ | admin, ctsv, teacher, union |
-| PUT | `/api/attendances/:id` | Cập nhật điểm danh | ✅ | admin, ctsv, teacher, union |
-| DELETE | `/api/attendances/:id` | Xóa điểm danh | ✅ | admin, ctsv, teacher, union |
-| PUT | `/api/attendances/:id/verify` | Xác minh điểm danh | ✅ | admin, ctsv, teacher, union |
+| POST | `/api/attendances` | Tạo bản ghi điểm danh mới | ✅ | admin, ctsv, staff, union |
+| PUT | `/api/attendances/:id` | Cập nhật điểm danh | ✅ | admin, ctsv, staff, union |
+| DELETE | `/api/attendances/:id` | Xóa điểm danh | ✅ | admin, ctsv, staff, union |
+| PUT | `/api/attendances/:id/verify` | Xác minh điểm danh | ✅ | admin, ctsv, staff, union |
 | PUT | `/api/attendances/:id/feedback` | Thêm phản hồi cho điểm danh | ✅ | - |
 | POST | `/api/attendances/scan-qr` | Quét mã QR để điểm danh | ✅ | - |
 
@@ -776,9 +1104,9 @@ Same format as above.
 | GET | `/api/posts` | Lấy tất cả bài đăng | ✅ | - |
 | GET | `/api/posts/:id` | Lấy chi tiết bài đăng theo ID | ✅ | - |
 | GET | `/api/posts/activity/:activityId` | Lấy bài đăng theo hoạt động | ✅ | - |
-| POST | `/api/posts` | Tạo bài đăng mới | ✅ | admin, ctsv, teacher, union |
-| PUT | `/api/posts/:id` | Cập nhật bài đăng | ✅ | admin, ctsv, teacher, union |
-| DELETE | `/api/posts/:id` | Xóa bài đăng | ✅ | admin, ctsv, teacher, union |
+| POST | `/api/posts` | Tạo bài đăng mới | ✅ | admin, ctsv, staff, union |
+| PUT | `/api/posts/:id` | Cập nhật bài đăng | ✅ | admin, ctsv, staff, union |
+| DELETE | `/api/posts/:id` | Xóa bài đăng | ✅ | admin, ctsv, staff, union |
 
 **Request Body - Create Post:**
 ```json
@@ -1016,13 +1344,12 @@ Authorization: Bearer <PLOK>
 
 ## 👥 Role-based Access Control
 
-Hệ thống có **4 roles chính**:
+Hệ thống có **3 roles chính**:
 
 | Role | Description | Số lượng Permissions |
 |------|-------------|---------------------|
 | `admin` | Quản trị viên hệ thống - Toàn quyền | ~82 permissions |
 | `staff` | Cán bộ (CTSV, Đoàn, Hội SV, Khoa, CLB) - Quản lý sinh viên và hoạt động | ~55 permissions |
-| `teacher` | Giảng viên - Quản lý lớp, chấm điểm, duyệt minh chứng | ~35 permissions |
 | `student` | Sinh viên - Tham gia hoạt động, nộp minh chứng | ~17 permissions |
 
 **Lưu ý đặc biệt:**
@@ -1048,7 +1375,7 @@ Hệ thống có **4 roles chính**:
 
 ## 📱 Test Accounts
 
-Sau khi chạy `seed_correct_structure.js`, bạn có **10 users** cho đầy đủ 4 roles:
+Sau khi chạy `seed_correct_structure.js`, bạn có **8 users** cho đầy đủ 3 roles:
 
 ### 👑 Admin (1 account)
 | Username | Password | Role | Mô tả |
@@ -1061,12 +1388,6 @@ Sau khi chạy `seed_correct_structure.js`, bạn có **10 users** cho đầy đ
 | `staff_ctsv` | `staff123` | staff | Phòng CTSV | Cán bộ Công tác sinh viên |
 | `staff_doan` | `staff123` | staff | Đoàn trường | Cán bộ Đoàn trường |
 | `staff_khoa` | `staff123` | staff | Khoa CNTT | Cán bộ Khoa CNTT |
-
-### 👨‍🏫 Teacher (2 accounts)
-| Username | Password | Role | Mô tả |
-|----------|----------|------|-------|
-| `teacher1` | `teacher123` | teacher | Giảng viên A (GV001) |
-| `teacher2` | `teacher123` | teacher | Giảng viên B (GV002) |
 
 ### 👨‍🎓 Student (4 accounts)
 | Username | Password | Role | Student Number | Đặc biệt |

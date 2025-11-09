@@ -1,6 +1,8 @@
 // Quản lý vai trò
 const Role = require('../models/role.model');
 const User = require('../models/user.model');
+const UserRole = require('../models/user_role.model');
+const RoleAction = require('../models/role_action.model');
 
 module.exports = {
   async getAllRoles(req, res) {
@@ -64,11 +66,28 @@ module.exports = {
 
   async deleteRole(req, res) {
     try {
-      const role = await Role.findByIdAndDelete(req.params.id);
+      const role = await Role.findById(req.params.id);
       if (!role) {
         return res.status(404).json({ message: 'Role not found' });
       }
-      res.json({ message: 'Role deleted successfully' });
+
+      // Xóa tất cả user_role liên quan
+      const userRoleResult = await UserRole.deleteMany({ role_id: req.params.id });
+      
+      // Xóa tất cả role_action liên quan
+      const roleActionResult = await RoleAction.deleteMany({ role_id: req.params.id });
+      
+      // Xóa role
+      await Role.findByIdAndDelete(req.params.id);
+      
+      res.json({ 
+        message: 'Role deleted successfully',
+        deleted: {
+          role: role.name,
+          userRoles: userRoleResult.deletedCount,
+          roleActions: roleActionResult.deletedCount
+        }
+      });
     } catch (err) {
       res.status(500).json({ message: err.message });
     }

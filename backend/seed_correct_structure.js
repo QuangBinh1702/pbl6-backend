@@ -30,7 +30,7 @@ async function seedData() {
       'user', 'role', 'permission', 'action', 'role_action', 'user_role', 'user_action_override',
       'field', 'falcuty', 'cohort', 'class', 'org_unit',
       'staff_profile', 'student_profile',
-      'activity', 'activity_registration', 'activity_eligiblity',
+      'activity', 'activity_registration', 'activity_eligiblity', 'activity_rejection',
       'attendance', 'evidence', 'student_feedback', 'student_cohort',
       'pvcd_record', 'post'
     ];
@@ -364,7 +364,8 @@ async function seedData() {
         registration_open: new Date('2025-09-20T00:00:00'),
         registration_close: new Date('2025-09-30T23:59:59'),
         activity_image: '',
-        requires_approval: true
+        requires_approval: true,
+        status: 'pending'
       },
       {
         org_unit_id: orgUnits.insertedIds[1],
@@ -381,7 +382,39 @@ async function seedData() {
         registration_open: new Date('2025-10-15T00:00:00'),
         registration_close: new Date('2025-11-03T23:59:59'),
         activity_image: '',
-        requires_approval: false
+        requires_approval: false,
+        status: 'approved',
+        approved_at: new Date('2025-10-01T10:00:00')
+      },
+      {
+        org_unit_id: orgUnits.insertedIds[0],
+        field_id: fields.insertedIds[0],
+        title: 'Hoạt động từ thiện tại trường tiểu học',
+        description: 'Tổ chức hoạt động từ thiện, tặng quà cho học sinh nghèo',
+        location: 'Trường Tiểu học ABC',
+        start_time: new Date('2025-12-20T08:00:00'),
+        end_time: new Date('2025-12-20T12:00:00'),
+        capacity: 30,
+        registration_open: new Date('2025-12-01T00:00:00'),
+        registration_close: new Date('2025-12-18T23:59:59'),
+        activity_image: '',
+        requires_approval: true,
+        status: 'pending'
+      },
+      {
+        org_unit_id: orgUnits.insertedIds[1],
+        field_id: fields.insertedIds[1],
+        title: 'Workshop về kỹ năng mềm',
+        description: 'Workshop về kỹ năng giao tiếp, làm việc nhóm',
+        location: 'Phòng họp A201',
+        start_time: new Date('2025-12-25T14:00:00'),
+        end_time: new Date('2025-12-25T17:00:00'),
+        capacity: 50,
+        registration_open: new Date('2025-12-05T00:00:00'),
+        registration_close: new Date('2025-12-23T23:59:59'),
+        activity_image: '',
+        requires_approval: true,
+        status: 'pending'
       }
     ]);
     console.log(`   ✅ ${activities.insertedCount} activities`);
