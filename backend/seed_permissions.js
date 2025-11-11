@@ -229,6 +229,16 @@ const RESOURCES_ACTIONS = {
       { code: 'UPDATE', name: 'Cập nhật điều kiện', description: 'Chỉnh sửa điều kiện' },
       { code: 'DELETE', name: 'Xóa điều kiện', description: 'Xóa điều kiện tham gia' }
     ]
+  },
+  notification: {
+    name: 'Quản lý thông báo',
+    description: 'Quản lý thông báo hệ thống',
+    actions: [
+      { code: 'CREATE', name: 'Tạo thông báo', description: 'Tạo thông báo mới' },
+      { code: 'READ', name: 'Xem thông báo', description: 'Xem danh sách thông báo' },
+      { code: 'UPDATE', name: 'Cập nhật thông báo', description: 'Chỉnh sửa thông báo' },
+      { code: 'DELETE', name: 'Xóa thông báo', description: 'Xóa thông báo' }
+    ]
   }
 };
 

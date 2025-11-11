@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Notifications API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .auth-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .auth-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .token-display {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            word-break: break-all;
+            font-size: 12px;
+        }
+
+        .notifications-section {
+            margin-top: 30px;
+        }
+
+        .notifications-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .notification-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s;
+        }
+
+        .notification-item:hover {
+            transform: translateX(5px);
+        }
+
+        .notification-item.unread {
+            background: #e3f2fd;
+            border-left-color: #2196f3;
+        }
+
+        .notification-item.read {
+            background: #f5f5f5;
+            border-left-color: #9e9e9e;
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .notification-title {
+            font-weight: bold;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .notification-badge {
+            background: #667eea;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+
+        .notification-date {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .notification-content {
+            color: #555;
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+
+        .notification-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .notification-actions button {
+            padding: 5px 15px;
+            font-size: 12px;
+            margin: 0;
+        }
+
+        .unread-count {
+            background: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .form-create {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔔 Test Notifications API</h1>
+        <p class="subtitle">Test API thông báo hệ thống PBL6</p>
+
+        <!-- Auth Section -->
+        <div class="auth-section">
+            <h2>🔐 Authentication</h2>
+            <div class="form-group">
+                <label>Base URL:</label>
+                <input type="text" id="baseUrl" value="http://localhost:5000" placeholder="http://localhost:5000">
+            </div>
+            <div class="form-group">
+                <label>Username:</label>
+                <input type="text" id="username" value="admin" placeholder="admin">
+            </div>
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" id="password" value="admin123" placeholder="password">
+            </div>
+            <button onclick="login()">Login</button>
+            <div id="authResult"></div>
+            <div id="tokenDisplay" class="token-display" style="display: none;"></div>
+        </div>
+
+        <!-- Notifications Section -->
+        <div class="notifications-section">
+            <h2>
+                📋 Danh sách thông báo
+                <span id="unreadCount" class="unread-count" style="display: none;"></span>
+            </h2>
+
+            <div class="controls">
+                <button onclick="loadNotifications()">Tải lại danh sách</button>
+                <button onclick="loadUnreadNotifications()">Chỉ hiển thị chưa đọc</button>
+                <button onclick="loadReadNotifications()">Chỉ hiển thị đã đọc</button>
+                <button onclick="getUnreadCount()" class="btn-success">Lấy số lượng chưa đọc</button>
+                <button onclick="markAllAsRead()" class="btn-success">Đánh dấu tất cả đã đọc</button>
+                <select id="filterType" onchange="filterByType()" style="width: auto; padding: 8px;">
+                    <option value="">Tất cả loại</option>
+                    <option value="schedule">Lịch học</option>
+                    <option value="score_update">Cập nhật điểm</option>
+                    <option value="cancellation">Hủy lớp</option>
+                    <option value="registration_guide">Hướng dẫn đăng ký</option>
+                    <option value="general">Chung</option>
+                    <option value="activity">Hoạt động</option>
+                    <option value="announcement">Thông báo</option>
+                </select>
+            </div>
+
+            <div id="notificationsList">
+                <div class="loading">Vui lòng đăng nhập để xem thông báo</div>
+            </div>
+        </div>
+
+        <!-- Create Notification Section -->
+        <div class="form-create">
+            <h2>➕ Tạo thông báo mới</h2>
+            <div class="form-group">
+                <label>Tiêu đề:</label>
+                <input type="text" id="createTitle" placeholder="Nhập tiêu đề thông báo">
+            </div>
+            <div class="form-group">
+                <label>Nội dung:</label>
+                <textarea id="createContent" rows="4" placeholder="Nhập nội dung thông báo"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Loại thông báo:</label>
+                <select id="createType">
+                    <option value="general">Chung</option>
+                    <option value="schedule">Lịch học</option>
+                    <option value="score_update">Cập nhật điểm</option>
+                    <option value="cancellation">Hủy lớp</option>
+                    <option value="registration_guide">Hướng dẫn đăng ký</option>
+                    <option value="activity">Hoạt động</option>
+                    <option value="announcement">Thông báo</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Đối tượng:</label>
+                <select id="createAudience">
+                    <option value="all">Tất cả</option>
+                    <option value="student">Sinh viên</option>
+                    <option value="staff">Cán bộ</option>
+                    <option value="specific">Cụ thể</option>
+                </select>
+            </div>
+            <button onclick="createNotification()" class="btn-success">Tạo thông báo</button>
+            <div id="createResult"></div>
+        </div>
+    </div>
+
+    <script>
+        let token = '';
+        let baseUrl = 'http://localhost:5000';
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            baseUrl = document.getElementById('baseUrl').value;
+
+            try {
+                const response = await fetch(`${baseUrl}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                
+                if (data.success && data.token) {
+                    token = data.token;
+                    document.getElementById('tokenDisplay').style.display = 'block';
+                    document.getElementById('tokenDisplay').textContent = `Token: ${token.substring(0, 50)}...`;
+                    document.getElementById('authResult').innerHTML = '<div class="success">✅ Đăng nhập thành công!</div>';
+                    await loadNotifications();
+                    await getUnreadCount();
+                } else {
+                    document.getElementById('authResult').innerHTML = `<div class="error">❌ ${data.message || 'Đăng nhập thất bại'}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('authResult').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        async function loadNotifications(filter = '') {
+            if (!token) {
+                document.getElementById('notificationsList').innerHTML = '<div class="error">Vui lòng đăng nhập trước</div>';
+                return;
+            }
+
+            try {
+                const url = `${baseUrl}/api/notifications${filter ? '?' + filter : ''}`;
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayNotifications(data.data);
+                    if (data.unread_count !== undefined) {
+                        updateUnreadCount(data.unread_count);
+                    }
+                } else {
+                    document.getElementById('notificationsList').innerHTML = `<div class="error">❌ ${data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('notificationsList').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        async function loadUnreadNotifications() {
+            await loadNotifications('read_status=unread');
+        }
+
+        async function loadReadNotifications() {
+            await loadNotifications('read_status=read');
+        }
+
+        function filterByType() {
+            const type = document.getElementById('filterType').value;
+            if (type) {
+                loadNotifications(`notification_type=${type}`);
+            } else {
+                loadNotifications();
+            }
+        }
+
+        async function getUnreadCount() {
+            if (!token) return;
+
+            try {
+                const response = await fetch(`${baseUrl}/api/notifications/unread/count`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    updateUnreadCount(data.unread_count);
+                }
+            } catch (error) {
+                console.error('Error getting unread count:', error);
+            }
+        }
+
+        function updateUnreadCount(count) {
+            const unreadCountEl = document.getElementById('unreadCount');
+            if (count > 0) {
+                unreadCountEl.textContent = `${count} chưa đọc`;
+                unreadCountEl.style.display = 'inline-block';
+            } else {
+                unreadCountEl.style.display = 'none';
+            }
+        }
+
+        async function markAsRead(notificationId) {
+            if (!token) return;
+
+            try {
+                const response = await fetch(`${baseUrl}/api/notifications/${notificationId}/read`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    await loadNotifications();
+                    await getUnreadCount();
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        async function markAllAsRead() {
+            if (!token) return;
+
+            if (!confirm('Bạn có chắc muốn đánh dấu tất cả thông báo là đã đọc?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${baseUrl}/api/notifications/read-all`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    await loadNotifications();
+                    await getUnreadCount();
+                    alert('✅ ' + data.message);
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        async function createNotification() {
+            if (!token) {
+                document.getElementById('createResult').innerHTML = '<div class="error">Vui lòng đăng nhập trước</div>';
+                return;
+            }
+
+            const title = document.getElementById('createTitle').value;
+            const content = document.getElementById('createContent').value;
+            const notificationType = document.getElementById('createType').value;
+            const targetAudience = document.getElementById('createAudience').value;
+
+            if (!title || !content) {
+                document.getElementById('createResult').innerHTML = '<div class="error">Vui lòng nhập đầy đủ thông tin</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${baseUrl}/api/notifications`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        title,
+                        content,
+                        notification_type: notificationType,
+                        target_audience: targetAudience,
+                        icon_type: 'megaphone'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('createResult').innerHTML = '<div class="success">✅ Tạo thông báo thành công!</div>';
+                    document.getElementById('createTitle').value = '';
+                    document.getElementById('createContent').value = '';
+                    await loadNotifications();
+                    await getUnreadCount();
+                } else {
+                    document.getElementById('createResult').innerHTML = `<div class="error">❌ ${data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('createResult').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        function displayNotifications(notifications) {
+            const container = document.getElementById('notificationsList');
+            
+            if (notifications.length === 0) {
+                container.innerHTML = '<div class="loading">Không có thông báo nào</div>';
+                return;
+            }
+
+            container.innerHTML = notifications.map(notif => {
+                const date = new Date(notif.published_date);
+                const dateStr = date.toLocaleDateString('vi-VN', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                const typeLabels = {
+                    'schedule': 'Lịch học',
+                    'score_update': 'Cập nhật điểm',
+                    'cancellation': 'Hủy lớp',
+                    'registration_guide': 'Hướng dẫn đăng ký',
+                    'general': 'Chung',
+                    'activity': 'Hoạt động',
+                    'announcement': 'Thông báo'
+                };
+
+                return `
+                    <div class="notification-item ${notif.is_read ? 'read' : 'unread'}">
+                        <div class="notification-header">
+                            <div>
+                                <span class="notification-title">${notif.title}</span>
+                                <span class="notification-badge">${typeLabels[notif.notification_type] || notif.notification_type}</span>
+                                ${!notif.is_read ? '<span class="notification-badge" style="background: #dc3545;">Chưa đọc</span>' : ''}
+                            </div>
+                            <div class="notification-date">${dateStr}</div>
+                        </div>
+                        <div class="notification-content">${notif.content}</div>
+                        <div class="notification-actions">
+                            ${!notif.is_read ? `<button onclick="markAsRead('${notif._id}')" class="btn-success">Đánh dấu đã đọc</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Auto login on page load if token exists in localStorage
+        window.onload = function() {
+            const savedToken = localStorage.getItem('notification_token');
+            const savedBaseUrl = localStorage.getItem('notification_baseUrl');
+            if (savedToken && savedBaseUrl) {
+                token = savedToken;
+                baseUrl = savedBaseUrl;
+                document.getElementById('baseUrl').value = savedBaseUrl;
+                document.getElementById('tokenDisplay').style.display = 'block';
+                document.getElementById('tokenDisplay').textContent = `Token: ${token.substring(0, 50)}...`;
+                loadNotifications();
+                getUnreadCount();
+            }
+        };
+
+        // Save token to localStorage
+        function saveToken() {
+            if (token) {
+                localStorage.setItem('notification_token', token);
+                localStorage.setItem('notification_baseUrl', baseUrl);
+            }
+        }
+
+        // Update login function to save token
+        const originalLogin = login;
+        login = async function() {
+            await originalLogin();
+            saveToken();
+        };
+    </script>
+</body>
+</html>
+
+

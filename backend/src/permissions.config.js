@@ -70,7 +70,10 @@ module.exports = {
     
     // Activity Eligibility - Điều kiện tham gia
     'activity_eligibility:create', 'activity_eligibility:read', 
-    'activity_eligibility:update', 'activity_eligibility:delete'
+    'activity_eligibility:update', 'activity_eligibility:delete',
+    
+    // Notification - Quản lý thông báo
+    'notification:create', 'notification:read', 'notification:update', 'notification:delete'
   ],
   
   // ============================================
@@ -134,7 +137,10 @@ module.exports = {
     
     // Activity Eligibility
     'activity_eligibility:create', 'activity_eligibility:read', 
-    'activity_eligibility:update', 'activity_eligibility:delete'
+    'activity_eligibility:update', 'activity_eligibility:delete',
+    
+    // Notification - Quản lý thông báo
+    'notification:create', 'notification:read', 'notification:update', 'notification:delete'
   ],
   
   // ============================================

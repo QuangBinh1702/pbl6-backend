@@ -80,6 +80,8 @@ app.use('/api/posts', require('./routes/post.routes'));
 app.use('/api/feedback', require('./routes/feedback.routes'));
 app.use('/api/evidences', require('./routes/evidence.routes'));
 
+// Communication
+app.use('/api/notifications', require('./routes/notification.routes'));
 
 // System
 app.use('/api/permissions', require('./routes/permission.routes'));

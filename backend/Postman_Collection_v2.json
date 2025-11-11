@@ -37,7 +37,8 @@
     { "key": "pvcdRecordId", "value": "", "type": "string" },
     { "key": "permissionId", "value": "", "type": "string" },
     { "key": "actionId", "value": "", "type": "string" },
-    { "key": "studentCohortId", "value": "", "type": "string" }
+    { "key": "studentCohortId", "value": "", "type": "string" },
+    { "key": "notificationId", "value": "", "type": "string" }
   ],
   "item": [
     {
@@ -2171,6 +2172,189 @@
               }
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "💬 Communication",
+      "description": "Notification management endpoints",
+      "item": [
+        {
+          "name": "Get All Notifications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/notifications"
+          }
+        },
+        {
+          "name": "Get Notifications with Pagination",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Unread Notifications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications?read_status=unread",
+              "query": [
+                { "key": "read_status", "value": "unread" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Read Notifications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications?read_status=read",
+              "query": [
+                { "key": "read_status", "value": "read" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Notifications by Type (Schedule)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications?notification_type=schedule",
+              "query": [
+                { "key": "notification_type", "value": "schedule" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/notifications/unread/count"
+          }
+        },
+        {
+          "name": "Get Notification by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/notifications/{{notificationId}}"
+          }
+        },
+        {
+          "name": "Create Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/notifications",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Thông báo lịch học tuần này\",\n  \"content\": \"Các lớp học sẽ bắt đầu lúc 7h30 sáng thứ 2. Vui lòng có mặt đúng giờ và chuẩn bị đầy đủ tài liệu học tập.\",\n  \"published_date\": \"2025-10-23T00:00:00.000Z\",\n  \"icon_type\": \"megaphone\",\n  \"notification_type\": \"schedule\",\n  \"target_audience\": \"all\",\n  \"target_user_ids\": []\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Notification - Student Only",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/notifications",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cập nhật điểm rèn luyện\",\n  \"content\": \"Điểm rèn luyện học kỳ vừa rồi đã được công bố. Sinh viên có thể xem chi tiết trong mục Kết quả học tập.\",\n  \"published_date\": \"2025-10-22T00:00:00.000Z\",\n  \"icon_type\": \"megaphone\",\n  \"notification_type\": \"score_update\",\n  \"target_audience\": \"student\",\n  \"target_user_ids\": []\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Notification - Staff Only",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/notifications",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Họp phòng CTSV\",\n  \"content\": \"Thông báo họp phòng CTSV vào thứ 2 tuần sau.\",\n  \"published_date\": \"2025-10-21T00:00:00.000Z\",\n  \"icon_type\": \"megaphone\",\n  \"notification_type\": \"announcement\",\n  \"target_audience\": \"staff\",\n  \"target_user_ids\": []\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Notification - Specific Users",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/notifications",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Thông báo cho lớp CNTT01\",\n  \"content\": \"Lịch thi cuối kỳ lớp CNTT01 sẽ diễn ra vào...\",\n  \"published_date\": \"2025-10-20T00:00:00.000Z\",\n  \"icon_type\": \"megaphone\",\n  \"notification_type\": \"schedule\",\n  \"target_audience\": \"specific\",\n  \"target_user_ids\": [\n    \"{{userId}}\",\n    \"user_id_2\",\n    \"user_id_3\"\n  ]\n}"
+            },
+            "description": "Tạo thông báo chỉ gửi cho các users cụ thể trong target_user_ids. Chỉ những users có ID trong danh sách này mới nhìn thấy thông báo."
+          }
+        },
+        {
+          "name": "Update Notification",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/notifications/{{notificationId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Thông báo lịch học tuần này (đã cập nhật)\",\n  \"content\": \"Nội dung đã được cập nhật...\",\n  \"published_date\": \"2025-10-24T00:00:00.000Z\",\n  \"icon_type\": \"megaphone\",\n  \"notification_type\": \"schedule\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Notification",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/notifications/{{notificationId}}"
+          }
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/notifications/{{notificationId}}/read"
+          }
+        },
+        {
+          "name": "Mark All Notifications as Read",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/notifications/read-all"
+          }
         }
       ]
     },

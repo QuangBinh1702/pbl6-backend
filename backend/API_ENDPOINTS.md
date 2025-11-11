@@ -17,8 +17,9 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 3. [Organization](#organization)
 4. [Activities](#activities)
 5. [Points & Feedback](#points--feedback)
-6. [System & Permissions](#system--permissions)
-7. [Statistics](#statistics)
+6. [Communication](#communication)
+7. [System & Permissions](#system--permissions)
+8. [Statistics](#statistics)
 
 ---
 
@@ -291,6 +292,25 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 }
 ```
 
+**Request Body - Update User:**
+```json
+{
+  "username": "updated_username",
+  "is_locked": false
+}
+```
+
+**Request Body - Add Action Override:**
+```json
+{
+  "action_id": "action_uuid_here"
+}
+```
+
+**Lưu ý - Lock/Unlock User:**
+- `PUT /api/users/:id/lock`: Không cần body, sẽ tự động khóa tài khoản
+- `PUT /api/users/:id/unlock`: Không cần body, sẽ tự động mở khóa tài khoản
+
 ---
 
 ## 👤 Profiles
@@ -483,6 +503,13 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 }
 ```
 
+**Request Body - Update PVCD Points:**
+```json
+{
+  "total_point": 25
+}
+```
+
 ---
 
 ## 🏢 Organization
@@ -507,6 +534,15 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 }
 ```
 
+**Request Body - Update Faculty:**
+```json
+{
+  "name": "Khoa Công nghệ thông tin (đã cập nhật)",
+  "code": "CNTT",
+  "description": "Khoa Công nghệ thông tin - Mô tả mới"
+}
+```
+
 ---
 
 ### Field Routes (`/api/fields`)
@@ -525,6 +561,15 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
   "name": "Công nghệ thông tin",
   "code": "CNTT",
   "description": "Ngành Công nghệ thông tin"
+}
+```
+
+**Request Body - Update Field:**
+```json
+{
+  "name": "Công nghệ thông tin (đã cập nhật)",
+  "code": "CNTT",
+  "description": "Ngành Công nghệ thông tin - Mô tả mới"
 }
 ```
 
@@ -552,6 +597,15 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 }
 ```
 
+**Request Body - Update Cohort:**
+```json
+{
+  "name": "Khóa 2022 (đã cập nhật)",
+  "year": 2022,
+  "description": "Khóa học 2022 - Mô tả mới"
+}
+```
+
 ---
 
 ### Class Routes (`/api/classes`)
@@ -575,6 +629,17 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
   "facultyId": "faculty_uuid_here",
   "cohortId": "cohort_uuid_here",
   "description": "Lớp CNTT01"
+}
+```
+
+**Request Body - Update Class:**
+```json
+{
+  "name": "CNTT01 (đã cập nhật)",
+  "code": "CNTT01",
+  "facultyId": "faculty_uuid_here",
+  "cohortId": "cohort_uuid_here",
+  "description": "Lớp CNTT01 - Mô tả mới"
 }
 ```
 
@@ -607,6 +672,16 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 ```json
 {
   "staffId": "staff_uuid_here"
+}
+```
+
+**Request Body - Update Organization Unit:**
+```json
+{
+  "name": "Khoa Công nghệ thông tin (đã cập nhật)",
+  "code": "CNTT",
+  "type": "faculty",
+  "description": "Khoa Công nghệ thông tin - Mô tả mới"
 }
 ```
 
@@ -728,6 +803,24 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 }
 ```
 
+**Request Body - Update Activity:**
+```json
+{
+  "title": "Hoạt động tình nguyện (đã cập nhật)",
+  "description": "Mô tả hoạt động đã cập nhật",
+  "location": "P102",
+  "start_time": "2024-01-16T08:00:00.000Z",
+  "end_time": "2024-01-16T12:00:00.000Z",
+  "capacity": 100,
+  "registration_open": "2024-01-10T00:00:00.000Z",
+  "registration_close": "2024-01-15T23:59:59.000Z",
+  "requires_approval": false,
+  "org_unit_id": "org_unit_id_here",
+  "field_id": "field_id_here",
+  "activity_image": "https://example.com/image_updated.jpg"
+}
+```
+
 **Request Body - Approve Activity (tùy chọn):**
 ```json
 {
@@ -742,6 +835,13 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
   - Nếu `start_time > now`: status = `chưa tổ chức`
 - Nếu không gửi body, hệ thống mặc định đặt `requires_approval = false` (coi như đã duyệt)
 - Nếu gửi `requires_approval = true`, đánh dấu hoạt động cần duyệt lại
+
+**Lưu ý - Complete/Cancel Activity:**
+- `PUT /api/activities/:id/complete`: Không cần body, sẽ tự động đánh dấu hoạt động là `đã tổ chức`
+- `PUT /api/activities/:id/cancel`: Không cần body, sẽ tự động đánh dấu hoạt động là `hủy hoạt động`
+
+**Lưu ý - Register Activity:**
+- `POST /api/activities/:id/register`: Không cần body, sẽ tự động đăng ký user hiện tại tham gia hoạt động
 
 **Query Parameters - Get All Activities (`GET /api/activities`):**
 - `org_unit_id` (optional): Lọc hoạt động theo đơn vị tổ chức
@@ -1052,12 +1152,22 @@ Same format as above.
 }
 ```
 
+**Request Body - Update Registration:**
+```json
+{
+  "note": "Ghi chú đăng ký đã cập nhật"
+}
+```
+
 **Request Body - Reject Registration:**
 ```json
 {
   "reason": "Lý do từ chối đăng ký"
 }
 ```
+
+**Lưu ý - Approve Registration:**
+- `PUT /api/registrations/:id/approve`: Không cần body, sẽ tự động phê duyệt đăng ký
 
 ---
 
@@ -1084,6 +1194,31 @@ Same format as above.
   "studentId": "student_uuid_here",
   "attendedAt": "2024-01-15T00:00:00.000Z",
   "note": "Ghi chú điểm danh"
+}
+```
+
+**Request Body - Update Attendance:**
+```json
+{
+  "status": "present",
+  "points": 5,
+  "note": "Ghi chú điểm danh đã cập nhật",
+  "scanned_at": "2024-01-15T08:05:00.000Z"
+}
+```
+
+**Request Body - Verify Attendance:**
+```json
+{
+  "verified": true
+}
+```
+
+**Request Body - Feedback Attendance:**
+```json
+{
+  "feedback": "Sinh viên tham gia tốt",
+  "points": 5
 }
 ```
 
@@ -1118,6 +1253,15 @@ Same format as above.
 }
 ```
 
+**Request Body - Update Post:**
+```json
+{
+  "title": "Tiêu đề bài đăng (đã cập nhật)",
+  "content": "Nội dung bài đăng đã cập nhật",
+  "images": ["image1.jpg", "image2.jpg", "image3.jpg"]
+}
+```
+
 ---
 
 ## ⭐ Points & Feedback
@@ -1141,6 +1285,15 @@ Same format as above.
   "rating": 5,
   "comment": "Hoạt động rất hay và bổ ích",
   "suggestions": "Nên tổ chức thêm hoạt động tương tự"
+}
+```
+
+**Request Body - Update Feedback:**
+```json
+{
+  "rating": 4,
+  "comment": "Hoạt động hay nhưng cần cải thiện thêm",
+  "suggestions": "Nên tổ chức thêm hoạt động tương tự và cải thiện thời gian"
 }
 ```
 
@@ -1205,6 +1358,18 @@ Same format as above.
 - `submitted_at` và `verified_at` được quản lý tự động bởi hệ thống
 - Tất cả các trường đều optional, chỉ cập nhật các trường được gửi trong request
 
+**Request Body - Approve Evidence:**
+```json
+{
+  "class_point": 8,
+  "faculty_point": 9
+}
+```
+
+**Lưu ý - Approve Evidence:**
+- `PUT /api/evidences/:id/approve`: Có thể gửi body với `class_point` và `faculty_point` hoặc không cần body
+- Nếu không gửi body, hệ thống sẽ phê duyệt minh chứng với điểm mặc định
+
 **Request Body - Reject Evidence:**
 ```json
 {
@@ -1229,6 +1394,273 @@ Same format as above.
   ]
 }
 ```
+
+---
+
+## 💬 Communication
+
+### Notification Routes (`/api/notifications`)
+
+| Method | Endpoint | Description | Auth Required | Permission Required |
+|--------|----------|-------------|---------------|---------------------|
+| GET | `/api/notifications` | Lấy danh sách thông báo của user hiện tại | ✅ | - (Own notifications) |
+| GET | `/api/notifications/unread/count` | Lấy số lượng thông báo chưa đọc | ✅ | - (Own notifications) |
+| GET | `/api/notifications/:id` | Lấy chi tiết thông báo theo ID | ✅ | - (Own notifications) |
+| POST | `/api/notifications` | Tạo thông báo mới | ✅ | `notification:CREATE` |
+| PUT | `/api/notifications/:id` | Cập nhật thông báo | ✅ | `notification:UPDATE` |
+| DELETE | `/api/notifications/:id` | Xóa thông báo | ✅ | `notification:DELETE` |
+| PUT | `/api/notifications/:id/read` | Đánh dấu thông báo là đã đọc | ✅ | - (Own notifications) |
+| PUT | `/api/notifications/read-all` | Đánh dấu tất cả thông báo là đã đọc | ✅ | - (Own notifications) |
+
+**Query Parameters - Get All Notifications (`GET /api/notifications`):**
+- `page` (optional): Số trang (default: 1)
+- `limit` (optional): Số lượng thông báo mỗi trang (default: 10)
+- `read_status` (optional): Lọc theo trạng thái đọc (`read` hoặc `unread`)
+- `notification_type` (optional): Lọc theo loại thông báo (`schedule`, `score_update`, `cancellation`, `registration_guide`, `general`, `activity`, `announcement`)
+
+**Request Body - Create Notification (Gửi cho tất cả):**
+```json
+{
+  "title": "Thông báo lịch học tuần này",
+  "content": "Các lớp học sẽ bắt đầu lúc 7h30 sáng thứ 2. Vui lòng có mặt đúng giờ và chuẩn bị đầy đủ tài liệu học tập.",
+  "published_date": "2025-10-23T00:00:00.000Z",
+  "icon_type": "megaphone",
+  "notification_type": "schedule",
+  "target_audience": "all",
+  "target_user_ids": []  // ← Bỏ qua khi target_audience = "all"
+}
+```
+
+**Request Body - Create Notification (Gửi cho sinh viên):**
+```json
+{
+  "title": "Cập nhật điểm rèn luyện",
+  "content": "Điểm rèn luyện học kỳ vừa rồi đã được công bố. Sinh viên có thể xem chi tiết trong mục Kết quả học tập.",
+  "published_date": "2025-10-22T00:00:00.000Z",
+  "icon_type": "megaphone",
+  "notification_type": "score_update",
+  "target_audience": "student",
+  "target_user_ids": []  // ← Bỏ qua khi target_audience = "student"
+}
+```
+
+**Request Body - Create Notification (Gửi cho staff):**
+```json
+{
+  "title": "Họp phòng CTSV",
+  "content": "Thông báo họp phòng CTSV vào thứ 2 tuần sau.",
+  "published_date": "2025-10-21T00:00:00.000Z",
+  "icon_type": "megaphone",
+  "notification_type": "announcement",
+  "target_audience": "staff",
+  "target_user_ids": []  // ← Bỏ qua khi target_audience = "staff"
+}
+```
+
+**Request Body - Create Notification (Gửi cho users cụ thể):**
+```json
+{
+  "title": "Thông báo cho lớp CNTT01",
+  "content": "Lịch thi cuối kỳ lớp CNTT01 sẽ diễn ra vào...",
+  "published_date": "2025-10-23T00:00:00.000Z",
+  "icon_type": "megaphone",
+  "notification_type": "schedule",
+  "target_audience": "specific",
+  "target_user_ids": [
+    "67a1b2c3d4e5f6g7h8i9j0k1",
+    "67a1b2c3d4e5f6g7h8i9j0k2",
+    "67a1b2c3d4e5f6g7h8i9j0k3"
+  ]  // ← Chỉ các users có ID trong danh sách này mới nhìn thấy
+}
+```
+
+**Các trường trong Request:**
+- `title` (required): Tiêu đề thông báo
+- `content` (required): Nội dung thông báo
+- `published_date` (optional): Ngày xuất bản (default: hiện tại)
+- `icon_type` (optional): Loại icon (default: `megaphone`)
+- `notification_type` (optional): Loại thông báo (default: `general`)
+  - Các giá trị: `schedule`, `score_update`, `cancellation`, `registration_guide`, `general`, `activity`, `announcement`
+- `target_audience` (optional): Đối tượng nhận thông báo (default: `all`)
+  - Các giá trị: `all`, `student`, `staff`, `specific`
+  - `all`: Tất cả users (students, staff, admin)
+  - `student`: Chỉ sinh viên
+  - `staff`: Chỉ staff và admin
+  - `specific`: Chỉ những users trong `target_user_ids`
+- `target_user_ids` (optional): Danh sách user IDs nhận thông báo
+  - **Chỉ sử dụng khi `target_audience = 'specific'`**
+  - Khi `target_audience = 'all'/'student'/'staff'`, trường này bị bỏ qua (có thể để `[]` hoặc không gửi)
+  - Khi `target_audience = 'specific'`, **bắt buộc** phải có ít nhất 1 user ID trong danh sách
+  - Ví dụ: `["67a1b2c3d4e5f6g7h8i9j0k1", "67a1b2c3d4e5f6g7h8i9j0k2"]`
+  - **Lưu ý**: Admin luôn nhìn thấy tất cả thông báo (để quản lý), dù có trong `target_user_ids` hay không
+
+**Request Body - Update Notification:**
+```json
+{
+  "title": "Thông báo lịch học tuần này (đã cập nhật)",
+  "content": "Nội dung đã được cập nhật...",
+  "published_date": "2025-10-24T00:00:00.000Z",
+  "icon_type": "megaphone",
+  "notification_type": "schedule",
+  "target_audience": "student",
+  "target_user_ids": []
+}
+```
+
+**Request Body - Update Notification (Thay đổi target_audience):**
+```json
+{
+  "target_audience": "staff",
+  "target_user_ids": []  // ← Bỏ qua khi target_audience = "staff"
+}
+```
+
+**Request Body - Update Notification (Thay đổi sang specific users):**
+```json
+{
+  "target_audience": "specific",
+  "target_user_ids": [
+    "67a1b2c3d4e5f6g7h8i9j0k1",
+    "67a1b2c3d4e5f6g7h8i9j0k2"
+  ]  // ← Bắt buộc phải có ít nhất 1 user ID khi target_audience = "specific"
+}
+```
+
+**Lưu ý - Update Notification:**
+- **CÓ THỂ update** các trường `target_audience` và `target_user_ids`
+- Khi update `target_audience` từ `all`/`student`/`staff` sang `specific`, **bắt buộc** phải có ít nhất 1 user ID trong `target_user_ids`
+- Khi update `target_audience` từ `specific` sang `all`/`student`/`staff`, `target_user_ids` sẽ bị bỏ qua (nhưng vẫn lưu trong database)
+- Tất cả các trường đều **optional**, chỉ cập nhật các trường được gửi trong request
+- Nếu không gửi `target_audience` và `target_user_ids`, các giá trị cũ sẽ được giữ nguyên
+
+**Response - Get All Notifications (`GET /api/notifications`):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "notification_id",
+      "title": "Thông báo lịch học tuần này",
+      "content": "Các lớp học sẽ bắt đầu lúc 7h30 sáng thứ 2. Vui lòng có mặt đúng giờ và chuẩn bị đầy đủ tài liệu học tập.",
+      "published_date": "2025-10-23T00:00:00.000Z",
+      "icon_type": "megaphone",
+      "notification_type": "schedule",
+      "target_audience": "all",
+      "created_by": {
+        "_id": "user_id",
+        "username": "admin"
+      },
+      "is_read": false
+    },
+    {
+      "_id": "notification_id_2",
+      "title": "Cập nhật điểm rèn luyện",
+      "content": "Điểm rèn luyện học kỳ vừa rồi đã được công bố. Sinh viên có thể xem chi tiết trong mục Kết quả học tập.",
+      "published_date": "2025-10-22T00:00:00.000Z",
+      "icon_type": "megaphone",
+      "notification_type": "score_update",
+      "target_audience": "all",
+      "created_by": {
+        "_id": "user_id",
+        "username": "admin"
+      },
+      "is_read": true
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 4,
+    "totalPages": 1
+  },
+  "unread_count": 2
+}
+```
+
+**Response - Get Unread Count (`GET /api/notifications/unread/count`):**
+```json
+{
+  "success": true,
+  "unread_count": 2
+}
+```
+
+**Response - Get Notification by ID (`GET /api/notifications/:id`):**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "notification_id",
+    "title": "Thông báo lịch học tuần này",
+    "content": "Các lớp học sẽ bắt đầu lúc 7h30 sáng thứ 2. Vui lòng có mặt đúng giờ và chuẩn bị đầy đủ tài liệu học tập.",
+    "published_date": "2025-10-23T00:00:00.000Z",
+    "icon_type": "megaphone",
+    "notification_type": "schedule",
+    "target_audience": "all",
+    "created_by": {
+      "_id": "user_id",
+      "username": "admin"
+    },
+    "is_read": false
+  }
+}
+```
+
+**Response - Mark as Read (`PUT /api/notifications/:id/read`):**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "read_record_id",
+    "notification_id": "notification_id",
+    "user_id": "user_id",
+    "read_at": "2025-10-23T10:30:00.000Z"
+  }
+}
+```
+
+**Response - Mark All as Read (`PUT /api/notifications/read-all`):**
+```json
+{
+  "success": true,
+  "message": "Marked 2 notifications as read"
+}
+```
+
+**Lưu ý:**
+- **Xem thông báo**: Tất cả users đều có thể xem thông báo của mình (không cần permission đặc biệt, chỉ cần authentication)
+- **Tạo thông báo**: Chỉ **admin** và **staff** có quyền (cần permission `notification:CREATE`)
+- **Cập nhật thông báo**: Chỉ **admin** và **staff** có quyền (cần permission `notification:UPDATE`)
+- **Xóa thông báo**: Chỉ **admin** và **staff** có quyền (cần permission `notification:DELETE`)
+- **Sinh viên (student)**: Chỉ có quyền xem và đánh dấu đã đọc, không thể tạo/cập nhật/xóa thông báo
+- **Cách lưu trạng thái "đã đọc" và "chưa đọc"**:
+  - **Bảng `notification`**: Lưu thông tin thông báo (dùng chung cho tất cả users), **KHÔNG lưu trạng thái đọc**
+  - **Bảng `notification_read`**: **CHỈ lưu trạng thái "ĐÃ ĐỌC"** với các trường:
+    - `notification_id`: ID của thông báo
+    - `user_id`: ID của user đã đọc
+    - `read_at`: Thời gian đánh dấu đã đọc
+  - **Trạng thái "CHƯA ĐỌC"**: **KHÔNG lưu trong database**, là trạng thái mặc định (khi không có record trong `notification_read`)
+  - **Cách xác định**:
+    - `is_read = true` → Có record trong `notification_read` (đã đọc)
+    - `is_read = false` → Không có record trong `notification_read` (chưa đọc - mặc định)
+  - Khi user đánh dấu đã đọc (`PUT /api/notifications/:id/read`), hệ thống sẽ tạo một record mới trong `notification_read`
+  - Khi lấy danh sách thông báo, hệ thống sẽ check xem có record trong `notification_read` không để xác định `is_read`
+  - Trường `is_read` trong response **KHÔNG lưu trong database**, mà được tính toán động dựa trên `notification_read`
+- Thông báo được sắp xếp theo `published_date` giảm dần (mới nhất trước)
+- **Quan trọng**: Sau khi thêm notification permissions, cần chạy lại `seed_permissions.js` để tạo permissions trong database
+- **Xem chi tiết**: 
+  - Xem file `NOTIFICATION_READ_EXPLAINED.md` để hiểu rõ hơn về cách lưu trạng thái đọc
+  - Xem file `NOTIFICATION_TARGET_EXPLAINED.md` để hiểu rõ hơn về `target_user_ids` và `target_audience`
+
+**Ví dụ:**
+- Lấy tất cả thông báo: `GET /api/notifications`
+- Lấy thông báo với phân trang: `GET /api/notifications?page=1&limit=10`
+- Lấy thông báo chưa đọc: `GET /api/notifications?read_status=unread`
+- Lấy thông báo đã đọc: `GET /api/notifications?read_status=read`
+- Lấy thông báo theo loại: `GET /api/notifications?notification_type=schedule`
+- Lấy số lượng thông báo chưa đọc: `GET /api/notifications/unread/count`
+- Đánh dấu đã đọc: `PUT /api/notifications/:id/read`
+- Đánh dấu tất cả đã đọc: `PUT /api/notifications/read-all`
 
 ---
 
@@ -1323,6 +1755,24 @@ Same format as above.
   "description": "Mô tả vai trò mới"
 }
 ```
+
+**Request Body - Update Role:**
+```json
+{
+  "name": "Updated Role",
+  "description": "Mô tả vai trò đã cập nhật"
+}
+```
+
+**Request Body - Add Permission to Role:**
+```json
+{
+  "permissionId": "permission_uuid_here"
+}
+```
+
+**Lưu ý - Remove Permission from Role:**
+- `DELETE /api/roles/:id/permissions`: Không cần body, cần gửi `permissionId` trong query parameter hoặc body
 
 ---
 
