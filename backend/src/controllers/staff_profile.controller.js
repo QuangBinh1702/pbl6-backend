@@ -246,6 +246,46 @@ module.exports = {
       res.status(500).json({ message: err.message });
     }
   },
+
+  async getPositions(req, res) {
+    try {
+      // Danh sách position mặc định
+      const defaultPositions = [
+        'Trưởng phòng',
+        'Phó phòng',
+        'Thư kí',
+        'Giảng viên',
+        'Nhân viên',
+        'Trưởng khoa',
+        'Phó trưởng khoa',
+        'Trưởng bộ môn',
+        'Phó trưởng bộ môn',
+        'Chuyên viên',
+        'Cán bộ',
+        'Trợ lý'
+      ];
+
+      // Lấy tất cả các position unique từ database
+      const positionsInDB = await StaffProfile.distinct('position', {
+        position: { $exists: true, $ne: null, $ne: '' }
+      });
+
+      // Kết hợp và loại bỏ trùng lặp
+      const allPositions = [...new Set([...defaultPositions, ...positionsInDB])].sort();
+
+      res.json({
+        success: true,
+        data: allPositions,
+        count: allPositions.length
+      });
+    } catch (err) {
+      console.error('Get positions error:', err);
+      res.status(500).json({ 
+        success: false,
+        message: err.message 
+      });
+    }
+  },
 };
 
 

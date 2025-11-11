@@ -395,6 +395,7 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 | GET | `/api/staff-profiles/staff-number/:staffNumber` | Lấy hồ sơ theo mã cán bộ | ✅ | - |
 | GET | `/api/staff-profiles/username/:username` | Lấy hồ sơ cán bộ theo username | ✅ | - |
 | GET | `/api/staff-profiles/org-unit/:orgUnitId/staff` | Lấy danh sách cán bộ theo đơn vị | ✅ | - |
+| GET | `/api/staff-profiles/positions` | Lấy danh sách các position (chức vụ) có sẵn | ✅ | - |
 | POST | `/api/staff-profiles` | Tạo hồ sơ cán bộ mới | ✅ | admin, ctsv |
 | PUT | `/api/staff-profiles/:id` | Cập nhật hồ sơ cán bộ | ✅ | - |
 | DELETE | `/api/staff-profiles/:id` | Xóa hồ sơ cán bộ | ✅ | admin, ctsv |
@@ -431,8 +432,31 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 }
 ```
 
+**Response - Get Positions (`GET /api/staff-profiles/positions`):**
+```json
+{
+  "success": true,
+  "data": [
+    "Cán bộ",
+    "Chuyên viên",
+    "Giảng viên",
+    "Nhân viên",
+    "Phó phòng",
+    "Phó trưởng bộ môn",
+    "Phó trưởng khoa",
+    "Thư kí",
+    "Trợ lý",
+    "Trưởng bộ môn",
+    "Trưởng khoa",
+    "Trưởng phòng"
+  ],
+  "count": 12
+}
+```
+
 **Note:** 
-- The `position` field (chức vụ) is optional. Common values include: "Trưởng phòng", "Phó phòng", "Thư kí", "Giảng viên", "Nhân viên", "Trưởng khoa", "Phó trưởng khoa", etc.
+- The `position` field (chức vụ) is optional. Use `GET /api/staff-profiles/positions` to get the list of available positions.
+- The API returns both default positions and positions currently used in the database.
 - Both camelCase (userId, staffNumber, orgUnitId, fullName, dateOfBirth, contactAddress, staffImage) and snake_case (user_id, staff_number, org_unit_id, full_name, date_of_birth, contact_address, staff_image) field names are supported.
 - Required fields for Create: `user_id` (or `userId`) and `staff_number` (or `staffNumber`).
 - All other fields are optional.

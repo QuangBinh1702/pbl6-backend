@@ -11,11 +11,10 @@ router.get('/',
   staffProfileController.getAllStaffProfiles
 );
 
-// Lấy hồ sơ cán bộ theo ID
-router.get('/:id', 
-  auth, 
-  checkPermission('staff_profile', 'READ'),
-  staffProfileController.getStaffProfileById
+// Lấy danh sách các position (chức vụ) có sẵn - PHẢI đặt trước /:id để tránh conflict
+router.get('/positions', 
+  auth,
+  staffProfileController.getPositions
 );
 
 // Lấy hồ sơ cán bộ theo User ID
@@ -42,6 +41,13 @@ router.get('/org-unit/:orgUnitId/staff',
   auth, 
   checkPermission('staff_profile', 'READ'),
   staffProfileController.getStaffByOrgUnit
+);
+
+// Lấy hồ sơ cán bộ theo ID - PHẢI đặt cuối cùng để tránh conflict với các route trên
+router.get('/:id', 
+  auth, 
+  checkPermission('staff_profile', 'READ'),
+  staffProfileController.getStaffProfileById
 );
 
 // Tạo hồ sơ cán bộ mới (admin/staff)

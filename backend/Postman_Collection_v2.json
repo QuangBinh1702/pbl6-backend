@@ -1083,6 +1083,14 @@
           }
         },
         {
+          "name": "Get Positions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/staff-profiles/positions"
+          }
+        },
+        {
           "name": "Create Staff Profile",
           "request": {
             "method": "POST",
