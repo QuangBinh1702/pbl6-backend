@@ -1732,11 +1732,110 @@ Same format as above.
 | GET | `/api/permissions/users/:userId/actions/:resource` | Lấy actions của user cho resource | ✅ |
 | POST | `/api/permissions/users/:userId/check-permission` | Kiểm tra permission của user | ✅ |
 
+**Response - Get User Permissions (`GET /api/permissions/users/:userId/permissions`):**
+```json
+{
+  "success": true,
+  "user": "67a1b2c3d4e5f6g7h8i9j0k1",
+  "roles": [
+    {
+      "role": "admin",
+      "orgUnit": null
+    },
+    {
+      "role": "staff",
+      "orgUnit": "Phòng CTSV"
+    }
+  ],
+  "permissions": {
+    "activity": [
+      {
+        "action_code": "CREATE",
+        "action_name": "Tạo hoạt động"
+      },
+      {
+        "action_code": "READ",
+        "action_name": "Xem hoạt động"
+      },
+      {
+        "action_code": "UPDATE",
+        "action_name": "Cập nhật hoạt động"
+      },
+      {
+        "action_code": "DELETE",
+        "action_name": "Xóa hoạt động"
+      }
+    ],
+    "user": [
+      {
+        "action_code": "READ",
+        "action_name": "Xem người dùng"
+      },
+      {
+        "action_code": "CREATE",
+        "action_name": "Tạo người dùng"
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "action": "activity.CREATE",
+      "action_name": "Tạo hoạt động",
+      "granted": true
+    },
+    {
+      "action": "user.DELETE",
+      "action_name": "Xóa người dùng",
+      "granted": false
+    }
+  ]
+}
+```
+
+**Response - Get User Actions for Resource (`GET /api/permissions/users/:userId/actions/:resource`):**
+```json
+{
+  "success": true,
+  "user": "67a1b2c3d4e5f6g7h8i9j0k1",
+  "resource": "activity",
+  "actions": [
+    {
+      "action_code": "CREATE",
+      "action_name": "Tạo hoạt động"
+    },
+    {
+      "action_code": "READ",
+      "action_name": "Xem hoạt động"
+    },
+    {
+      "action_code": "UPDATE",
+      "action_name": "Cập nhật hoạt động"
+    },
+    {
+      "action_code": "DELETE",
+      "action_name": "Xóa hoạt động"
+    }
+  ]
+}
+```
+
 **Request Body - Check Permission:**
 ```json
 {
   "resource": "activity",
   "action": "CREATE"
+}
+```
+
+**Response - Check User Permission (`POST /api/permissions/users/:userId/check-permission`):**
+```json
+{
+  "success": true,
+  "allowed": true,
+  "user": "67a1b2c3d4e5f6g7h8i9j0k1",
+  "resource": "activity",
+  "action": "CREATE",
+  "action_name": "Tạo hoạt động"
 }
 ```
 

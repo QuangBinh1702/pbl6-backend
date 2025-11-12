@@ -82,11 +82,11 @@ async function hasPermission(userId, resource, actionCode, orgUnitId = null) {
  * @param {string|ObjectId} userId - User ID
  * @param {string} resource - Resource name
  * @param {string|ObjectId} orgUnitId - Optional: specific org unit context
- * @returns {Promise<Array<string>>} - Array of action codes the user can perform
+ * @returns {Promise<Array<{action_code: string, action_name: string}>>} - Array of action objects with code and name
  */
 async function getUserActions(userId, resource, orgUnitId = null) {
   try {
-    const actionsSet = new Set();
+    const actionsMap = new Map(); // Map<action_code, action_name>
 
     // Step 1: Get actions from roles
     const userRoles = await UserRole.getRolesForUser(userId, orgUnitId);
@@ -103,7 +103,10 @@ async function getUserActions(userId, resource, orgUnitId = null) {
           if (roleAction.action_id && 
               roleAction.action_id.resource === resource &&
               roleAction.action_id.is_active) {
-            actionsSet.add(roleAction.action_id.action_code);
+            actionsMap.set(
+              roleAction.action_id.action_code,
+              roleAction.action_id.action_name || roleAction.action_id.action_code
+            );
           }
         }
       }
@@ -115,14 +118,21 @@ async function getUserActions(userId, resource, orgUnitId = null) {
     for (const override of overrides) {
       if (override.action_id && override.action_id.resource === resource) {
         if (override.is_granted) {
-          actionsSet.add(override.action_id.action_code);
+          actionsMap.set(
+            override.action_id.action_code,
+            override.action_id.action_name || override.action_id.action_code
+          );
         } else {
-          actionsSet.delete(override.action_id.action_code);
+          actionsMap.delete(override.action_id.action_code);
         }
       }
     }
 
-    return Array.from(actionsSet);
+    // Convert Map to Array of objects
+    return Array.from(actionsMap.entries()).map(([action_code, action_name]) => ({
+      action_code,
+      action_name
+    }));
   } catch (error) {
     console.error('Error in getUserActions:', error);
     return [];
@@ -154,11 +164,11 @@ async function isClassMonitor(userId) {
  * 
  * @param {string|ObjectId} userId - User ID
  * @param {string|ObjectId} orgUnitId - Optional: specific org unit context
- * @returns {Promise<Object>} - Object with resources as keys and arrays of action codes as values
+ * @returns {Promise<Object>} - Object with resources as keys and arrays of action objects (with action_code and action_name) as values
  */
 async function getAllUserPermissions(userId, orgUnitId = null) {
   try {
-    const permissionsByResource = {};
+    const permissionsByResource = {}; // { resource: Map<action_code, action_name> }
 
     // Get all actions from roles
     const userRoles = await UserRole.getRolesForUser(userId, orgUnitId);
@@ -175,9 +185,12 @@ async function getAllUserPermissions(userId, orgUnitId = null) {
           if (roleAction.action_id && roleAction.action_id.is_active) {
             const resource = roleAction.action_id.resource;
             if (!permissionsByResource[resource]) {
-              permissionsByResource[resource] = new Set();
+              permissionsByResource[resource] = new Map();
             }
-            permissionsByResource[resource].add(roleAction.action_id.action_code);
+            permissionsByResource[resource].set(
+              roleAction.action_id.action_code,
+              roleAction.action_id.action_name || roleAction.action_id.action_code
+            );
           }
         }
       }
@@ -190,21 +203,27 @@ async function getAllUserPermissions(userId, orgUnitId = null) {
       if (override.action_id) {
         const resource = override.action_id.resource;
         if (!permissionsByResource[resource]) {
-          permissionsByResource[resource] = new Set();
+          permissionsByResource[resource] = new Map();
         }
         
         if (override.is_granted) {
-          permissionsByResource[resource].add(override.action_id.action_code);
+          permissionsByResource[resource].set(
+            override.action_id.action_code,
+            override.action_id.action_name || override.action_id.action_code
+          );
         } else {
           permissionsByResource[resource].delete(override.action_id.action_code);
         }
       }
     }
 
-    // Convert Sets to Arrays
+    // Convert Maps to Arrays of objects
     const result = {};
-    for (const [resource, actionsSet] of Object.entries(permissionsByResource)) {
-      result[resource] = Array.from(actionsSet);
+    for (const [resource, actionsMap] of Object.entries(permissionsByResource)) {
+      result[resource] = Array.from(actionsMap.entries()).map(([action_code, action_name]) => ({
+        action_code,
+        action_name
+      }));
     }
 
     return result;

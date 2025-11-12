@@ -203,12 +203,20 @@ exports.checkUserPermission = async (req, res) => {
     
     const allowed = await hasPermission(userId, resource, action);
     
+    // Get action name from Action model
+    const actionDoc = await Action.findOne({
+      resource,
+      action_code: action.toUpperCase(),
+      is_active: true
+    });
+    
     res.json({
       success: true,
       allowed,
       user: userId,
       resource,
-      action
+      action,
+      action_name: actionDoc?.action_name || action
     });
   } catch (err) {
     console.error('Check user permission error:', err);
@@ -227,7 +235,7 @@ exports.getUserPermissions = async (req, res) => {
   try {
     const { userId } = req.params;
     
-    // Get all permissions grouped by resource
+    // Get all permissions grouped by resource (already includes action_code and action_name)
     const permissions = await getAllUserPermissions(userId);
     
     // Get user roles
@@ -249,6 +257,7 @@ exports.getUserPermissions = async (req, res) => {
       permissions,
       overrides: overrides.map(o => ({
         action: `${o.action_id?.resource}.${o.action_id?.action_code}`,
+        action_name: o.action_id?.action_name || o.action_id?.action_code,
         granted: o.is_granted
       }))
     });
