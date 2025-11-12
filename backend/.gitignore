@@ -2,9 +2,10 @@
 node_modules
 
 # Environment variables
-/backend/.env
+.env
 .env.local
 .env.production
+.env*
 
 # Logs
 *.log
