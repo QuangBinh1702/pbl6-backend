@@ -208,13 +208,15 @@ module.exports = {
         .populate('activity_id')
         .sort({ scanned_at: -1 });
 
-      // Deduplicate by activity_id
+      // Deduplicate by activity_id and include points
       const activitiesMap = new Map();
       attendances.forEach(att => {
         if (att.activity_id) {
-          const act = att.activity_id.toObject();
-          const key = act._id.toString();
+          const key = att.activity_id._id.toString();
           if (!activitiesMap.has(key)) {
+            const act = att.activity_id.toObject();
+            // Add attendance points to activity object
+            act.points = att.points || 0;
             activitiesMap.set(key, act);
           }
         }

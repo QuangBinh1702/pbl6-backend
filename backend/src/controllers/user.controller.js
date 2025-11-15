@@ -44,11 +44,48 @@ module.exports = {
   },
   async deleteUser(req, res) {
     try {
-      const user = await User.findByIdAndDelete(req.params.id);
-      if (!user) return res.status(404).json({ message: 'User not found' });
-      res.json({ message: 'User deleted' });
+      const userId = req.params.id;
+      
+      // Kiểm tra user có tồn tại không
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'User not found' 
+        });
+      }
+      
+      // Xóa cascade: Xóa tất cả dữ liệu liên quan đến user
+      const StaffProfile = require('../models/staff_profile.model');
+      const StudentProfile = require('../models/student_profile.model');
+      
+      // Xóa staff profile nếu có
+      await StaffProfile.deleteMany({ user_id: userId });
+      
+      // Xóa student profile nếu có
+      await StudentProfile.deleteMany({ user_id: userId });
+      
+      // Xóa user roles
+      await UserRole.deleteMany({ user_id: userId });
+      
+      // Xóa action overrides
+      await UserActionOverride.deleteMany({ user_id: userId });
+      
+      // Xóa evidences
+      await Evidence.deleteMany({ user: userId });
+      
+      // Cuối cùng xóa user
+      await User.findByIdAndDelete(userId);
+      
+      res.json({ 
+        success: true, 
+        message: 'User and all related data deleted successfully' 
+      });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      res.status(500).json({ 
+        success: false, 
+        message: err.message 
+      });
     }
   },
   async lockUser(req, res) {

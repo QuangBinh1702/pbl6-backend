@@ -246,7 +246,8 @@
             "method": "DELETE",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": "{{baseUrl}}/api/users/{{userId}}"
-          }
+          },
+          "description": "Xóa user và TẤT CẢ dữ liệu liên quan: Staff Profile, Student Profile, User Roles, Action Overrides, Evidence Records"
         },
         {
           "name": "Lock User",
@@ -1048,7 +1049,9 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": "{{baseUrl}}/api/staff-profiles/{{staffId}}"
-          }
+          },
+          "response": [],
+          "description": "Get staff profile by ID.\n\n**Faculty Information (only when staff belongs to a faculty):**\n- `is_faculty_member`: true\n- `faculty_id`: ID of faculty (same as org_unit_id._id)\n- `faculty_name`: Name of faculty\n\n**Note**: \n- If staff belongs to a faculty (org_unit_id.type === 'faculty'), then org_unit_id._id is the faculty ID and the response will include the faculty fields above.\n- If staff belongs to other org units (Đoàn trường, CTSV, CLB) or has no org unit, the response will NOT include faculty fields (same as original format)."
         },
         {
           "name": "Get by User ID",
@@ -1459,7 +1462,9 @@
                 "method": "GET",
                 "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
                 "url": "{{baseUrl}}/api/org-units/{{orgUnitId}}/staff"
-              }
+              },
+              "response": [],
+              "description": "Get staff list of an org unit. Response format is the same as Staff Profile responses.\n\n**If the org unit is a faculty (type='faculty'):**\n- All staff will have:\n  - `is_faculty_member`: true\n  - `faculty_id`: org_unit_id._id (the faculty ID)\n  - `faculty_name`: org_unit_id.name\n\n**If the org unit is not a faculty (e.g., Đoàn trường, CTSV, CLB):**\n- Response will NOT include `is_faculty_member`, `faculty_id`, or `faculty_name` fields (same as original format).\n\n**Note**: When staff belongs to a faculty, org_unit_id._id is the faculty ID."
             },
             {
               "name": "Create Org Unit",
@@ -1472,9 +1477,10 @@
                 "url": "{{baseUrl}}/api/org-units",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Khoa CNTT\",\n  \"code\": \"CNTT\",\n  \"type\": \"faculty\"\n}"
+                  "raw": "{\n  \"name\": \"Khoa CNTT\",\n  \"type\": \"faculty\",\n  \"leader_id\": null\n}"
                 }
-              }
+              },
+              "description": "Tạo org unit mới. Nếu type='faculty', hệ thống sẽ tự động:\n1. Kiểm tra xem faculty này đã tồn tại trong bảng falcuty không (theo tên)\n2. Nếu chưa có → tạo mới faculty\n3. Nếu đã có → dùng luôn ID của faculty\n4. Kết quả: org_unit._id sẽ trùng với faculty._id (tự động sync)\n\nNếu type khác 'faculty' (ctsv, doan, club, etc) → tự sinh ID bình thường"
             },
             {
               "name": "Update Org Unit",
