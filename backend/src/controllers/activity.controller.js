@@ -5,6 +5,9 @@ const ActivityRejection = require('../models/activity_rejection.model');
 const Attendance = require('../models/attendance.model');
 const StudentProfile = require('../models/student_profile.model');
 const User = require('../models/user.model');
+const ActivityEligibility = require('../models/activity_eligibility.model');
+const Falcuty = require('../models/falcuty.model');
+const Cohort = require('../models/cohort.model');
 
 // Mapping status từ tiếng Anh (database) sang tiếng Việt (response)
 const statusMapping = {
@@ -132,6 +135,31 @@ async function updateActivityStatus(activity) {
   return activity;
 }
 
+// Helper function to get activity requirements
+async function getActivityRequirementsData(activityId) {
+  const requirements = await ActivityEligibility.find({ activity_id: activityId });
+  
+  const detailedRequirements = await Promise.all(
+    requirements.map(async (req) => {
+      if (req.type === 'falcuty') {
+        const falcuty = await Falcuty.findById(req.reference_id);
+        return {
+          type: 'falcuty',
+          name: falcuty ? falcuty.name : 'Unknown'
+        };
+      } else if (req.type === 'cohort') {
+        const cohort = await Cohort.findById(req.reference_id);
+        return {
+          type: 'cohort',
+          year: cohort ? cohort.year : 'Unknown'
+        };
+      }
+    })
+  );
+  
+  return detailedRequirements.filter(r => r);
+}
+
 module.exports = {
   async getAllActivities(req, res) {
     try {
@@ -166,10 +194,22 @@ module.exports = {
         activities.map(activity => updateActivityStatus(activity))
       );
       
+      // Get requirements for each activity
+      const activitiesWithRequirements = await Promise.all(
+        activities.map(async (activity) => {
+          const activityObj = transformActivity(activity);
+          const requirements = await getActivityRequirementsData(activity._id);
+          return {
+            ...activityObj,
+            requirements
+          };
+        })
+      );
+      
       // Transform activities to return Vietnamese status
       const transformedActivities = transformActivities(activities);
       
-      res.json({ success: true, data: transformedActivities });
+      res.json({ success: true, data: activitiesWithRequirements });
     } catch (err) {
       console.error('Get all activities error:', err);
       res.status(500).json({ success: false, message: err.message });
@@ -201,6 +241,9 @@ module.exports = {
       const rejection = await ActivityRejection.findOne({ activity_id: activity._id })
         .populate('rejected_by', 'username');
       
+      // Get requirements
+      const requirements = await getActivityRequirementsData(activity._id);
+      
       // Transform activity to return Vietnamese status
       const transformedActivity = transformActivity(activity);
       
@@ -209,7 +252,8 @@ module.exports = {
         data: {
           ...transformedActivity,
           registrationCount,
-          rejection: rejection || null
+          rejection: rejection || null,
+          requirements
         }
       });
     } catch (err) {
@@ -232,7 +276,8 @@ module.exports = {
         requires_approval,
         org_unit_id,
         field_id,
-        activity_image
+        activity_image,
+        requirements // <-- thêm trường này
       } = req.body;
       
       // Validate required fields
@@ -363,10 +408,32 @@ module.exports = {
         status: activityStatus,
         approved_at: activityStatus === 'approved' || activityStatus === 'in_progress' ? new Date() : null
       });
-      
+      // Xử lý requirements nếu có
+      if (Array.isArray(requirements) && requirements.length > 0) {
+        for (const reqItem of requirements) {
+          if (reqItem.type === 'falcuty' && reqItem.name) {
+            const falcuty = await Falcuty.findOne({ name: reqItem.name });
+            if (falcuty) {
+              await ActivityEligibility.create({
+                activity_id: activity._id,
+                type: 'falcuty',
+                reference_id: falcuty._id
+              });
+            }
+          } else if (reqItem.type === 'cohort' && reqItem.year) {
+            const cohort = await Cohort.findOne({ year: reqItem.year });
+            if (cohort) {
+              await ActivityEligibility.create({
+                activity_id: activity._id,
+                type: 'cohort',
+                reference_id: cohort._id
+              });
+            }
+          }
+        }
+      }
       // Transform activity to return Vietnamese status
       const transformedActivity = transformActivity(activity);
-      
       res.status(201).json({ success: true, data: transformedActivity });
     } catch (err) {
       console.error('Create activity error:', err);
@@ -851,19 +918,30 @@ module.exports = {
         activities.push(value);
       });
       
+      // Add requirements to each activity
+      const activitiesWithRequirements = await Promise.all(
+        activities.map(async (activity) => {
+          const requirements = await getActivityRequirementsData(activity._id);
+          return {
+            ...activity,
+            requirements
+          };
+        })
+      );
+      
       // Sort by start_time (most recent first)
-      activities.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+      activitiesWithRequirements.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
       
       res.json({ 
         success: true, 
-        data: activities,
-        count: activities.length
+        data: activitiesWithRequirements,
+        count: activitiesWithRequirements.length
       });
-    } catch (err) {
+      } catch (err) {
       console.error('Get student activities error:', err);
       res.status(500).json({ success: false, message: err.message });
-    }
-  },
+      }
+      },
 
   async getMyActivities(req, res) {
     try {
@@ -1015,19 +1093,30 @@ module.exports = {
         activities.push(value);
       });
       
+      // Add requirements to each activity
+      const activitiesWithRequirements = await Promise.all(
+        activities.map(async (activity) => {
+          const requirements = await getActivityRequirementsData(activity._id);
+          return {
+            ...activity,
+            requirements
+          };
+        })
+      );
+      
       // Sort by start_time (most recent first)
-      activities.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+      activitiesWithRequirements.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
       
       res.json({ 
         success: true, 
-        data: activities,
-        count: activities.length
+        data: activitiesWithRequirements,
+        count: activitiesWithRequirements.length
       });
-    } catch (err) {
+      } catch (err) {
       console.error('Get my activities error:', err);
       res.status(500).json({ success: false, message: err.message });
-    }
-  },
+      }
+      },
 
   async rejectActivity(req, res) {
     try {

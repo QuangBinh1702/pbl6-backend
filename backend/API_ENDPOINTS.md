@@ -13,8 +13,8 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 ## 📑 Mục lục
 
 1. [Authentication & Users](#authentication--users)
-2. [Profiles](#profiles)
-3. [Organization](#organization)
+2. [Organization](#-organization)
+3. [Profiles](#profiles)
 4. [Activities](#activities)
 5. [Points & Feedback](#points--feedback)
 6. [Communication](#communication)
@@ -361,6 +361,52 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 - `PUT /api/users/:id/lock`: Không cần body, sẽ tự động khóa tài khoản
 - `PUT /api/users/:id/unlock`: Không cần body, sẽ tự động mở khóa tài khoản
+
+---
+
+## 🏫 Organization
+
+### Faculty Routes (`/api/faculties`)
+
+| Method | Endpoint                              | Description                 | Auth Required | Permission Required |
+| ------ | ------------------------------------- | --------------------------- | ------------- | ------------------- |
+| GET    | `/api/faculties`                      | Lấy tất cả khoa             | ❌            | -                   |
+| GET    | `/api/faculties/:id`                  | Lấy chi tiết khoa theo ID   | ❌            | -                   |
+| GET    | `/api/faculties/:id/classes`          | Lấy danh sách lớp của khoa  | ❌            | -                   |
+| POST   | `/api/faculties`                      | Tạo khoa mới                | ✅            | `faculty:CREATE`    |
+| PUT    | `/api/faculties/:id`                  | Cập nhật thông tin khoa     | ✅            | `faculty:UPDATE`    |
+| DELETE | `/api/faculties/:id`                  | Xóa khoa                    | ✅            | `faculty:DELETE`    |
+
+**Request Body - Create Faculty:**
+
+```json
+{
+  "name": "Khoa Công nghệ Thông tin"
+}
+```
+
+**Request Body - Update Faculty:**
+
+```json
+{
+  "name": "Khoa Kỹ thuật Máy tính (cập nhật)"
+}
+```
+
+**Response - Get All Faculties:**
+
+```json
+[
+  {
+    "_id": "faculty_id_1",
+    "name": "Khoa Công nghệ Thông tin"
+  },
+  {
+    "_id": "faculty_id_2",
+    "name": "Khoa Kỹ thuật Phần mềm"
+  }
+]
+```
 
 ---
 
@@ -740,9 +786,7 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 ```json
 {
-  "name": "Công nghệ thông tin",
-  "code": "CNTT",
-  "description": "Ngành Công nghệ thông tin"
+    "name": "Y tế"
 }
 ```
 
@@ -750,9 +794,7 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 ```json
 {
-  "name": "Công nghệ thông tin (đã cập nhật)",
-  "code": "CNTT",
-  "description": "Ngành Công nghệ thông tin - Mô tả mới"
+    "name": "Y tế(cập nhật)"
 }
 ```
 
@@ -775,9 +817,7 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 ```json
 {
-  "name": "Khóa 2022",
-  "year": 2022,
-  "description": "Khóa học 2022"
+  "year": 2024
 }
 ```
 
@@ -785,9 +825,7 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 ```json
 {
-  "name": "Khóa 2022 (đã cập nhật)",
-  "year": 2022,
-  "description": "Khóa học 2022 - Mô tả mới"
+  "year": 2025
 }
 ```
 
@@ -810,11 +848,9 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 ```json
 {
-  "name": "CNTT01",
-  "code": "CNTT01",
-  "facultyId": "faculty_uuid_here",
-  "cohortId": "cohort_uuid_here",
-  "description": "Lớp CNTT01"
+  "name": "Lớp A1",
+  "falcuty_id": "faculty_uuid_here",
+  "cohort_id": "cohort_uuid_here"
 }
 ```
 
@@ -822,11 +858,9 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 ```json
 {
-  "name": "CNTT01 (đã cập nhật)",
-  "code": "CNTT01",
-  "facultyId": "faculty_uuid_here",
-  "cohortId": "cohort_uuid_here",
-  "description": "Lớp CNTT01 - Mô tả mới"
+  "name": "Lớp A1 (cập nhật)",
+  "falcuty_id": "faculty_uuid_here",
+  "cohort_id": "cohort_uuid_here"
 }
 ```
 
@@ -872,7 +906,7 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 ```json
 {
-  "staffId": "staff_uuid_here"
+  "leaderId": "staff_profile_uuid_here"
 }
 ```
 
@@ -880,10 +914,9 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 ```json
 {
-  "name": "Khoa Công nghệ thông tin (đã cập nhật)",
-  "code": "CNTT",
+  "name": "Khoa Công nghệ thông tin (cập nhật)",
   "type": "faculty",
-  "description": "Khoa Công nghệ thông tin - Mô tả mới"
+  "leader_id": "leader_uuid_here"
 }
 ```
 
@@ -913,8 +946,8 @@ The response format is the same as Staff Profile responses.
 | GET    | `/api/activities`                    | Lấy tất cả hoạt động (có thể filter theo org_unit_id, field_id, status, start_date, end_date) | ❌            | - (Public)                     |
 | GET    | `/api/activities/my/activities`      | Lấy hoạt động của sinh viên hiện tại                                                          | ✅            | - (Own data)                   |
 | GET    | `/api/activities/student/:studentId` | Lấy hoạt động của một sinh viên cụ thể                                                        | ✅            | `activity_registration:READ`   |
-| GET    | `/api/activities/:id`                | Lấy chi tiết hoạt động theo ID                                                                | ❌            | - (Public)                     |
-| POST   | `/api/activities`                    | Tạo hoạt động mới (status = chưa tổ chức/đang tổ chức/đã tổ chức tùy thời gian)               | ✅            | `activity:CREATE`              |
+| GET    | `/api/activities/:id`                | Lấy chi tiết hoạt động theo ID (bao gồm requirements)                                         | ❌            | - (Public)                     |
+| POST   | `/api/activities`                    | Tạo hoạt động mới (có thể kèm yêu cầu khoa/khóa tham gia)                                     | ✅            | `activity:CREATE`              |
 | POST   | `/api/activities/suggest`            | Đề xuất hoạt động (status = chờ duyệt)                                                        | ✅            | - (Authenticated)              |
 | PUT    | `/api/activities/:id`                | Cập nhật thông tin hoạt động                                                                  | ✅            | `activity:UPDATE`              |
 | DELETE | `/api/activities/:id`                | Xóa hoạt động                                                                                 | ✅            | `activity:DELETE`              |
@@ -943,9 +976,29 @@ The response format is the same as Staff Profile responses.
   "requires_approval": false,
   "org_unit_id": "org_unit_id_here",
   "field_id": "field_id_here",
-  "activity_image": "https://example.com/image.jpg"
+  "activity_image": "https://example.com/image.jpg",
+  "requirements": [
+    { "type": "falcuty", "id": "faculty_id_here" },
+    { "type": "cohort", "id": "cohort_id_here" }
+  ]
 }
 ```
+
+**Lưu ý về trường `requirements`:**
+
+- Trường `requirements` là **optional** khi tạo hoạt động.
+- Nếu gửi lên, phải là một mảng các đối tượng, mỗi đối tượng có:
+  - `type`: Loại yêu cầu (`falcuty` hoặc `cohort`)
+  - `id`: ID của khoa hoặc khóa học (tương ứng với bảng `falcuty` hoặc `cohort`)
+- Ví dụ: Chỉ sinh viên thuộc khoa CNTT và khóa 2022 mới được tham gia:
+  ```json
+  "requirements": [
+    { "type": "falcuty", "id": "faculty_id_here" },
+    { "type": "cohort", "id": "cohort_id_here" }
+  ]
+  ```
+- Nếu không gửi trường này, hoạt động sẽ **không giới hạn** khoa/khóa tham gia.
+- Khi tạo, hệ thống sẽ tự động lưu các yêu cầu này vào bảng `activity_eligibility`.
 
 **Lưu ý - Create Activity:**
 
@@ -1138,7 +1191,17 @@ The response format is the same as Staff Profile responses.
       "capacity": 50,
       "status": "chưa tổ chức",
       "requires_approval": false,
-      "approved_at": "2024-01-10T10:00:00.000Z"
+      "approved_at": "2024-01-10T10:00:00.000Z",
+      "requirements": [
+        {
+          "type": "falcuty",
+          "name": "Khoa Công nghệ Thông tin"
+        },
+        {
+          "type": "cohort",
+          "year": 2022
+        }
+      ]
     }
   ]
 }
@@ -1170,7 +1233,17 @@ The response format is the same as Staff Profile responses.
         "verified": true,
         "points": 5,
         "feedback": "Hoàn thành tốt"
-      }
+      },
+      "requirements": [
+        {
+          "type": "falcuty",
+          "name": "Khoa Công nghệ Thông tin"
+        },
+        {
+          "type": "cohort",
+          "year": 2022
+        }
+      ]
     }
   ],
   "count": 1
@@ -1200,7 +1273,17 @@ Same format as above.
         "username": "admin"
       },
       "rejected_at": "2024-01-10T10:00:00.000Z"
-    }
+    },
+    "requirements": [
+      {
+        "type": "falcuty",
+        "name": "Khoa Công nghệ Thông tin"
+      },
+      {
+        "type": "cohort",
+        "year": 2022
+      }
+    ]
   }
 }
 ```
@@ -1260,10 +1343,18 @@ Same format as above.
       "_id": "org_unit_id",
       "name": "Phòng CTSV",
       "code": "CTSV"
-    }
+    },
+    "requirements": [
+      { "type": "falcuty", "id": "faculty_id_here", "name": "Khoa Công nghệ Thông tin" },
+      { "type": "cohort", "id": "cohort_id_here", "year": 2022 }
+    ]
   }
 }
 ```
+
+**Lưu ý:**
+- Trường `requirements` trong response sẽ trả về danh sách yêu cầu đã lưu cho hoạt động (nếu có).
+- Nếu không có yêu cầu, trường này sẽ là mảng rỗng hoặc không xuất hiện.
 
 **Response - Reject Activity (`PUT /api/activities/:id/reject`):**
 
@@ -2184,6 +2275,163 @@ Authorization: Bearer <PLOK>
 1. Đăng nhập qua `/api/auth/login`
 2. Nhận token từ response
 3. Sử dụng token trong header cho các requests tiếp theo
+
+---
+
+## 📊 Statistics
+
+### Statistics Routes (`/api/statistics`)
+
+| Method | Endpoint                  | Description                                    | Auth Required | Permission Required |
+| ------ | ------------------------- | ---------------------------------------------- | ------------- | ------------------- |
+| GET    | `/api/statistics/community-points` | Thống kê tổng điểm PVCD theo user, năm | ✅ | - |
+| GET    | `/api/statistics/activities` | Thống kê số lượng hoạt động theo loại, trạng thái | ✅ | - |
+| GET    | `/api/statistics/certificates` | Thống kê số lượng minh chứng đã duyệt | ✅ | - |
+| GET    | `/api/statistics/grades` | **Xem thống kê điểm với bộ lọc** | ✅ | - |
+
+#### Get Grades Statistics (`GET /api/statistics/grades`)
+
+Endpoint này dùng để xem thống kê điểm rèn luyện (PVCD) với các tùy chọn lọc:
+- `student_number`: Mã sinh viên (hỗ trợ tìm kiếm từ riêng)
+- `faculty_id`: ID khoa
+- `class_id`: ID lớp
+- `year`: Năm học
+- `page`: Trang (mặc định: 1)
+- `limit`: Số bản ghi trên trang (mặc định: 10)
+
+**Query Parameters:**
+
+```
+GET /api/statistics/grades?student_number=1022&faculty_id=faculty_uuid&class_id=class_uuid&year=2024&page=1&limit=10
+```
+
+**Request Example:**
+
+```bash
+curl -X GET "http://localhost:5000/api/statistics/grades?student_number=1022&year=2024&page=1&limit=10" \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+**Response - Get Grades Statistics (Success):**
+
+```json
+{
+  "success": true,
+  "message": "Lấy thống kê điểm thành công",
+  "data": {
+    "records": [
+      {
+        "_id": "pvcd_record_id",
+        "year": 2024,
+        "total_point": 85,
+        "start_year": "2024-09-01T00:00:00.000Z",
+        "end_year": "2025-06-30T00:00:00.000Z",
+        "student": {
+          "_id": "student_profile_id",
+          "student_number": "102220095",
+          "full_name": "Nguyễn Văn A",
+          "email": "student@example.com",
+          "phone": "0123456789",
+          "enrollment_year": 2022,
+          "isClassMonitor": false
+        },
+        "class": {
+          "_id": "class_id",
+          "name": "CNTT21.1"
+        },
+        "faculty": {
+          "_id": "faculty_id",
+          "name": "Khoa Công nghệ Thông tin"
+        },
+        "user": {
+          "_id": "user_id",
+          "username": "102220095"
+        }
+      },
+      {
+        "_id": "pvcd_record_id_2",
+        "year": 2024,
+        "total_point": 92,
+        "start_year": "2024-09-01T00:00:00.000Z",
+        "end_year": "2025-06-30T00:00:00.000Z",
+        "student": {
+          "_id": "student_profile_id_2",
+          "student_number": "102220096",
+          "full_name": "Nguyễn Văn B",
+          "email": "student2@example.com",
+          "phone": "0987654321",
+          "enrollment_year": 2022,
+          "isClassMonitor": true
+        },
+        "class": {
+          "_id": "class_id",
+          "name": "CNTT21.1"
+        },
+        "faculty": {
+          "_id": "faculty_id",
+          "name": "Khoa Công nghệ Thông tin"
+        },
+        "user": {
+          "_id": "user_id_2",
+          "username": "102220096"
+        }
+      }
+    ],
+    "statistics": {
+      "total_students": 2,
+      "total_points": 177,
+      "average_points": "88.50",
+      "max_points": 92,
+      "min_points": 85
+    },
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 2,
+      "totalPages": 1
+    }
+  }
+}
+```
+
+**Response - Get Grades Statistics (No Results):**
+
+```json
+{
+  "success": true,
+  "message": "Lấy thống kê điểm thành công",
+  "data": {
+    "records": [],
+    "statistics": {
+      "total_students": 0,
+      "total_points": 0,
+      "average_points": "0.00",
+      "max_points": 0,
+      "min_points": 0
+    },
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 0,
+      "totalPages": 0
+    }
+  }
+}
+```
+
+**Lưu ý:**
+
+- Tất cả parameters đều **optional**, nếu không gửi sẽ lấy tất cả bản ghi
+- `student_number` hỗ trợ tìm kiếm từ riêng (không phân biệt hoa/thường)
+- `faculty_id`, `class_id`, `year` phải là giá trị hợp lệ nếu được cung cấp
+- Kết quả được sắp xếp theo năm giảm dần, sau đó theo mã sinh viên tăng dần
+- `statistics` bao gồm:
+  - `total_students`: Tổng số sinh viên trong kết quả
+  - `total_points`: Tổng điểm của tất cả sinh viên
+  - `average_points`: Điểm trung bình
+  - `max_points`: Điểm cao nhất
+  - `min_points`: Điểm thấp nhất (0 nếu không có bản ghi)
+- Endpoint yêu cầu authentication token nhưng không yêu cầu permission đặc biệt
 
 ---
 

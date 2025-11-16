@@ -30,7 +30,7 @@ const staffProfileSchema = new mongoose.Schema({
 
 // Index for faster queries
 staffProfileSchema.index({ user_id: 1 });
-staffProfileSchema.index({ staff_number: 1 });
+// staffProfileSchema.index({ staff_number: 1 });
 staffProfileSchema.index({ org_unit_id: 1 });
 
 module.exports = mongoose.model('StaffProfile', staffProfileSchema, 'staff_profile');
