@@ -1514,7 +1514,83 @@ Same format as above.
 
 ---
 
+
 ### Attendance Routes (`/api/attendances`)
+
+#### Phản hồi điểm phục vụ cộng đồng (feedback điểm PVCD)
+
+**Các trường liên quan trong attendance:**
+
+- `feedback`: Nội dung phản hồi của sinh viên về điểm số
+- `feedback_time`: Thời gian sinh viên gửi phản hồi
+- `feedback_status`: Trạng thái phản hồi (`pending`, `accepted`, `rejected`, hoặc `null` nếu chưa phản hồi)
+- `feedback_verified_at`: Thời gian staff xác nhận phản hồi
+
+**Các API phản hồi điểm PVCD:**
+
+| Method | Endpoint                                                        | Description                                         | Auth Required | Roles/Permission         |
+| ------ | --------------------------------------------------------------- | --------------------------------------------------- | ------------- | ------------------------ |
+
+
+| POST   | `/api/attendances/:attendanceId/submit-feedback`                | Sinh viên gửi phản hồi về điểm                       | ✅            | student (own attendance) |
+| PUT    | `/api/attendances/:attendanceId/approve-feedback`               | Staff duyệt phản hồi và cập nhật điểm                | ✅            | staff, admin             |
+| GET    | `/api/attendances/faculty/:facultyId/pending-feedbacks`         | Lấy danh sách phản hồi chờ duyệt theo khoa           | ✅            | staff, admin             |
+
+**Ví dụ request body cho các API phản hồi điểm:**
+
+**POST /api/attendances/:attendanceId/submit-feedback**
+```json
+{
+  "feedback": "Em xin khiếu nại điểm, em đã hoàn thành đủ yêu cầu"
+}
+```
+
+**PUT /api/attendances/:attendanceId/approve-feedback**
+_Chấp nhận:_
+```json
+{
+  "status": "accepted",
+  "newPoints": 10,
+  "content": "Phản hồi được chấp nhận"
+}
+```
+_Từ chối:_
+```json
+{
+  "status": "rejected",
+  "rejectionReason": "Không đủ minh chứng"
+}
+```
+
+**GET /api/attendances/faculty/:facultyId/pending-feedbacks**
+
+**Quy trình:**
+1. Sinh viên gửi phản hồi về điểm (trường `feedback`, `feedback_time`, `feedback_status: "pending"`).
+2. Staff xem phản hồi, nếu đồng ý thì cập nhật trường `points` và chuyển `feedback_status: "accepted"`, nếu không thì chuyển `feedback_status: "rejected"`.
+3. Khi duyệt, staff có thể gửi thông báo cho sinh viên.
+
+**Ví dụ dữ liệu attendance có phản hồi:**
+```json
+{
+  "student_id": "68f905f7585ae2c65d0e5503",
+  "activity_id": "68f905f7585ae2c65d0e5518",
+  "points": 8,
+  "feedback": "Em xin khiếu nại điểm, em đã hoàn thành tất cả các yêu cầu",
+  "feedback_time": "2025-11-17T15:44:10.000Z",
+  "feedback_status": "pending",
+  "feedback_verified_at": null
+}
+```
+
+**Ví dụ attendance không có phản hồi:**
+```json
+{
+  "student_id": "68f905f7585ae2c65d0e5501",
+  "activity_id": "68f905f7585ae2c65d0e5518",
+  "points": 9
+  // Không có trường feedback, feedback_status, feedback_time, feedback_verified_at
+}
+```
 
 | Method | Endpoint                                         | Description                                        | Auth Required | Roles                     |
 | ------ | ------------------------------------------------ | -------------------------------------------------- | ------------- | ------------------------- |
@@ -1534,10 +1610,11 @@ Same format as above.
 
 ```json
 {
-  "activityId": "activity_uuid_here",
-  "studentId": "student_uuid_here",
-  "attendedAt": "2024-01-15T00:00:00.000Z",
-  "note": "Ghi chú điểm danh"
+  "activity_id": "activity_uuid_here",
+  "student_id": "student_uuid_here",
+  "scanned_at": "2024-01-15T08:05:00.000Z",
+  "status": "present",
+  "points": 5
 }
 ```
 
@@ -1546,8 +1623,7 @@ Same format as above.
 ```json
 {
   "status": "present",
-  "points": 5,
-  "note": "Ghi chú điểm danh đã cập nhật",
+  "points": 10,
   "scanned_at": "2024-01-15T08:05:00.000Z"
 }
 ```

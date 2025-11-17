@@ -71,6 +71,26 @@ router.put('/:id/feedback',
   attendanceController.addFeedback
 );
 
+// Sinh viên gửi phản hồi về điểm
+router.post('/:attendanceId/submit-feedback', 
+  auth,
+  attendanceController.submitFeedback
+);
+
+// Staff duyệt phản hồi và cập nhật điểm
+router.put('/:attendanceId/approve-feedback', 
+  auth,
+  checkPermission('attendance', 'VERIFY'),
+  attendanceController.approveFeedback
+);
+
+// Lấy danh sách phản hồi chờ duyệt theo khoa
+router.get('/faculty/:facultyId/pending-feedbacks',
+  auth,
+  checkPermission('attendance', 'READ'),
+  attendanceController.getPendingFeedbacksByFaculty
+);
+
 // Quét mã QR điểm danh (students scan QR)
 router.post('/scan-qr', 
   auth, 

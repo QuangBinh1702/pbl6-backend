@@ -2,6 +2,7 @@
 const Attendance = require('../models/attendance.model');
 const Activity = require('../models/activity.model');
 const StudentProfile = require('../models/student_profile.model');
+const Notification = require('../models/notification.model');
 
 module.exports = {
   async getAllAttendances(req, res) {
@@ -175,11 +176,17 @@ module.exports = {
   async addFeedback(req, res) {
     try {
       const { feedback } = req.body;
+      
+      if (!feedback) {
+        return res.status(400).json({ success: false, message: 'Feedback không được để trống' });
+      }
+
       const attendance = await Attendance.findByIdAndUpdate(
         req.params.id,
         { 
           feedback,
-          feedback_time: new Date()
+          feedback_time: new Date(),
+          feedback_status: 'pending'
         },
         { new: true }
       )
@@ -195,9 +202,153 @@ module.exports = {
       if (!attendance) {
         return res.status(404).json({ success: false, message: 'Attendance not found' });
       }
-      res.json({ success: true, data: attendance });
+      res.json({ success: true, message: 'Phản hồi đã được gửi, chờ duyệt', data: attendance });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });
+    }
+  },
+
+  // API sinh viên gửi phản hồi về điểm
+  async submitFeedback(req, res) {
+    try {
+      const { feedback } = req.body;
+      const { attendanceId } = req.params;
+      const student_id = req.user._id;
+
+      if (!feedback || feedback.trim() === '') {
+        return res.status(400).json({ success: false, message: 'Phản hồi không được để trống' });
+      }
+
+      // Kiểm tra attendance tồn tại và thuộc về sinh viên
+      const attendance = await Attendance.findById(attendanceId).populate('student_id');
+      if (!attendance) {
+        return res.status(404).json({ success: false, message: 'Bản ghi điểm danh không tồn tại' });
+      }
+
+      // So sánh user_id của StudentProfile với req.user._id
+      if (attendance.student_id.user_id.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ success: false, message: 'Bạn không có quyền phản hồi bản ghi này' });
+      }
+
+      // Cập nhật feedback với trạng thái pending
+      attendance.feedback = feedback;
+      attendance.feedback_time = new Date();
+      attendance.feedback_status = 'pending';
+      await attendance.save();
+
+      await attendance.populate({
+        path: 'student_id',
+        populate: {
+          path: 'user_id',
+          select: '-password_hash'
+        }
+      });
+      await attendance.populate('activity_id');
+
+      res.json({ success: true, message: 'Phản hồi đã được gửi, chờ duyệt từ staff', data: attendance });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // API staff duyệt phản hồi và sửa điểm
+  async approveFeedback(req, res) {
+    try {
+      const { attendanceId } = req.params;
+      const { status, newPoints, rejectionReason } = req.body;
+      const staff_id = req.user._id;
+
+      // Validate input
+      if (!['accepted', 'rejected'].includes(status)) {
+        return res.status(400).json({ success: false, message: 'Trạng thái không hợp lệ' });
+      }
+
+      const attendance = await Attendance.findById(attendanceId)
+        .populate({
+          path: 'student_id',
+          populate: {
+            path: 'user_id',
+            select: '-password_hash'
+          }
+        })
+        .populate('activity_id');
+
+      if (!attendance) {
+        return res.status(404).json({ success: false, message: 'Bản ghi điểm danh không tồn tại' });
+      }
+
+      if (attendance.feedback_status !== 'pending') {
+        return res.status(400).json({ success: false, message: 'Phản hồi này đã được duyệt trước đó' });
+      }
+
+      // Cập nhật trạng thái phản hồi
+      attendance.feedback_status = status;
+      attendance.feedback_verified_at = new Date();
+
+      // Nếu chấp nhận, cập nhật điểm
+      if (status === 'accepted' && newPoints !== undefined) {
+        attendance.points = newPoints;
+      }
+
+      await attendance.save();
+
+      // Gửi thông báo cho sinh viên
+      const notificationContent = status === 'accepted' 
+        ? `Phản hồi của bạn về điểm hoạt động "${attendance.activity_id.title}" đã được chấp nhận. Điểm được cập nhật: ${newPoints} điểm`
+        : `Phản hồi của bạn về điểm hoạt động "${attendance.activity_id.title}" đã bị từ chối. Lý do: ${rejectionReason || 'Không có lý do'}`;
+
+      const notification = new Notification({
+        title: status === 'accepted' ? 'Phản hồi được chấp nhận' : 'Phản hồi bị từ chối',
+        content: notificationContent,
+        notification_type: 'score_update',
+        target_audience: 'specific',
+        target_user_ids: [attendance.student_id.user_id],
+        created_by: staff_id
+      });
+
+      await notification.save();
+
+      res.json({ 
+        success: true, 
+        message: `Phản hồi đã được ${status === 'accepted' ? 'chấp nhận' : 'từ chối'}`, 
+        data: attendance 
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // Lấy danh sách phản hồi chờ duyệt theo khoa
+  async getPendingFeedbacksByFaculty(req, res) {
+    try {
+      const { facultyId } = req.params;
+
+      // Lấy danh sách sinh viên thuộc khoa
+      const students = await StudentProfile.find({ faculty_id: facultyId }).select('_id');
+      const studentIds = students.map(s => s._id);
+
+      if (studentIds.length === 0) {
+        return res.json({ success: true, data: [], count: 0 });
+      }
+
+      // Lấy danh sách phản hồi chờ duyệt của sinh viên thuộc khoa
+      const pendingFeedbacks = await Attendance.find({
+        student_id: { $in: studentIds },
+        feedback_status: 'pending'
+      })
+        .populate({
+          path: 'student_id',
+          populate: {
+            path: 'user_id',
+            select: '-password_hash'
+          }
+        })
+        .populate('activity_id')
+        .sort({ feedback_time: -1 });
+
+      res.json({ success: true, data: pendingFeedbacks, count: pendingFeedbacks.length });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
     }
   },
 

@@ -26,7 +26,13 @@ const attendanceSchema = new mongoose.Schema({
   verified_at: Date,
   points: Number,
   feedback: String,
-  feedback_time: Date
+  feedback_time: Date,
+  feedback_status: {
+    type: String,
+    enum: ['pending', 'accepted', 'rejected'],
+    default: null
+  },
+  feedback_verified_at: Date
 }, { timestamps: false });
 
 // Index for faster queries
