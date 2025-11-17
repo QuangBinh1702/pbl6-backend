@@ -5,9 +5,6 @@ const activityController = require('../controllers/activity.controller');
 const auth = require('../middlewares/auth.middleware');
 const { checkPermission } = require('../middlewares/check_permission.middleware');
 
-// Activity routes with new permission system
-router.get('/', activityController.getAllActivities); // Public - list activities
-
 // IMPORTANT: Specific routes MUST come before :id route to avoid conflicts
 // Order matters in Express routing!
 
@@ -18,6 +15,8 @@ router.get('/rejections',
   activityController.getActivityRejections
 );
 
+router.get('/', activityController.getAllActivities);
+
 router.get('/my/activities', 
   auth, 
   activityController.getMyActivities
@@ -27,6 +26,16 @@ router.get('/student/:studentId',
   auth, 
   checkPermission('activity_registration', 'READ'), 
   activityController.getStudentActivities
+);
+
+router.get('/student/:student_id/filter', 
+  auth, 
+  (req, res, next) => {
+    // Check if user has either activity_registration:READ or attendance:READ permission
+    req.requiredPermissions = ['activity_registration:READ', 'attendance:READ'];
+    next();
+  },
+  activityController.getStudentActivitiesWithFilter
 );
 
 router.get('/:id', activityController.getActivityById); // Public - view activity details (MUST be last)

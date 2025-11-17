@@ -1313,5 +1313,184 @@ module.exports = {
       console.error('Cancel activity error:', err);
       res.status(400).json({ success: false, message: err.message });
     }
+  },
+
+  async getStudentActivitiesWithFilter(req, res) {
+    try {
+      const { student_id } = req.params;
+      const { status, field_id, org_unit_id, title } = req.query;
+
+      // Get all registrations for the student
+      const registrations = await ActivityRegistration.find({ 
+        student_id 
+      }).populate('activity_id');
+
+      // Get all attendances for the student
+      const attendances = await Attendance.find({ 
+        student_id 
+      }).populate('activity_id');
+
+      // Get all activity IDs to check for rejections
+      const activityIds = new Set();
+      registrations.forEach(reg => {
+        if (reg.activity_id) activityIds.add(reg.activity_id._id);
+      });
+      attendances.forEach(att => {
+        if (att.activity_id) activityIds.add(att.activity_id._id);
+      });
+
+      // Check rejections for all activities
+      const rejections = await ActivityRejection.find({
+        activity_id: { $in: Array.from(activityIds) }
+      });
+      const rejectionMap = new Map();
+      rejections.forEach(rej => {
+        rejectionMap.set(rej.activity_id.toString(), rej);
+      });
+
+      const activities = [];
+      const activityMap = new Map();
+
+      // Process registrations
+      registrations.forEach(reg => {
+        if (reg.activity_id) {
+          const activityData = reg.activity_id.toObject();
+          
+          // Check if activity is rejected and update status
+          if (rejectionMap.has(activityData._id.toString())) {
+            activityData.status = 'rejected';
+          } else {
+            // Update status based on time if not rejected
+            const now = new Date();
+            const startTime = new Date(activityData.start_time);
+            const endTime = new Date(activityData.end_time);
+            
+            if (activityData.status !== 'pending' && activityData.status !== 'rejected' && activityData.status !== 'cancelled') {
+              if (endTime < now) {
+                activityData.status = 'completed';
+              } else if (startTime <= now && now <= endTime) {
+                activityData.status = 'in_progress';
+              } else if (startTime > now) {
+                activityData.status = 'approved';
+              }
+            }
+          }
+          
+          // Convert status to Vietnamese
+          activityData.status = getStatusVi(activityData.status);
+          activityMap.set(activityData._id.toString(), {
+            ...activityData,
+            registration: {
+              id: reg._id,
+              status: reg.status,
+              registered_at: reg.registered_at,
+              approval_note: reg.approval_note,
+              approved_by: reg.approved_by,
+              approved_at: reg.approved_at
+            },
+            attendance: null
+          });
+        }
+      });
+
+      // Process attendances
+      attendances.forEach(att => {
+        if (att.activity_id) {
+          const activityId = att.activity_id._id.toString();
+          if (activityMap.has(activityId)) {
+            // Add attendance info to existing activity
+            activityMap.get(activityId).attendance = {
+              id: att._id,
+              scanned_at: att.scanned_at,
+              status: att.status,
+              verified: att.verified,
+              verified_at: att.verified_at,
+              points: att.points,
+              feedback: att.feedback,
+              feedback_time: att.feedback_time
+            };
+          } else {
+            // Activity with attendance but no registration
+            const activityData = att.activity_id.toObject();
+            
+            // Check if activity is rejected and update status
+            if (rejectionMap.has(activityId)) {
+              activityData.status = 'rejected';
+            } else {
+              // Update status based on time if not rejected
+              const now = new Date();
+              const startTime = new Date(activityData.start_time);
+              const endTime = new Date(activityData.end_time);
+              
+              if (activityData.status !== 'pending' && activityData.status !== 'rejected' && activityData.status !== 'cancelled') {
+                if (endTime < now) {
+                  activityData.status = 'completed';
+                } else if (startTime <= now && now <= endTime) {
+                  activityData.status = 'in_progress';
+                } else if (startTime > now) {
+                  activityData.status = 'approved';
+                }
+              }
+            }
+            
+            // Convert status to Vietnamese
+            activityData.status = getStatusVi(activityData.status);
+            activityMap.set(activityId, {
+              ...activityData,
+              registration: null,
+              attendance: {
+                id: att._id,
+                scanned_at: att.scanned_at,
+                status: att.status,
+                verified: att.verified,
+                verified_at: att.verified_at,
+                points: att.points,
+                feedback: att.feedback,
+                feedback_time: att.feedback_time
+              }
+            });
+          }
+        }
+      });
+
+      // Convert map to array
+      activityMap.forEach(value => {
+        activities.push(value);
+      });
+
+      // Apply filters
+      let filtered = activities;
+
+      if (status) {
+        const statusEn = getStatusEn(status);
+        filtered = filtered.filter(act => act.status === status || act.status === statusEn);
+      }
+
+      if (field_id) {
+        filtered = filtered.filter(act => act.field_id && act.field_id.toString() === field_id);
+      }
+
+      if (org_unit_id) {
+        filtered = filtered.filter(act => act.org_unit_id && act.org_unit_id.toString() === org_unit_id);
+      }
+
+      if (title) {
+        filtered = filtered.filter(act => 
+          act.title && act.title.toLowerCase().includes(title.toLowerCase())
+        );
+      }
+
+      // Sort by start_time (most recent first)
+      filtered.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+
+      res.json({ 
+        success: true, 
+        data: filtered,
+        count: filtered.length
+      });
+    } catch (err) {
+      console.error('Get student activities with filter error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
   }
 };
