@@ -1481,11 +1481,17 @@ module.exports = {
       }
 
       if (field_id) {
-        filtered = filtered.filter(act => act.field_id && act.field_id.toString() === field_id);
+        filtered = filtered.filter(act => act.field_id && (
+          act.field_id._id.toString() === field_id || 
+          act.field_id.name.toLowerCase() === field_id.toLowerCase()
+        ));
       }
 
       if (org_unit_id) {
-        filtered = filtered.filter(act => act.org_unit_id && act.org_unit_id.toString() === org_unit_id);
+        filtered = filtered.filter(act => act.org_unit_id && (
+          act.org_unit_id._id.toString() === org_unit_id || 
+          act.org_unit_id.name.toLowerCase() === org_unit_id.toLowerCase()
+        ));
       }
 
       if (title) {
@@ -1563,11 +1569,21 @@ module.exports = {
       }
 
       if (field_id) {
-        filtered = filtered.filter(act => act.field_id && act.field_id.toString() === field_id);
+        filtered = filtered.filter(act => {
+          if (!act.field_id) return false;
+          const fieldObjId = act.field_id._id ? act.field_id._id.toString() : act.field_id.toString();
+          const fieldName = act.field_id.name ? act.field_id.name.toLowerCase() : '';
+          return fieldObjId === field_id || fieldName === field_id.toLowerCase();
+        });
       }
 
       if (org_unit_id) {
-        filtered = filtered.filter(act => act.org_unit_id && act.org_unit_id.toString() === org_unit_id);
+        filtered = filtered.filter(act => {
+          if (!act.org_unit_id) return false;
+          const orgObjId = act.org_unit_id._id ? act.org_unit_id._id.toString() : act.org_unit_id.toString();
+          const orgName = act.org_unit_id.name ? act.org_unit_id.name.toLowerCase() : '';
+          return orgObjId === org_unit_id || orgName === org_unit_id.toLowerCase();
+        });
       }
 
       if (title) {
