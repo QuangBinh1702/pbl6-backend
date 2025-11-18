@@ -1530,8 +1530,7 @@ Same format as above.
 
 | Method | Endpoint                                                        | Description                                         | Auth Required | Roles/Permission         |
 | ------ | --------------------------------------------------------------- | --------------------------------------------------- | ------------- | ------------------------ |
-
-
+| GET    | `/api/attendances/student/:studentId/activity/:activityId`      | Lấy phản hồi của sinh viên cho một hoạt động        | ✅            | student (own attendance) |
 | POST   | `/api/attendances/:attendanceId/submit-feedback`                | Sinh viên gửi phản hồi về điểm                       | ✅            | student (own attendance) |
 | PUT    | `/api/attendances/:attendanceId/approve-feedback`               | Staff duyệt phản hồi và cập nhật điểm                | ✅            | staff, admin             |
 | GET    | `/api/attendances/faculty/:facultyId/pending-feedbacks`         | Lấy danh sách phản hồi chờ duyệt theo khoa           | ✅            | staff, admin             |

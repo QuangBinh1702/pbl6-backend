@@ -362,6 +362,33 @@ module.exports = {
     }
   },
 
+  async getAttendanceByStudentAndActivity(req, res) {
+    try {
+      const { studentId, activityId } = req.params;
+      
+      const attendance = await Attendance.findOne({
+        student_id: studentId.trim(),
+        activity_id: activityId.trim()
+      })
+        .populate({
+          path: 'student_id',
+          populate: {
+            path: 'user_id',
+            select: '-password_hash'
+          }
+        })
+        .populate('activity_id');
+      
+      if (!attendance) {
+        return res.status(404).json({ success: false, message: 'Attendance not found' });
+      }
+      
+      res.json({ success: true, data: attendance });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
   async getAttendedActivitiesByStudent(req, res) {
     try {
       const { studentId } = req.params;
