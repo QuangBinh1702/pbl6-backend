@@ -17,6 +17,10 @@ router.get('/rejections',
 
 router.get('/', activityController.getAllActivities);
 
+router.get('/filter', 
+  activityController.getActivitiesWithFilter
+);
+
 router.get('/my/activities', 
   auth, 
   activityController.getMyActivities

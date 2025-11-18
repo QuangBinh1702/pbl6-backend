@@ -1506,5 +1506,87 @@ module.exports = {
       console.error('Get student activities with filter error:', err);
       res.status(500).json({ success: false, message: err.message });
     }
+  },
+
+  async getActivitiesWithFilter(req, res) {
+    try {
+      const { status, field_id, org_unit_id, title } = req.query;
+
+      // Get all activities
+      const activities = await Activity.find()
+        .populate('org_unit_id')
+        .populate('field_id')
+        .sort({ start_time: -1 });
+
+      // Get all rejections
+      const rejections = await ActivityRejection.find();
+      const rejectionMap = new Map();
+      rejections.forEach(rej => {
+        rejectionMap.set(rej.activity_id.toString(), rej);
+      });
+
+      // Process all activities
+      const processedActivities = activities.map(act => {
+        const activityData = act.toObject();
+
+        // Check if activity is rejected and update status
+        if (rejectionMap.has(activityData._id.toString())) {
+          activityData.status = 'rejected';
+        } else {
+          // Update status based on time if not rejected
+          const now = new Date();
+          const startTime = new Date(activityData.start_time);
+          const endTime = new Date(activityData.end_time);
+
+          if (activityData.status !== 'pending' && activityData.status !== 'rejected' && activityData.status !== 'cancelled') {
+            if (endTime < now) {
+              activityData.status = 'completed';
+            } else if (startTime <= now && now <= endTime) {
+              activityData.status = 'in_progress';
+            } else if (startTime > now) {
+              activityData.status = 'approved';
+            }
+          }
+        }
+
+        // Convert status to Vietnamese
+        activityData.status = getStatusVi(activityData.status);
+        return activityData;
+      });
+
+      // Apply filters
+      let filtered = processedActivities;
+
+      if (status) {
+        const statusEn = getStatusEn(status);
+        filtered = filtered.filter(act => act.status === status || act.status === statusEn);
+      }
+
+      if (field_id) {
+        filtered = filtered.filter(act => act.field_id && act.field_id.toString() === field_id);
+      }
+
+      if (org_unit_id) {
+        filtered = filtered.filter(act => act.org_unit_id && act.org_unit_id.toString() === org_unit_id);
+      }
+
+      if (title) {
+        filtered = filtered.filter(act => 
+          act.title && act.title.toLowerCase().includes(title.toLowerCase())
+        );
+      }
+
+      // Sort by start_time (most recent first)
+      filtered.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+
+      res.json({ 
+        success: true, 
+        data: filtered,
+        count: filtered.length
+      });
+    } catch (err) {
+      console.error('Get activities with filter error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
   }
 };

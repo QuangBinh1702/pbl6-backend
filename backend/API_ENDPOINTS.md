@@ -944,8 +944,10 @@ The response format is the same as Staff Profile responses.
 | Method | Endpoint                             | Description                                                                                   | Auth Required | Permission Required            |
 | ------ | ------------------------------------ | --------------------------------------------------------------------------------------------- | ------------- | ------------------------------ |
 | GET    | `/api/activities`                    | Lấy tất cả hoạt động (có thể filter theo org_unit_id, field_id, status, start_date, end_date) | ❌            | - (Public)                     |
+| GET    | `/api/activities/filter`             | Lọc tất cả hoạt động (không cần studentId, hỗ trợ title search)                              | ❌            | - (Public)                     |
 | GET    | `/api/activities/my/activities`      | Lấy hoạt động của sinh viên hiện tại                                                          | ✅            | - (Own data)                   |
 | GET    | `/api/activities/student/:studentId` | Lấy hoạt động của một sinh viên cụ thể                                                        | ✅            | `activity_registration:READ`   |
+| GET    | `/api/activities/student/:student_id/filter` | Lọc hoạt động của sinh viên (đã đăng ký, đã duyệt, đã tham gia) | ✅            | `activity_registration:READ` hoặc `attendance:READ` |
 | GET    | `/api/activities/:id`                | Lấy chi tiết hoạt động theo ID (bao gồm requirements)                                         | ❌            | - (Public)                     |
 | POST   | `/api/activities`                    | Tạo hoạt động mới (có thể kèm yêu cầu khoa/khóa tham gia)                                     | ✅            | `activity:CREATE`              |
 | POST   | `/api/activities/suggest`            | Đề xuất hoạt động (status = chờ duyệt)                                                        | ✅            | - (Authenticated)              |
@@ -1134,6 +1136,38 @@ The response format is the same as Staff Profile responses.
 - `status` (optional): Lọc hoạt động theo trạng thái (có thể dùng tiếng Anh: `pending`, `approved`, `in_progress`, `completed`, `rejected`, `cancelled` hoặc tiếng Việt: `chờ duyệt`, `chưa tổ chức`, `đang tổ chức`, `đã tổ chức`, `từ chối`, `hủy hoạt động`)
 - `start_date` (optional): Lọc hoạt động từ ngày bắt đầu (ISO format: `2024-01-15`)
 - `end_date` (optional): Lọc hoạt động đến ngày kết thúc (ISO format: `2024-12-31`)
+
+**Query Parameters - Filter All Activities (`GET /api/activities/filter`):**
+
+- `status` (optional): Lọc theo trạng thái (tiếng Việt: `chờ duyệt`, `chưa tổ chức`, `đang tổ chức`, `đã tổ chức`, `từ chối`, `hủy hoạt động`)
+- `field_id` (optional): Lọc theo ngành học (field UUID)
+- `org_unit_id` (optional): Lọc theo đơn vị tổ chức (org unit UUID)
+- `title` (optional): Tìm kiếm theo tên hoạt động (hỗ trợ tìm kiếm từ riêng, không phân biệt hoa/thường)
+
+**Ví dụ:**
+- Lấy tất cả hoạt động: `GET /api/activities/filter`
+- Lọc theo trạng thái: `GET /api/activities/filter?status=chưa tổ chức`
+- Tìm kiếm theo tên: `GET /api/activities/filter?title=tình nguyện`
+- Kết hợp lọc: `GET /api/activities/filter?status=chưa tổ chức&field_id=<field_id>&title=tình nguyện`
+
+**Query Parameters - Filter Student Activities (`GET /api/activities/student/:student_id/filter`):**
+
+- `status` (optional): Lọc hoạt động của sinh viên theo trạng thái (tiếng Việt: `đã đăng ký`, `đã duyệt`, `đã tham gia`)
+- `field_id` (optional): Lọc theo ngành học (field UUID)
+- `org_unit_id` (optional): Lọc theo đơn vị tổ chức (org unit UUID)
+- `title` (optional): Tìm kiếm theo tên hoạt động
+
+**Lưu ý - Filter Student Activities:**
+- Chỉ lấy hoạt động mà sinh viên đã đăng ký hoặc tham dự
+- Hỗ trợ 3 trạng thái: `đã đăng ký`, `đã duyệt`, `đã tham gia`
+- Response bao gồm thông tin `registration` (nếu có) và `attendance` (nếu có)
+- Yêu cầu authentication và permission `activity_registration:READ` hoặc `attendance:READ`
+
+**Ví dụ:**
+- Lấy hoạt động của sinh viên: `GET /api/activities/student/{studentId}/filter`
+- Lọc theo trạng thái: `GET /api/activities/student/{studentId}/filter?status=đã tham gia`
+- Tìm kiếm theo tên: `GET /api/activities/student/{studentId}/filter?title=tình nguyện`
+- Kết hợp lọc: `GET /api/activities/student/{studentId}/filter?status=đã duyệt&field_id=<field_id>`
 
 **Trạng thái hoạt động (Activity Status):**
 
