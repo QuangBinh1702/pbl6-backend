@@ -45,13 +45,6 @@ router.put('/:id',
   pvcdRecordController.updatePvcdRecord
 );
 
-// Cập nhật điểm (admin/staff - adjust points)
-router.put('/:id/points', 
-  auth, 
-  checkPermission('pvcd_record', 'ADJUST'),
-  pvcdRecordController.updatePoints
-);
-
 // Xóa bản ghi PVCD (admin only)
 router.delete('/:id', 
   auth, 

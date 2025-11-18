@@ -77,35 +77,11 @@ module.exports = {
     try {
       const payload = { ...req.body };
       if (payload.studentId && !payload.student_id) payload.student_id = payload.studentId;
-      if (payload.points != null && payload.total_point == null) payload.total_point = payload.points;
       // Normalize year to number if sent as string
       if (payload.year != null) payload.year = parseInt(payload.year, 10);
 
-      // Validate total_point: cannot exceed 100
-      if (payload.total_point != null) {
-        const totalPoint = typeof payload.total_point === 'number' 
-          ? payload.total_point 
-          : parseFloat(payload.total_point);
-        if (isNaN(totalPoint)) {
-          return res.status(400).json({ 
-            success: false,
-            message: 'Invalid total_point format' 
-          });
-        }
-        if (totalPoint > 100) {
-          return res.status(400).json({ 
-            success: false,
-            message: 'Total point cannot exceed 100' 
-          });
-        }
-        if (totalPoint < 0) {
-          return res.status(400).json({ 
-            success: false,
-            message: 'Total point cannot be negative' 
-          });
-        }
-        payload.total_point = totalPoint;
-      }
+      // Remove total_point from payload - it will be calculated automatically
+      delete payload.total_point;
 
       // Validate start_year and end_year
       if (payload.start_year || payload.end_year) {
@@ -159,34 +135,10 @@ module.exports = {
     try {
       const payload = { ...req.body };
       if (payload.studentId && !payload.student_id) payload.student_id = payload.studentId;
-      if (payload.points != null && payload.total_point == null) payload.total_point = payload.points;
       if (payload.year != null) payload.year = parseInt(payload.year, 10);
 
-      // Validate total_point: cannot exceed 100
-      if (payload.total_point != null) {
-        const totalPoint = typeof payload.total_point === 'number' 
-          ? payload.total_point 
-          : parseFloat(payload.total_point);
-        if (isNaN(totalPoint)) {
-          return res.status(400).json({ 
-            success: false,
-            message: 'Invalid total_point format' 
-          });
-        }
-        if (totalPoint > 100) {
-          return res.status(400).json({ 
-            success: false,
-            message: 'Total point cannot exceed 100' 
-          });
-        }
-        if (totalPoint < 0) {
-          return res.status(400).json({ 
-            success: false,
-            message: 'Total point cannot be negative' 
-          });
-        }
-        payload.total_point = totalPoint;
-      }
+      // Remove total_point from payload - it will be calculated automatically
+      delete payload.total_point;
 
       // Validate start_year and end_year
       // Get existing record to compare with new values
@@ -261,61 +213,6 @@ module.exports = {
     }
   },
 
-  async updatePoints(req, res) {
-    try {
-      const pointsFromBody = req.body.points != null ? req.body.points : req.body.total_point;
-      
-      if (pointsFromBody == null) {
-        return res.status(400).json({ 
-          success: false,
-          message: 'Points or total_point is required' 
-        });
-      }
-      
-      // Validate total_point: cannot exceed 100
-      const totalPoint = typeof pointsFromBody === 'number' 
-        ? pointsFromBody 
-        : parseFloat(pointsFromBody);
-      
-      if (isNaN(totalPoint)) {
-        return res.status(400).json({ 
-          success: false,
-          message: 'Invalid points format' 
-        });
-      }
-      if (totalPoint > 100) {
-        return res.status(400).json({ 
-          success: false,
-          message: 'Total point cannot exceed 100' 
-        });
-      }
-      if (totalPoint < 0) {
-        return res.status(400).json({ 
-          success: false,
-          message: 'Total point cannot be negative' 
-        });
-      }
-      
-      const record = await PvcdRecord.findByIdAndUpdate(
-        req.params.id,
-        { total_point: totalPoint },
-        { new: true }
-      )
-        .populate({
-          path: 'student_id',
-          populate: {
-            path: 'user_id',
-            select: '-password'
-          }
-        });
-      if (!record) {
-        return res.status(404).json({ message: 'PVCD record not found' });
-      }
-      res.json(record);
-    } catch (err) {
-      res.status(400).json({ message: err.message });
-    }
-  },
 };
 
 

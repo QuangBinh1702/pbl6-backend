@@ -840,6 +840,7 @@ module.exports = {
           activityData.status = getStatusVi(activityData.status);
           activityMap.set(activityData._id.toString(), {
             ...activityData,
+            org_unit_name: activityData.org_unit_id?.name || null,
             registration: {
               id: reg._id,
               status: reg.status,
@@ -897,6 +898,7 @@ module.exports = {
             activityData.status = getStatusVi(activityData.status);
             activityMap.set(activityId, {
               ...activityData,
+              org_unit_name: activityData.org_unit_id?.name || null,
               registration: null,
               attendance: {
                 id: att._id,
@@ -961,11 +963,23 @@ module.exports = {
       // Use the same logic as getStudentActivities
       const registrations = await ActivityRegistration.find({ 
         student_id: studentProfile._id 
-      }).populate('activity_id');
+      }).populate({
+        path: 'activity_id',
+        populate: {
+          path: 'org_unit_id',
+          select: 'name'
+        }
+      });
       
       const attendances = await Attendance.find({ 
         student_id: studentProfile._id 
-      }).populate('activity_id');
+      }).populate({
+        path: 'activity_id',
+        populate: {
+          path: 'org_unit_id',
+          select: 'name'
+        }
+      });
       
       // Get all activity IDs to check for rejections
       const activityIds = new Set();

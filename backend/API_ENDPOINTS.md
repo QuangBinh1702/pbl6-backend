@@ -1726,6 +1726,86 @@ _Từ chối:_
 
 ---
 
+### PVCD Records Routes (`/api/pvcd-records`)
+
+| Method | Endpoint                             | Description                          | Auth Required | Roles              |
+| ------ | ------------------------------------ | ------------------------------------ | ------------- | ------------------ |
+| GET    | `/api/pvcd-records`                  | Lấy tất cả bản ghi PVCD              | ✅            | admin, ctsv, staff |
+| GET    | `/api/pvcd-records/:id`              | Lấy chi tiết PVCD record theo ID     | ✅            | admin, ctsv, staff |
+| GET    | `/api/pvcd-records/student/:studentId` | Lấy bản ghi PVCD của sinh viên      | ✅            | -                  |
+| GET    | `/api/pvcd-records/year/:year`       | Lấy bản ghi PVCD theo năm            | ✅            | admin, ctsv, staff |
+| POST   | `/api/pvcd-records`                  | Tạo bản ghi PVCD mới                 | ✅            | admin, ctsv, staff |
+| PUT    | `/api/pvcd-records/:id`              | Cập nhật bản ghi PVCD                | ✅            | admin, ctsv, staff |
+| DELETE | `/api/pvcd-records/:id`              | Xóa bản ghi PVCD                     | ✅            | admin              |
+
+**Lưu ý - Tính toán total_point tự động:**
+- `total_point` được tính **tự động** khi tạo hoặc cập nhật PVCD record
+- Hệ thống sẽ query tất cả `attendance` records của sinh viên
+- Lọc những attendance có `activity.start_time` cùng năm với `year` trong PVCD record
+- Cộng tất cả `points` từ các attendance đó
+- Nếu tổng vượt quá 100, sẽ được giới hạn ở 100
+- **Không cần gửi `total_point` trong request body**
+
+**Request Body - Create PVCD Record:**
+
+```json
+{
+  "student_id": "student_profile_id_here",
+  "year": 2024,
+  "start_year": "2024-01-01T00:00:00.000Z",
+  "end_year": "2024-12-31T23:59:59.000Z"
+}
+```
+
+**Các trường trong Request:**
+
+- `student_id` (required): ID của StudentProfile
+- `year` (required): Năm học (số nguyên, ví dụ: 2024)
+- `start_year` (optional): Ngày bắt đầu năm học
+- `end_year` (optional): Ngày kết thúc năm học
+- **`total_point`**: Không gửi - được tính tự động
+
+**Request Body - Update PVCD Record:**
+
+```json
+{
+  "year": 2024,
+  "start_year": "2024-01-01T00:00:00.000Z",
+  "end_year": "2024-12-31T23:59:59.000Z"
+}
+```
+
+**Response - Create/Update PVCD Record:**
+
+```json
+{
+  "_id": "pvcd_record_id",
+  "student_id": {
+    "_id": "student_profile_id",
+    "user_id": {
+      "_id": "user_id",
+      "username": "102220095"
+    },
+    "full_name": "Nguyễn Văn A"
+  },
+  "year": 2024,
+  "start_year": "2024-01-01T00:00:00.000Z",
+  "end_year": "2024-12-31T23:59:59.000Z",
+  "total_point": 45.5,
+  "createdAt": "2025-11-18T10:30:00.000Z"
+}
+```
+
+**Ví dụ: Cách tính total_point**
+
+- Sinh viên A tham gia 3 hoạt động năm 2024:
+  - Hoạt động 1 (2024-01-15): 10 điểm
+  - Hoạt động 2 (2024-06-20): 15 điểm
+  - Hoạt động 3 (2024-09-10): 20 điểm
+- `total_point` sẽ tự động được tính = 10 + 15 + 20 = 45 điểm
+
+---
+
 ### Evidence Routes (`/api/evidences`)
 
 | Method | Endpoint                            | Description                     | Auth Required | Roles                        |
