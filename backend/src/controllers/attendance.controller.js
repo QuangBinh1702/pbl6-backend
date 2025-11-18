@@ -323,16 +323,26 @@ module.exports = {
     try {
       const { facultyId } = req.params;
 
-      // Lấy danh sách sinh viên thuộc khoa
-      const students = await StudentProfile.find({ faculty_id: facultyId }).select('_id');
-      const studentIds = students.map(s => s._id);
+      // Lấy danh sách sinh viên thuộc khoa (phải populate class_id -> falcuty_id)
+      const allStudents = await StudentProfile.find().populate({
+        path: 'class_id',
+        populate: {
+          path: 'falcuty_id'  // Note: typo in model - falcuty not faculty
+        }
+      });
+      
+      const filteredStudents = allStudents.filter(p => {
+        return p.class_id && p.class_id.falcuty_id && p.class_id.falcuty_id._id.toString() === facultyId;
+      });
+      
+      const studentIds = filteredStudents.map(s => s._id);
 
       if (studentIds.length === 0) {
         return res.json({ success: true, data: [], count: 0 });
       }
 
       // Lấy danh sách phản hồi chờ duyệt của sinh viên thuộc khoa
-      const pendingFeedbacks = await Attendance.find({
+      const result = await Attendance.find({
         student_id: { $in: studentIds },
         feedback_status: 'pending'
       })
@@ -346,7 +356,7 @@ module.exports = {
         .populate('activity_id')
         .sort({ feedback_time: -1 });
 
-      res.json({ success: true, data: pendingFeedbacks, count: pendingFeedbacks.length });
+      res.json({ success: true, data: result, count: result.length });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
     }
@@ -366,8 +376,9 @@ module.exports = {
           const key = att.activity_id._id.toString();
           if (!activitiesMap.has(key)) {
             const act = att.activity_id.toObject();
-            // Add attendance points to activity object
+            // Add attendance points and id to activity object
             act.points = att.points || 0;
+            act.attendance_id = att._id;
             activitiesMap.set(key, act);
           }
         }
