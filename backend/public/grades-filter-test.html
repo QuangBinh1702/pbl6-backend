@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grades Filter Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.95em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-search {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-search:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-reset {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-reset:hover {
+            background: #e0e0e0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        .results-header h3 {
+            color: #333;
+        }
+
+        .count-badge {
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .stats-box {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table thead {
+            background: #f9f9f9;
+        }
+
+        table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #ddd;
+            color: #333;
+        }
+
+        table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        table tbody tr:hover {
+            background: #f5f5f5;
+        }
+
+        .score-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+            color: white;
+        }
+
+        .score-excellent {
+            background: #28a745;
+        }
+
+        .score-good {
+            background: #17a2b8;
+        }
+
+        .score-fair {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .score-low {
+            background: #dc3545;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .json-view {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .json-view pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            color: #333;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination button.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            table {
+                font-size: 0.85em;
+            }
+
+            table th, table td {
+                padding: 8px 5px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .stats-box {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Bộ lọc thống kê</h1>
+            <p>Kiểm tra API thống kê điểm rèn luyện</p>
+        </div>
+
+        <div class="content">
+            <div class="error" id="error-message"></div>
+
+            <form onsubmit="searchGrades(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="student-number">Mã sinh viên</label>
+                        <input type="text" id="student-number" placeholder="Nhập mã sinh viên (ví dụ: 1022)">
+                    </div>
+                    <div class="form-group">
+                        <label for="faculty-id">Khoa</label>
+                        <select id="faculty-id">
+                            <option value="">-- Chọn khoa --</option>
+                            <option value="">Tải danh sách khoa...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="class-id">Lớp</label>
+                        <select id="class-id">
+                            <option value="">-- Chọn lớp --</option>
+                            <option value="">Tải danh sách lớp...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="year">Năm học</label>
+                        <select id="year">
+                            <option value="">-- Chọn năm học --</option>
+                            <option value="2023">2023</option>
+                            <option value="2024">2024</option>
+                            <option value="2025">2025</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn btn-search">✓ Áp dụng bộ lọc</button>
+                    <button type="button" class="btn btn-reset" onclick="resetForm()">⟳ Reset</button>
+                </div>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Đang tải...</p>
+            </div>
+
+            <div class="results" id="results" style="display: none;">
+                <div class="results-header">
+                    <h3>📊 Kết quả tìm kiếm</h3>
+                    <div class="count-badge" id="count-badge">0 kết quả</div>
+                </div>
+
+                <div class="stats-box" id="stats-box">
+                    <div class="stat-item">
+                        <div class="stat-label">Tổng sinh viên</div>
+                        <div class="stat-value" id="total-students">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Tổng điểm</div>
+                        <div class="stat-value" id="total-points">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Điểm trung bình</div>
+                        <div class="stat-value" id="average-points">0.00</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Điểm cao nhất</div>
+                        <div class="stat-value" id="max-points">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Điểm thấp nhất</div>
+                        <div class="stat-value" id="min-points">0</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table id="results-table">
+                        <thead>
+                            <tr>
+                                <th>Mã sinh viên</th>
+                                <th>Họ tên</th>
+                                <th>Khoa</th>
+                                <th>Lớp</th>
+                                <th>Năm học</th>
+                                <th>Điểm PVCD</th>
+                                <th>Email</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="pagination" id="pagination"></div>
+
+                <div class="json-view">
+                    <pre id="json-data">[]</pre>
+                </div>
+            </div>
+
+            <div class="empty-state" id="empty-state" style="display: none;">
+                <div class="empty-state-icon">📭</div>
+                <p>Không tìm thấy sinh viên nào</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5000/api' 
+            : 'https://pbl6-backend-iy5q.onrender.com/api';
+        let currentPage = 1;
+        let totalPages = 1;
+        let lastSearchParams = {};
+
+        // Hàm load danh sách khoa
+        async function loadFaculties() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/faculties`);
+                if (!response.ok) throw new Error('Không thể tải danh sách khoa');
+                
+                const faculties = await response.json();
+                const facultySelect = document.getElementById('faculty-id');
+                
+                // Clear options except default
+                const defaultOption = facultySelect.querySelector('option:first-child');
+                facultySelect.innerHTML = '';
+                facultySelect.appendChild(defaultOption);
+                
+                // Add faculties
+                faculties.forEach(faculty => {
+                    const option = document.createElement('option');
+                    option.value = faculty._id;
+                    option.textContent = faculty.name;
+                    facultySelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading faculties:', error);
+            }
+        }
+
+        // Hàm load danh sách lớp
+        async function loadClasses() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/classes`);
+                if (!response.ok) throw new Error('Không thể tải danh sách lớp');
+                
+                const classes = await response.json();
+                const classSelect = document.getElementById('class-id');
+                
+                // Clear options except default
+                const defaultOption = classSelect.querySelector('option:first-child');
+                classSelect.innerHTML = '';
+                classSelect.appendChild(defaultOption);
+                
+                // Add classes
+                classes.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls._id;
+                    option.textContent = cls.name;
+                    classSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading classes:', error);
+            }
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('error-message');
+            errorEl.textContent = `❌ ${message}`;
+            errorEl.classList.add('show');
+        }
+
+        function hideError() {
+            document.getElementById('error-message').classList.remove('show');
+        }
+
+        async function searchGrades(e) {
+            e.preventDefault();
+            hideError();
+            currentPage = 1;
+            
+            const studentNumber = document.getElementById('student-number').value;
+            const facultyId = document.getElementById('faculty-id').value;
+            const classId = document.getElementById('class-id').value;
+            const year = document.getElementById('year').value;
+
+            // Build query parameters
+            const params = new URLSearchParams();
+            if (studentNumber) params.append('student_number', studentNumber);
+            if (facultyId) params.append('faculty_id', facultyId);
+            if (classId) params.append('class_id', classId);
+            if (year) params.append('year', year);
+            params.append('page', currentPage);
+            params.append('limit', 10);
+
+            // Store last search params for pagination
+            lastSearchParams = {
+                studentNumber,
+                facultyId,
+                classId,
+                year
+            };
+
+            const url = `${API_BASE_URL}/statistics/grades?${params.toString()}`;
+
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('empty-state').style.display = 'none';
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message);
+            } finally {
+                document.getElementById('loading').classList.remove('show');
+            }
+        }
+
+        function getScoreBadgeClass(score) {
+            if (score >= 90) return 'score-excellent';
+            if (score >= 80) return 'score-good';
+            if (score >= 70) return 'score-fair';
+            return 'score-low';
+        }
+
+        function displayResults(data) {
+            const records = data.data.records || [];
+            const stats = data.data.statistics || {};
+            const pagination = data.data.pagination || {};
+
+            if (records.length === 0) {
+                document.getElementById('empty-state').style.display = 'block';
+                return;
+            }
+
+            // Update statistics
+            document.getElementById('total-students').textContent = stats.total_students || 0;
+            document.getElementById('total-points').textContent = stats.total_points || 0;
+            document.getElementById('average-points').textContent = (stats.average_points || '0.00');
+            document.getElementById('max-points').textContent = stats.max_points || 0;
+            document.getElementById('min-points').textContent = stats.min_points || 0;
+            document.getElementById('count-badge').textContent = `${records.length} kết quả`;
+
+            // Update table
+            const tbody = document.querySelector('#results-table tbody');
+            tbody.innerHTML = '';
+
+            records.forEach(record => {
+                const student = record.student || {};
+                const clasInfo = record.class || {};
+                const faculty = record.faculty || {};
+                const score = record.total_point || 0;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${student.student_number || '-'}</strong></td>
+                    <td>${student.full_name || '-'}</td>
+                    <td>${faculty.name || '-'}</td>
+                    <td>${clasInfo.name || '-'}</td>
+                    <td>${record.year || '-'}</td>
+                    <td><span class="score-badge ${getScoreBadgeClass(score)}">${score}</span></td>
+                    <td>${student.email || '-'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Update pagination
+            totalPages = pagination.totalPages || 1;
+            displayPagination();
+
+            // Display JSON data
+            document.getElementById('json-data').textContent = JSON.stringify(records, null, 2);
+
+            document.getElementById('results').style.display = 'block';
+        }
+
+        function displayPagination() {
+            const paginationDiv = document.getElementById('pagination');
+            paginationDiv.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            // Previous button
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = '← Trước';
+            prevBtn.disabled = currentPage <= 1;
+            prevBtn.onclick = () => goToPage(currentPage - 1);
+            paginationDiv.appendChild(prevBtn);
+
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.classList.toggle('active', i === currentPage);
+                btn.onclick = () => goToPage(i);
+                paginationDiv.appendChild(btn);
+            }
+
+            // Next button
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = 'Sau →';
+            nextBtn.disabled = currentPage >= totalPages;
+            nextBtn.onclick = () => goToPage(currentPage + 1);
+            paginationDiv.appendChild(nextBtn);
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            searchGradesWithParams();
+        }
+
+        async function searchGradesWithParams() {
+            hideError();
+
+            const params = new URLSearchParams();
+            if (lastSearchParams.studentNumber) params.append('student_number', lastSearchParams.studentNumber);
+            if (lastSearchParams.facultyId) params.append('faculty_id', lastSearchParams.facultyId);
+            if (lastSearchParams.classId) params.append('class_id', lastSearchParams.classId);
+            if (lastSearchParams.year) params.append('year', lastSearchParams.year);
+            params.append('page', currentPage);
+            params.append('limit', 10);
+
+            const url = `${API_BASE_URL}/statistics/grades?${params.toString()}`;
+
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('results').style.display = 'none';
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message);
+            } finally {
+                document.getElementById('loading').classList.remove('show');
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('student-number').value = '';
+            document.getElementById('faculty-id').value = '';
+            document.getElementById('class-id').value = '';
+            document.getElementById('year').value = '';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('empty-state').style.display = 'none';
+            hideError();
+            currentPage = 1;
+            totalPages = 1;
+        }
+
+        function getToken() {
+            return localStorage.getItem('token') || '';
+        }
+
+        // Load faculties and classes on page load
+        window.addEventListener('load', () => {
+            loadFaculties();
+            loadClasses();
+            console.log('API Base URL:', API_BASE_URL);
+            console.log('Grades Statistics: GET /api/statistics/grades');
+        });
+    </script>
+</body>
+</html>

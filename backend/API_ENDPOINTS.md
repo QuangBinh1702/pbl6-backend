@@ -2227,282 +2227,53 @@ _Từ chối:_
 - Đánh dấu đã đọc: `PUT /api/notifications/:id/read`
 - Đánh dấu tất cả đã đọc: `PUT /api/notifications/read-all`
 
----
 
-## 🔐 System & Permissions
 
-### Permission Routes (`/api/permissions`)
+Lấy thống kê tổng quan hoạt động: tổng số, hoạt động năm nay, tỷ lệ tăng trưởng.
 
-#### Permission Management
-
-| Method | Endpoint           | Description            | Auth Required | Permission Required |
-| ------ | ------------------ | ---------------------- | ------------- | ------------------- |
-| GET    | `/api/permissions` | Lấy tất cả permissions | ✅            | -                   |
-| POST   | `/api/permissions` | Tạo permission mới     | ✅            | `permission:CREATE` |
-
-**Request Body - Create Permission:**
-
-```json
-{
-  "name": "New Permission",
-  "description": "Mô tả quyền mới"
-}
+**Request:**
+```bash
+curl -X GET "http://localhost:5000/api/statistics/activity-dashboard" \
+  -H "Authorization: Bearer <TOKEN>"
 ```
 
-#### Action Management
-
-| Method | Endpoint                             | Description               | Auth Required | Permission Required |
-| ------ | ------------------------------------ | ------------------------- | ------------- | ------------------- |
-| GET    | `/api/permissions/actions`           | Lấy tất cả actions        | ✅            | -                   |
-| POST   | `/api/permissions/actions`           | Tạo action mới            | ✅            | `permission:CREATE` |
-| GET    | `/api/permissions/actions/:resource` | Lấy actions theo resource | ✅            | -                   |
-
-**Request Body - Create Action:**
-
+**Response:**
 ```json
 {
-  "name": "NEW_ACTION",
-  "resource": "activity",
-  "description": "Mô tả action mới"
-}
-```
-
-#### User Permission Management
-
-| Method | Endpoint                                           | Description                       | Auth Required |
-| ------ | -------------------------------------------------- | --------------------------------- | ------------- |
-| GET    | `/api/permissions/users/:userId/permissions`       | Lấy tất cả permissions của user   | ✅            |
-| GET    | `/api/permissions/users/:userId/actions/:resource` | Lấy actions của user cho resource | ✅            |
-| POST   | `/api/permissions/users/:userId/check-permission`  | Kiểm tra permission của user      | ✅            |
-
-**Response - Get User Permissions (`GET /api/permissions/users/:userId/permissions`):**
-
-```json
-{
-  "success": true,
-  "user": "67a1b2c3d4e5f6g7h8i9j0k1",
-  "roles": [
-    {
-      "role": "admin",
-      "orgUnit": null
-    },
-    {
-      "role": "staff",
-      "orgUnit": "Phòng CTSV"
-    }
-  ],
-  "permissions": {
-    "activity": [
-      {
-        "action_code": "CREATE",
-        "action_name": "Tạo hoạt động"
-      },
-      {
-        "action_code": "READ",
-        "action_name": "Xem hoạt động"
-      },
-      {
-        "action_code": "UPDATE",
-        "action_name": "Cập nhật hoạt động"
-      },
-      {
-        "action_code": "DELETE",
-        "action_name": "Xóa hoạt động"
-      }
-    ],
-    "user": [
-      {
-        "action_code": "READ",
-        "action_name": "Xem người dùng"
-      },
-      {
-        "action_code": "CREATE",
-        "action_name": "Tạo người dùng"
-      }
-    ]
+  "data": {
+    "totalActivities": 150,
+    "activitiesThisYear": 85,
+    "activitiesPreviousYear": 65,
+    "growthPercentage": 31
   },
-  "overrides": [
-    {
-      "action": "activity.CREATE",
-      "action_name": "Tạo hoạt động",
-      "granted": true
-    },
-    {
-      "action": "user.DELETE",
-      "action_name": "Xóa người dùng",
-      "granted": false
-    }
-  ]
-}
-```
-
-**Response - Get User Actions for Resource (`GET /api/permissions/users/:userId/actions/:resource`):**
-
-```json
-{
-  "success": true,
-  "user": "67a1b2c3d4e5f6g7h8i9j0k1",
-  "resource": "activity",
-  "actions": [
-    {
-      "action_code": "CREATE",
-      "action_name": "Tạo hoạt động"
-    },
-    {
-      "action_code": "READ",
-      "action_name": "Xem hoạt động"
-    },
-    {
-      "action_code": "UPDATE",
-      "action_name": "Cập nhật hoạt động"
-    },
-    {
-      "action_code": "DELETE",
-      "action_name": "Xóa hoạt động"
-    }
-  ]
-}
-```
-
-**Request Body - Check Permission:**
-
-```json
-{
-  "resource": "activity",
-  "action": "CREATE"
-}
-```
-
-**Response - Check User Permission (`POST /api/permissions/users/:userId/check-permission`):**
-
-```json
-{
-  "success": true,
-  "allowed": true,
-  "user": "67a1b2c3d4e5f6g7h8i9j0k1",
-  "resource": "activity",
-  "action": "CREATE",
-  "action_name": "Tạo hoạt động"
-}
-```
-
-#### Role Permission Management
-
-| Method | Endpoint                                           | Description          | Auth Required | Permission Required |
-| ------ | -------------------------------------------------- | -------------------- | ------------- | ------------------- |
-| GET    | `/api/permissions/roles`                           | Lấy tất cả roles     | ✅            | -                   |
-| GET    | `/api/permissions/roles/:roleId/actions`           | Lấy actions của role | ✅            | -                   |
-| POST   | `/api/permissions/roles/:roleId/actions`           | Thêm action vào role | ✅            | `role:UPDATE`       |
-| DELETE | `/api/permissions/roles/:roleId/actions/:actionId` | Xóa action khỏi role | ✅            | `role:UPDATE`       |
-
-**Request Body - Add Action to Role:**
-
-```json
-{
-  "action_id": "action_uuid_here"
+  "message": "Dashboard statistics retrieved successfully"
 }
 ```
 
 ---
-
-### Role Routes (`/api/roles`)
-
-| Method | Endpoint                     | Description                 | Auth Required | Roles       |
-| ------ | ---------------------------- | --------------------------- | ------------- | ----------- |
-| GET    | `/api/roles`                 | Lấy tất cả vai trò          | ✅            | admin, ctsv |
-| GET    | `/api/roles/:id`             | Lấy vai trò theo ID         | ✅            | admin, ctsv |
-| GET    | `/api/roles/name/:name`      | Lấy vai trò theo tên        | ✅            | admin, ctsv |
-| GET    | `/api/roles/:id/users`       | Lấy người dùng theo vai trò | ✅            | admin, ctsv |
-| POST   | `/api/roles`                 | Tạo vai trò mới             | ✅            | admin       |
-| PUT    | `/api/roles/:id`             | Cập nhật vai trò            | ✅            | admin       |
-| DELETE | `/api/roles/:id`             | Xóa vai trò                 | ✅            | admin       |
-| POST   | `/api/roles/:id/permissions` | Thêm quyền vào vai trò      | ✅            | admin       |
-| DELETE | `/api/roles/:id/permissions` | Xóa quyền khỏi vai trò      | ✅            | admin       |
-
-**Request Body - Create Role:**
-
-```json
-{
-  "name": "New Role",
-  "description": "Mô tả vai trò mới"
-}
-```
-
-**Request Body - Update Role:**
-
-```json
-{
-  "name": "Updated Role",
-  "description": "Mô tả vai trò đã cập nhật"
-}
-```
-
-**Request Body - Add Permission to Role:**
-
-```json
-{
-  "permissionId": "permission_uuid_here"
-}
-```
-
-**Lưu ý - Remove Permission from Role:**
-
-- `DELETE /api/roles/:id/permissions`: Không cần body, cần gửi `permissionId` trong query parameter hoặc body
-
----
-
-## 🔑 Authentication
-
-Hầu hết các endpoints yêu cầu authentication token trong header:
-
-```
-Authorization: Bearer <PLOK>
-```
-
-### Lấy Token
-
-1. Đăng nhập qua `/api/auth/login`
-2. Nhận token từ response
-3. Sử dụng token trong header cho các requests tiếp theo
-
----
-
-## 📊 Statistics
-
-### Statistics Routes (`/api/statistics`)
-
-| Method | Endpoint                  | Description                                    | Auth Required | Permission Required |
-| ------ | ------------------------- | ---------------------------------------------- | ------------- | ------------------- |
-| GET    | `/api/statistics/community-points` | Thống kê tổng điểm PVCD theo user, năm | ✅ | - |
-| GET    | `/api/statistics/activities` | Thống kê số lượng hoạt động theo loại, trạng thái | ✅ | - |
-| GET    | `/api/statistics/certificates` | Thống kê số lượng minh chứng đã duyệt | ✅ | - |
-| GET    | `/api/statistics/grades` | **Xem thống kê điểm với bộ lọc** | ✅ | - |
 
 #### Get Grades Statistics (`GET /api/statistics/grades`)
 
-Endpoint này dùng để xem thống kê điểm rèn luyện (PVCD) với các tùy chọn lọc:
-- `student_number`: Mã sinh viên (hỗ trợ tìm kiếm từ riêng)
-- `faculty_id`: ID khoa
-- `class_id`: ID lớp
-- `year`: Năm học
-- `page`: Trang (mặc định: 1)
-- `limit`: Số bản ghi trên trang (mặc định: 10)
+Xem thống kê điểm rèn luyện (PVCD) với bộ lọc nâng cao, phân trang và thống kê tổng hợp.
 
-**Query Parameters:**
+**Query Parameters (tất cả optional):**
 
-```
-GET /api/statistics/grades?student_number=1022&faculty_id=faculty_uuid&class_id=class_uuid&year=2024&page=1&limit=10
-```
+| Tham số | Kiểu | Mô tả |
+|---------|------|-------|
+| `student_number` | string | Mã sinh viên (partial search) |
+| `faculty_id` | UUID | ID khoa |
+| `class_id` | UUID | ID lớp |
+| `year` | integer | Năm học |
+| `page` | integer | Trang (default: 1) |
+| `limit` | integer | Số bản ghi/trang (default: 10) |
 
-**Request Example:**
-
+**Request:**
 ```bash
 curl -X GET "http://localhost:5000/api/statistics/grades?student_number=1022&year=2024&page=1&limit=10" \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
-**Response - Get Grades Statistics (Success):**
-
+**Response (Success):**
 ```json
 {
   "success": true,
@@ -2510,81 +2281,40 @@ curl -X GET "http://localhost:5000/api/statistics/grades?student_number=1022&yea
   "data": {
     "records": [
       {
-        "_id": "pvcd_record_id",
+        "_id": "...",
         "year": 2024,
         "total_point": 85,
-        "start_year": "2024-09-01T00:00:00.000Z",
-        "end_year": "2025-06-30T00:00:00.000Z",
         "student": {
-          "_id": "student_profile_id",
           "student_number": "102220095",
           "full_name": "Nguyễn Văn A",
-          "email": "student@example.com",
-          "phone": "0123456789",
-          "enrollment_year": 2022,
-          "isClassMonitor": false
+          "email": "student@example.com"
         },
         "class": {
-          "_id": "class_id",
           "name": "CNTT21.1"
         },
         "faculty": {
-          "_id": "faculty_id",
           "name": "Khoa Công nghệ Thông tin"
-        },
-        "user": {
-          "_id": "user_id",
-          "username": "102220095"
-        }
-      },
-      {
-        "_id": "pvcd_record_id_2",
-        "year": 2024,
-        "total_point": 92,
-        "start_year": "2024-09-01T00:00:00.000Z",
-        "end_year": "2025-06-30T00:00:00.000Z",
-        "student": {
-          "_id": "student_profile_id_2",
-          "student_number": "102220096",
-          "full_name": "Nguyễn Văn B",
-          "email": "student2@example.com",
-          "phone": "0987654321",
-          "enrollment_year": 2022,
-          "isClassMonitor": true
-        },
-        "class": {
-          "_id": "class_id",
-          "name": "CNTT21.1"
-        },
-        "faculty": {
-          "_id": "faculty_id",
-          "name": "Khoa Công nghệ Thông tin"
-        },
-        "user": {
-          "_id": "user_id_2",
-          "username": "102220096"
         }
       }
     ],
     "statistics": {
-      "total_students": 2,
-      "total_points": 177,
-      "average_points": "88.50",
-      "max_points": 92,
-      "min_points": 85
+      "total_students": 15,
+      "total_points": 1275,
+      "average_points": "85.00",
+      "max_points": 98,
+      "min_points": 72
     },
     "pagination": {
       "page": 1,
       "limit": 10,
-      "total": 2,
-      "totalPages": 1
+      "total": 15,
+      "totalPages": 2
     }
   }
 }
 ```
 
-**Response - Get Grades Statistics (No Results):**
-
+**Response (Empty):**
 ```json
 {
   "success": true,
@@ -2608,19 +2338,11 @@ curl -X GET "http://localhost:5000/api/statistics/grades?student_number=1022&yea
 }
 ```
 
-**Lưu ý:**
-
-- Tất cả parameters đều **optional**, nếu không gửi sẽ lấy tất cả bản ghi
-- `student_number` hỗ trợ tìm kiếm từ riêng (không phân biệt hoa/thường)
-- `faculty_id`, `class_id`, `year` phải là giá trị hợp lệ nếu được cung cấp
-- Kết quả được sắp xếp theo năm giảm dần, sau đó theo mã sinh viên tăng dần
-- `statistics` bao gồm:
-  - `total_students`: Tổng số sinh viên trong kết quả
-  - `total_points`: Tổng điểm của tất cả sinh viên
-  - `average_points`: Điểm trung bình
-  - `max_points`: Điểm cao nhất
-  - `min_points`: Điểm thấp nhất (0 nếu không có bản ghi)
-- Endpoint yêu cầu authentication token nhưng không yêu cầu permission đặc biệt
+**Notes:**
+- Tất cả query parameters optional
+- `student_number` hỗ trợ partial search
+- Statistics tính từ tất cả kết quả, không chỉ trang hiện tại
+- Yêu cầu authentication, không yêu cầu permission đặc biệt
 
 ---
 
