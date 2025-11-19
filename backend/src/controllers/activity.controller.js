@@ -48,6 +48,9 @@ function transformActivity(activity) {
   // Thay thế status tiếng Anh bằng tiếng Việt
   activityObj.status = getStatusVi(activityObj.status);
   
+  // Giữ nguyên org_unit_id và field_id dưới dạng objects (không tách thành _id và name)
+  // Nếu là string ID, giữ như cũ
+  
   return activityObj;
 }
 
@@ -185,8 +188,8 @@ module.exports = {
       }
       
       let activities = await Activity.find(filter)
-        .populate('org_unit_id')
-        .populate('field_id')
+        .populate('org_unit_id', '_id name')
+        .populate('field_id', '_id name')
         .sort({ start_time: -1 });
       
       // Auto-update status (check rejection first, then time) for each activity
@@ -219,8 +222,8 @@ module.exports = {
   async getActivityById(req, res) {
     try {
       let activity = await Activity.findById(req.params.id)
-        .populate('org_unit_id')
-        .populate('field_id');
+        .populate('org_unit_id', '_id name')
+        .populate('field_id', '_id name');
       
       if (!activity) {
         return res.status(404).json({ 
@@ -781,12 +784,24 @@ module.exports = {
       // Get all registrations for this student
       const registrations = await ActivityRegistration.find({ 
         student_id: studentProfileId 
-      }).populate('activity_id');
+      }).populate({
+        path: 'activity_id',
+        populate: [
+          { path: 'org_unit_id' },
+          { path: 'field_id' }
+        ]
+      });
       
       // Get all attendance records for this student
       const attendances = await Attendance.find({ 
         student_id: studentProfileId 
-      }).populate('activity_id');
+      }).populate({
+        path: 'activity_id',
+        populate: [
+          { path: 'org_unit_id' },
+          { path: 'field_id' }
+        ]
+      });
       
       // Get all activity IDs to check for rejections
       const activityIds = new Set();
@@ -837,20 +852,20 @@ module.exports = {
           }
           
           // Convert status to Vietnamese
-          activityData.status = getStatusVi(activityData.status);
-          activityMap.set(activityData._id.toString(), {
-            ...activityData,
-            org_unit_name: activityData.org_unit_id?.name || null,
-            registration: {
-              id: reg._id,
-              status: reg.status,
-              registered_at: reg.registered_at,
-              approval_note: reg.approval_note,
-              approved_by: reg.approved_by,
-              approved_at: reg.approved_at
-            },
-            attendance: null
-          });
+           activityData.status = getStatusVi(activityData.status);
+           
+           activityMap.set(activityData._id.toString(), {
+             ...activityData,
+             registration: {
+               id: reg._id,
+               status: reg.status,
+               registered_at: reg.registered_at,
+               approval_note: reg.approval_note,
+               approved_by: reg.approved_by,
+               approved_at: reg.approved_at
+             },
+             attendance: null
+           });
         }
       });
       
@@ -895,22 +910,22 @@ module.exports = {
             }
             
             // Convert status to Vietnamese
-            activityData.status = getStatusVi(activityData.status);
-            activityMap.set(activityId, {
-              ...activityData,
-              org_unit_name: activityData.org_unit_id?.name || null,
-              registration: null,
-              attendance: {
-                id: att._id,
-                scanned_at: att.scanned_at,
-                status: att.status,
-                verified: att.verified,
-                verified_at: att.verified_at,
-                points: att.points,
-                feedback: att.feedback,
-                feedback_time: att.feedback_time
-              }
-            });
+             activityData.status = getStatusVi(activityData.status);
+             
+             activityMap.set(activityId, {
+               ...activityData,
+               registration: null,
+               attendance: {
+                 id: att._id,
+                 scanned_at: att.scanned_at,
+                 status: att.status,
+                 verified: att.verified,
+                 verified_at: att.verified_at,
+                 points: att.points,
+                 feedback: att.feedback,
+                 feedback_time: att.feedback_time
+               }
+             });
           }
         }
       });
@@ -965,20 +980,20 @@ module.exports = {
         student_id: studentProfile._id 
       }).populate({
         path: 'activity_id',
-        populate: {
-          path: 'org_unit_id',
-          select: 'name'
-        }
+        populate: [
+          { path: 'org_unit_id', select: '_id name' },
+          { path: 'field_id', select: '_id name' }
+        ]
       });
       
       const attendances = await Attendance.find({ 
         student_id: studentProfile._id 
       }).populate({
         path: 'activity_id',
-        populate: {
-          path: 'org_unit_id',
-          select: 'name'
-        }
+        populate: [
+          { path: 'org_unit_id', select: '_id name' },
+          { path: 'field_id', select: '_id name' }
+        ]
       });
       
       // Get all activity IDs to check for rejections
@@ -1337,12 +1352,24 @@ module.exports = {
       // Get all registrations for the student
       const registrations = await ActivityRegistration.find({ 
         student_id 
-      }).populate('activity_id');
+      }).populate({
+        path: 'activity_id',
+        populate: [
+          { path: 'org_unit_id', select: '_id name' },
+          { path: 'field_id', select: '_id name' }
+        ]
+      });
 
       // Get all attendances for the student
       const attendances = await Attendance.find({ 
         student_id 
-      }).populate('activity_id');
+      }).populate({
+        path: 'activity_id',
+        populate: [
+          { path: 'org_unit_id', select: '_id name' },
+          { path: 'field_id', select: '_id name' }
+        ]
+      });
 
       // Get all activity IDs to check for rejections
       const activityIds = new Set();
@@ -1520,8 +1547,8 @@ module.exports = {
 
       // Get all activities
       const activities = await Activity.find()
-        .populate('org_unit_id')
-        .populate('field_id')
+        .populate('org_unit_id', '_id name')
+        .populate('field_id', '_id name')
         .sort({ start_time: -1 });
 
       // Get all rejections

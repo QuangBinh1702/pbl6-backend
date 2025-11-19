@@ -393,7 +393,13 @@ module.exports = {
     try {
       const { studentId } = req.params;
       const attendances = await Attendance.find({ student_id: studentId })
-        .populate('activity_id')
+        .populate({
+          path: 'activity_id',
+          populate: [
+            { path: 'org_unit_id' },
+            { path: 'field_id' }
+          ]
+        })
         .sort({ scanned_at: -1 });
 
       // Deduplicate by activity_id and include points
