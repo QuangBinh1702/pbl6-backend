@@ -595,6 +595,11 @@ module.exports = {
         });
       }
       
+      // Auto-update status based on time if start_time or end_time changed
+      if (updates.start_time || updates.end_time) {
+        await updateActivityStatusBasedOnTime(activity);
+      }
+      
       // Transform activity to return Vietnamese status
       const transformedActivity = transformActivity(activity);
       

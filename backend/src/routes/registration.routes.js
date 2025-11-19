@@ -79,11 +79,10 @@ router.post(
 // Update registration (own registration only - controller checks ownership)
 router.put("/:id", auth, registrationController.updateRegistration);
 
-// Cancel/Delete registration (student can cancel own registration)
+// Cancel/Delete registration (xóa record khỏi DB - không lưu status cancelled)
 router.delete(
   "/:id",
   auth,
-  checkPermission("activity_registration", "CANCEL"),
   registrationController.deleteRegistration
 );
 

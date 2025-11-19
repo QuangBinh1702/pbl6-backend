@@ -18,7 +18,7 @@ const activityRegistrationSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected", "cancelled"],
+      enum: ["pending", "approved", "rejected", "attended"],
       default: "pending",
     },
     approval_note: String,
@@ -27,12 +27,18 @@ const activityRegistrationSchema = new mongoose.Schema(
       ref: "User",
     },
     approved_at: Date,
+    cancellation_reason: String,
+    cancelled_at: Date,
+    cancelled_by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     // Audit trail: lịch sử thay đổi status
     status_history: [
       {
         status: {
           type: String,
-          enum: ["pending", "approved", "rejected", "cancelled"],
+          enum: ["pending", "approved", "rejected", "attended"],
         },
         changed_at: {
           type: Date,
@@ -45,12 +51,10 @@ const activityRegistrationSchema = new mongoose.Schema(
         reason: String,
       },
     ],
-    // Lý do hủy (nếu status = cancelled)
-    cancellation_reason: String,
-    cancelled_at: Date,
-    cancelled_by: {
+    // Attendance info (tự động cập nhật khi sinh viên tham gia)
+    attendance_record_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Attendance",
     },
   },
   { timestamps: true }
@@ -68,7 +72,7 @@ activityRegistrationSchema.index(
   {
     unique: true,
     sparse: true,
-    partialFilterExpression: { status: { $ne: "cancelled" } },
+    partialFilterExpression: { status: { $in: ["pending", "approved"] } },
   }
 );
 
@@ -76,9 +80,10 @@ activityRegistrationSchema.index(
  * ===== VALIDATION RULES =====
  * 1. pending → approved (chỉ admin/staff)
  * 2. pending → rejected (chỉ admin/staff, có approval_note)
- * 3. pending/approved → cancelled (sinh viên hoặc admin)
+ * 3. approved → attended (tự động khi có attendance record)
  * 4. rejected → không thể chuyển trạng thái
- * 5. cancelled → không thể chuyển trạng thái
+ * 5. attended → không thể chuyển trạng thái
+ * 6. Hủy đơn: xóa record khỏi DB (không lưu status cancelled)
  */
 
 // Pre-save hook: Validate state transitions
@@ -106,10 +111,10 @@ activityRegistrationSchema.pre("save", async function (next) {
 
   // Validate transitions
   const validTransitions = {
-    pending: ["approved", "rejected", "cancelled"],
-    approved: ["cancelled"],
+    pending: ["approved", "rejected"],
+    approved: ["attended"],
     rejected: [],
-    cancelled: [],
+    attended: [],
   };
 
   const old = await oldStatus;
@@ -119,8 +124,8 @@ activityRegistrationSchema.pre("save", async function (next) {
     );
   }
 
-  // rejected/cancelled không được phép chuyển trạng thái
-  if (["rejected", "cancelled"].includes(old.status)) {
+  // rejected/attended không được phép chuyển trạng thái
+  if (["rejected", "attended"].includes(old.status)) {
     return next(
       new Error(`Cannot change status of ${old.status} registration`)
     );
@@ -131,11 +136,6 @@ activityRegistrationSchema.pre("save", async function (next) {
     return next(
       new Error("approval_note is required when rejecting a registration")
     );
-  }
-
-  // Nếu chuyển sang 'cancelled', ghi lại thông tin hủy
-  if (this.status === "cancelled") {
-    this.cancelled_at = new Date();
   }
 
   // Cập nhật status_history

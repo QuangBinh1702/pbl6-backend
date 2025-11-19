@@ -240,10 +240,36 @@ module.exports = {
     }
   },
 
+  /**
+   * API tự động cập nhật status thành "attended" khi attendance được tạo
+   * Called internally khi có attendance record
+   */
+  async markAsAttended(registrationId, attendanceRecordId) {
+    try {
+      const registration = await ActivityRegistration.findById(registrationId);
+
+      if (!registration) {
+        throw new Error("Registration not found");
+      }
+
+      // Chỉ cập nhật nếu status là 'approved'
+      if (registration.status !== "approved") {
+        return;
+      }
+
+      registration.status = "attended";
+      registration.attendance_record_id = attendanceRecordId;
+      registration.changed_by = null; // System change
+      registration.change_reason = "Auto-updated by attendance system";
+
+      await registration.save();
+    } catch (err) {
+      console.error("Mark as attended error:", err);
+    }
+  },
+
   async deleteRegistration(req, res) {
     try {
-      const { cancellation_reason } = req.body;
-
       const registration = await ActivityRegistration.findById(req.params.id);
 
       if (!registration) {
@@ -253,38 +279,20 @@ module.exports = {
         });
       }
 
-      // Validate: không thể hủy registration ở trạng thái 'rejected' hoặc 'cancelled'
-      if (["rejected", "cancelled"].includes(registration.status)) {
+      // Validate: không thể hủy registration ở trạng thái 'rejected' hoặc 'attended'
+      if (["rejected", "attended"].includes(registration.status)) {
         return res.status(400).json({
           success: false,
           message: `Cannot cancel a ${registration.status} registration`,
         });
       }
 
-      // Update status instead of deleting (soft delete)
-      registration.status = "cancelled";
-      registration.cancelled_at = new Date();
-      registration.cancelled_by = req.user.id;
-      registration.cancellation_reason =
-        cancellation_reason || "Cancelled by user";
-      registration.changed_by = req.user.id;
-      registration.change_reason = "Cancelled by user";
-
-      await registration.save();
-
-      await registration.populate({
-        path: "student_id",
-        populate: { path: "user_id" },
-      });
-      await registration.populate("activity_id");
-      await registration.populate("approved_by");
-      await registration.populate("cancelled_by");
-      await registration.populate("status_history.changed_by");
+      // Hard delete - xóa record khỏi DB (không lưu status cancelled)
+      await ActivityRegistration.findByIdAndDelete(req.params.id);
 
       res.json({
         success: true,
         message: "Registration cancelled successfully",
-        data: registration,
       });
     } catch (err) {
       console.error("Delete registration error:", err);
@@ -485,14 +493,15 @@ module.exports = {
         pending: "Chờ duyệt",
         approved: "Đã duyệt",
         rejected: "Bị từ chối",
-        cancelled: "Đã hủy",
+        attended: "Đã tham gia",
       };
 
       const result = {
         pending: 0,
         approved: 0,
         rejected: 0,
-        cancelled: 0,
+        attended: 0,
+        // Không có status "cancelled" - xóa record khỏi DB
       };
 
       summary.forEach((item) => {

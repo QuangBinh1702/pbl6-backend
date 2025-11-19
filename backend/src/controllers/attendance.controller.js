@@ -3,6 +3,8 @@ const Attendance = require('../models/attendance.model');
 const Activity = require('../models/activity.model');
 const StudentProfile = require('../models/student_profile.model');
 const Notification = require('../models/notification.model');
+const ActivityRegistration = require('../models/activity_registration.model');
+const registrationController = require('./registration.controller');
 
 module.exports = {
   async getAllAttendances(req, res) {
@@ -101,6 +103,17 @@ module.exports = {
         }
       });
       await attendance.populate('activity_id');
+      
+      // Tự động cập nhật registration status thành "attended"
+      const registration = await ActivityRegistration.findOne({
+        student_id: req.body.student_id,
+        activity_id: req.body.activity_id,
+        status: "approved"
+      });
+
+      if (registration) {
+        await registrationController.markAsAttended(registration._id, attendance._id);
+      }
       
       res.status(201).json({ success: true, data: attendance });
     } catch (err) {

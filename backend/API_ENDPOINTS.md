@@ -1737,9 +1737,12 @@ Quản lý đơn đăng ký tham gia hoạt động của sinh viên với hệ 
 | GET    | `/api/registrations/:id`                  | Lấy chi tiết đăng ký theo ID  | ✅            | `activity_registration:READ`    |
 | POST   | `/api/registrations`                      | Tạo đăng ký mới               | ✅            | `activity_registration:CREATE`  |
 | PUT    | `/api/registrations/:id`                  | Cập nhật đăng ký              | ✅            | - (Own data)                    |
-| DELETE | `/api/registrations/:id`                  | Hủy đăng ký                   | ✅            | `activity_registration:CANCEL`  |
+| DELETE | `/api/registrations/:id`                  | Hủy đăng ký                   | ✅            | - (Own registration)            |
 | PUT    | `/api/registrations/:id/approve`          | Phê duyệt đăng ký             | ✅            | `activity_registration:APPROVE` |
 | PUT    | `/api/registrations/:id/reject`           | Từ chối đăng ký               | ✅            | `activity_registration:REJECT`  |
+| GET    | `/api/registrations/my-registrations/status-summary` | Xem tóm tắt status đăng ký | ✅ | - (Own data) |
+| GET    | `/api/registrations/my-registrations/:id/status-detail` | Xem chi tiết status đơn | ✅ | - (Own data) |
+| GET    | `/api/registrations/student/:studentId/status-detail/:registrationId` | Xem chi tiết status (công khai) | ❌ | - |
 
 **Request Body - Create Registration:**
 
@@ -1763,13 +1766,41 @@ Quản lý đơn đăng ký tham gia hoạt động của sinh viên với hệ 
 
 ```json
 {
-  "reason": "Lý do từ chối đăng ký"
+  "approval_note": "Lý do từ chối đăng ký"
 }
 ```
+
+**Response - Delete Registration (Cancel):**
+
+```json
+{
+  "success": true,
+  "message": "Registration cancelled successfully"
+}
+```
+
+**Lưu ý - Hủy Đơn Đăng Ký (DELETE):**
+
+- Endpoint: `DELETE /api/registrations/:id`
+- **Không cần body**
+- **Xóa record khỏi database** (hard delete) - không lưu status "cancelled"
+- Sinh viên chỉ có thể hủy nếu status là `pending` hoặc `approved`
+- **Không thể hủy** nếu status là `rejected` hoặc `attended`
+- **Frontend**: Nếu registration không tìm thấy → là dấu hiệu đã hủy
+- Status codes:
+  - `200`: Hủy thành công
+  - `404`: Registration không tồn tại
+  - `400`: Không thể hủy (status rejected/attended)
+  - `500`: Lỗi server
 
 **Lưu ý - Approve Registration:**
 
 - `PUT /api/registrations/:id/approve`: Không cần body, sẽ tự động phê duyệt đăng ký
+
+**Lưu ý - Reject Registration:**
+
+- Request body bắt buộc có `approval_note`
+- Sinh viên không thể từ chối, chỉ staff/admin được phép
 
 ---
 
@@ -2709,6 +2740,60 @@ GET /api/registrations/student/5f8d1a2c3b1e4a5c6d7e8f9g/status-detail/691d32d37d
 }
 ```
 
+**Response (Attended Status):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "registration_id": "691d32d37d678ed4b292d8e0",
+    "student_id": "5f8d1a2c3b1e4a5c6d7e8f9g",
+    "activity": {
+      "id": "activity_id",
+      "title": "Hoạt động tình nguyện",
+      "description": "Tham gia dọn dẹp khuôn viên trường",
+      "start_time": "2024-01-20T08:00:00.000Z",
+      "end_time": "2024-01-20T10:00:00.000Z",
+      "requires_approval": true
+    },
+    "status": {
+      "current": "attended",
+      "text": "Đã tham gia",
+      "color": "info",
+      "icon": "user-check",
+      "message": "Bạn đã tham gia hoạt động thành công."
+    },
+    "timeline": {
+      "registered_at": "2024-01-15T10:30:00.000Z",
+      "approved_at": "2024-01-16T14:00:00.000Z",
+      "rejected_at": null,
+      "attended_at": "2024-01-20T08:15:00.000Z",
+      "approved_by": "staff_ctsv"
+    },
+    "history": [
+      {
+        "status": "pending",
+        "changed_at": "2024-01-15T10:30:00.000Z",
+        "changed_by": "System",
+        "reason": "Registered"
+      },
+      {
+        "status": "approved",
+        "changed_at": "2024-01-16T14:00:00.000Z",
+        "changed_by": "staff_ctsv",
+        "reason": "Approved by staff/admin"
+      },
+      {
+        "status": "attended",
+        "changed_at": "2024-01-20T08:15:00.000Z",
+        "changed_by": "System",
+        "reason": "Auto-updated by attendance system"
+      }
+    ]
+  }
+}
+```
+
 **Response (Approved Status):**
 
 ```json
@@ -2783,11 +2868,11 @@ GET /api/registrations/student/5f8d1a2c3b1e4a5c6d7e8f9g/status-detail/691d32d37d
     },
     "timeline": {
       "registered_at": "2024-01-15T10:30:00.000Z",
-      "approved_at": "2024-01-16T14:00:00.000Z",
+      "approved_at": null,
       "rejected_at": "2024-01-16T14:00:00.000Z",
-      "cancelled_at": null,
-      "approved_by": "staff_ctsv",
-      "cancelled_by": null
+      "attended_at": null,
+      "approved_by": null,
+      "rejected_by": "staff_ctsv"
     },
     "history": [
       {
@@ -2827,12 +2912,12 @@ GET /api/registrations/student/5f8d1a2c3b1e4a5c6d7e8f9g/status-detail/691d32d37d
 
 **Status Color & Icon Reference:**
 
-| Status    | Text         | Color     | Icon  | Meaning                             |
-| --------- | ------------ | --------- | ----- | ----------------------------------- |
-| pending   | Chờ duyệt    | warning   | clock | Chờ xét duyệt                       |
-| approved  | Đã duyệt     | success   | check | Được phép tham gia                  |
-| rejected  | Bị từ chối   | danger    | times | Không được phép tham gia            |
-| cancelled | Đã hủy       | secondary | ban   | Đã hủy đơn đăng ký                  |
+| Status    | Text         | Color     | Icon       | Meaning                             |
+| --------- | ------------ | --------- | ---------- | ----------------------------------- |
+| pending   | Chờ duyệt    | warning   | clock      | Chờ xét duyệt                       |
+| approved  | Đã duyệt     | success   | check      | Được phép tham gia                  |
+| rejected  | Bị từ chối   | danger    | times      | Không được phép tham gia            |
+| attended  | Đã tham gia  | info      | user-check | Đã tham gia hoạt động thành công    |
 
 **Lưu ý:**
 
