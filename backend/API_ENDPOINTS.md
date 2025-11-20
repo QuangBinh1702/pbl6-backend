@@ -2095,15 +2095,16 @@ _Từ chối:_
 
 ### Feedback Routes (`/api/feedback`)
 
-| Method | Endpoint                             | Description                    | Auth Required | Permission Required       |
-| ------ | ------------------------------------ | ------------------------------ | ------------- | ------------------------- |
-| GET    | `/api/feedback/my-feedbacks`         | Lấy danh sách phản hồi của tôi | ✅            | - (Own data)              |
-| GET    | `/api/feedback`                      | Lấy tất cả phản hồi            | ✅            | `student_feedback:READ`   |
-| GET    | `/api/feedback/activity/:activityId` | Lấy phản hồi theo hoạt động    | ❌            | -                         |
-| GET    | `/api/feedback/:id`                  | Lấy chi tiết phản hồi theo ID  | ✅            | `student_feedback:READ`   |
-| POST   | `/api/feedback`                      | Tạo phản hồi mới               | ✅            | - (Students)              |
-| PUT    | `/api/feedback/:id`                  | Cập nhật phản hồi              | ✅            | - (Own feedback)          |
-| DELETE | `/api/feedback/:id`                  | Xóa phản hồi                   | ✅            | `student_feedback:DELETE` |
+| Method | Endpoint                                                       | Description                                         | Auth Required | Permission Required       |
+| ------ | -------------------------------------------------------------- | --------------------------------------------------- | ------------- | ------------------------- |
+| GET    | `/api/feedback/my-feedbacks`                                   | Lấy danh sách phản hồi của tôi                      | ✅            | - (Own data)              |
+| GET    | `/api/feedback`                                                | Lấy tất cả phản hồi                                 | ✅            | `student_feedback:READ`   |
+| GET    | `/api/feedback/activity/:activityId`                           | Lấy phản hồi theo hoạt động                         | ❌            | -                         |
+| GET    | `/api/feedback/:id`                                            | Lấy chi tiết phản hồi theo ID                       | ✅            | `student_feedback:READ`   |
+| GET    | `/api/feedback/student/:studentId/activity/:activityId`        | Lấy feedback theo sinh viên và hoạt động ⭐ NEW   | ✅            | `student_feedback:READ`   |
+| POST   | `/api/feedback`                                                | Tạo phản hồi mới                                    | ✅            | - (Students)              |
+| PUT    | `/api/feedback/:id`                                            | Cập nhật phản hồi                                   | ✅            | - (Own feedback)          |
+| DELETE | `/api/feedback/:id`                                            | Xóa phản hồi                                        | ✅            | `student_feedback:DELETE` |
 
 **Request Body - Create Feedback:**
 
@@ -2123,6 +2124,53 @@ _Từ chối:_
   "rating": 4,
   "comment": "Hoạt động hay nhưng cần cải thiện thêm",
   "suggestions": "Nên tổ chức thêm hoạt động tương tự và cải thiện thời gian"
+}
+```
+
+**Response - Get Feedback by Student and Activity (Success):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "feedback_id",
+    "activity_id": {
+      "_id": "activity_id",
+      "title": "Hoạt động tình nguyện",
+      "start_time": "2024-01-20T08:00:00.000Z",
+      "end_time": "2024-01-20T10:00:00.000Z"
+    },
+    "student_id": {
+      "_id": "student_id",
+      "full_name": "Nguyễn Văn A",
+      "student_number": "102220095",
+      "user_id": {
+        "_id": "user_id",
+        "username": "student1"
+      }
+    },
+    "rating": 5,
+    "comment": "Hoạt động rất hay và bổ ích",
+    "submitted_at": "2024-01-20T11:00:00.000Z"
+  }
+}
+```
+
+**Response - Feedback Not Found:**
+
+```json
+{
+  "success": false,
+  "message": "Feedback not found for this student and activity"
+}
+```
+
+**Response - Missing Parameters:**
+
+```json
+{
+  "success": false,
+  "message": "studentId and activityId are required"
 }
 ```
 

@@ -9,7 +9,6 @@ const falcutySchema = new mongoose.Schema({
   }
 }, { timestamps: false });
 
-// Index for faster queries
-falcutySchema.index({ name: 1 });
+// Note: unique: true automatically creates an index, no need for falcutySchema.index({ name: 1 })
 
 module.exports = mongoose.model('Falcuty', falcutySchema, 'falcuty');

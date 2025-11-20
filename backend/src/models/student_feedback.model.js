@@ -26,12 +26,11 @@ const studentFeedbackSchema = new mongoose.Schema({
   }
 }, { timestamps: false });
 
-// Index for faster queries
-studentFeedbackSchema.index({ activity_id: 1 });
+// Index for faster queries (composite index covers both single-field queries for performance)
 studentFeedbackSchema.index({ student_id: 1 });
 studentFeedbackSchema.index({ submitted_at: -1 });
 
-// Prevent duplicate feedback from same student for same activity
+// Prevent duplicate feedback from same student for same activity (also serves as index for activity_id)
 studentFeedbackSchema.index({ activity_id: 1, student_id: 1 }, { unique: true });
 
 module.exports = mongoose.model('StudentFeedback', studentFeedbackSchema, 'student_feedback');

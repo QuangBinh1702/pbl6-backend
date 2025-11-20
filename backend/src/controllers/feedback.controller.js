@@ -282,5 +282,45 @@ module.exports = {
       console.error('Get my feedbacks error:', err);
       res.status(500).json({ success: false, message: err.message });
     }
+  },
+
+  async getFeedbackByStudentAndActivity(req, res) {
+    try {
+      const { studentId, activityId } = req.params;
+      
+      // Validate required parameters
+      if (!studentId || !activityId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'studentId and activityId are required' 
+        });
+      }
+      
+      // Find feedback by student and activity
+      const feedback = await StudentFeedback.findOne({
+        student_id: studentId,
+        activity_id: activityId
+      })
+        .populate({
+          path: 'activity_id',
+          select: 'title start_time end_time'
+        })
+        .populate({
+          path: 'student_id',
+          populate: { path: 'user_id' }
+        });
+      
+      if (!feedback) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Feedback not found for this student and activity' 
+        });
+      }
+      
+      res.json({ success: true, data: feedback });
+    } catch (err) {
+      console.error('Get feedback by student and activity error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
   }
 };

@@ -83,6 +83,9 @@ app.use('/api/evidences', require('./routes/evidence.routes'));
 // Communication
 app.use('/api/notifications', require('./routes/notification.routes'));
 
+// Chatbot
+app.use('/api/chatbot', require('./routes/chatbot.route'));
+
 // System
 app.use('/api/permissions', require('./routes/permission.routes'));
 app.use('/api/roles', require('./routes/role.routes'));

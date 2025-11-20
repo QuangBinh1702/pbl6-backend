@@ -38,6 +38,27 @@ const connectDB = async () => {
     console.log(
       `✅ MongoDB connected! Database: ${cached.conn.connection.name}`
     );
+
+    // Rebuild unique indices to ensure duplicate validation works
+    try {
+      const Cohort = require('../models/cohort.model');
+      const Falcuty = require('../models/falcuty.model');
+      const Class = require('../models/class.model');
+
+      await Cohort.collection.dropIndex('year_1').catch(() => {});
+      await Falcuty.collection.dropIndex('name_1').catch(() => {});
+      await Class.collection.dropIndex('name_1_falcuty_id_1_cohort_id_1').catch(() => {});
+
+      await Promise.all([
+        Cohort.collection.createIndex({ year: 1 }, { unique: true }),
+        Falcuty.collection.createIndex({ name: 1 }, { unique: true }),
+        Class.collection.createIndex({ name: 1, falcuty_id: 1, cohort_id: 1 }, { unique: true })
+      ]);
+      console.log('✅ Unique indices recreated');
+    } catch (err) {
+      console.log('⚠️ Index recreation:', err.message);
+    }
+
     return cached.conn;
   } catch (error) {
     console.error("❌ MongoDB connection failed:", error);

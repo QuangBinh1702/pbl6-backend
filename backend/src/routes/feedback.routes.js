@@ -19,6 +19,13 @@ router.get('/activity/:activityId',
   feedbackController.getFeedbacksByActivity
 );
 
+// Get feedback by student and activity
+router.get('/student/:studentId/activity/:activityId',
+  auth,
+  checkPermission('student_feedback', 'READ'),
+  feedbackController.getFeedbackByStudentAndActivity
+);
+
 // Get feedback by ID
 router.get('/:id', 
   auth, 

@@ -6,7 +6,7 @@ const activityRejectionSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Activity',
     required: true,
-    unique: true // Mỗi hoạt động chỉ có thể bị từ chối một lần
+    unique: true // Mỗi hoạt động chỉ có thể bị từ chối một lần (unique automatically creates index)
   },
   reason: {
     type: String,
@@ -24,8 +24,7 @@ const activityRejectionSchema = new mongoose.Schema({
   }
 }, { timestamps: false, collection: 'activity_rejection' });
 
-// Index for faster queries
-activityRejectionSchema.index({ activity_id: 1 });
+// Index for faster queries (activity_id index is already created by unique: true)
 activityRejectionSchema.index({ rejected_by: 1 });
 activityRejectionSchema.index({ rejected_at: -1 });
 
