@@ -2,6 +2,8 @@
 const StudentFeedback = require('../models/student_feedback.model');
 const StudentProfile = require('../models/student_profile.model');
 const Activity = require('../models/activity.model');
+const Attendance = require('../models/attendance.model');
+const ActivityRegistration = require('../models/activity_registration.model');
 
 module.exports = {
   async createFeedback(req, res) {
@@ -32,6 +34,40 @@ module.exports = {
         return res.status(404).json({ 
           success: false, 
           message: 'Student profile not found' 
+        });
+      }
+      
+      // Check if activity exists and is completed
+      const activity = await Activity.findById(activity_id);
+      if (!activity) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Activity not found' 
+        });
+      }
+      
+      if (activity.status !== 'completed') {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Activity must be completed to receive feedback' 
+        });
+      }
+      
+      // Check if student participated in activity
+      const participated = await Attendance.findOne({
+        activity_id,
+        student_id: studentProfile._id,
+        status: 'present'
+      }) || await ActivityRegistration.findOne({
+        activity_id,
+        student_id: studentProfile._id,
+        status: 'attended'
+      });
+      
+      if (!participated) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Student must participate in activity to give feedback' 
         });
       }
       
