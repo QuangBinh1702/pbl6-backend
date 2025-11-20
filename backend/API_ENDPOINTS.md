@@ -2210,11 +2210,12 @@ _Từ chối:_
 
 ### Evidence Routes (`/api/evidences`)
 
-| Method | Endpoint                            | Description                     | Auth Required | Roles                        |
-| ------ | ----------------------------------- | ------------------------------- | ------------- | ---------------------------- |
-| GET    | `/api/evidences`                    | Lấy tất cả minh chứng           | ✅            | admin, ctsv, khoa, loptruong |
-| GET    | `/api/evidences/class/:classId`     | Lấy tất cả minh chứng trong lớp | ✅            | admin, ctsv, khoa, loptruong |
-| GET    | `/api/evidences/student/:studentId` | Lấy minh chứng theo sinh viên   | ✅            | -                            |
+| Method | Endpoint                            | Description                     | Auth Required | Permission Required    |
+| ------ | ----------------------------------- | ------------------------------- | ------------- | ---------------------- |
+| GET    | `/api/evidences`                    | Lấy tất cả minh chứng           | ✅            | `evidence:READ`        |
+| GET    | `/api/evidences/faculty/:facultyId` | Lấy tất cả minh chứng theo khoa | ✅            | `evidence:READ`        |
+| GET    | `/api/evidences/class/:classId`     | Lấy tất cả minh chứng trong lớp | ✅            | `evidence:READ`        |
+| GET    | `/api/evidences/student/:studentId` | Lấy minh chứng theo sinh viên   | ✅            | -                      |
 | GET    | `/api/evidences/:id`                | Lấy chi tiết minh chứng theo ID | ✅            | -                            |
 | POST   | `/api/evidences`                    | Tạo minh chứng mới              | ✅            | student                      |
 | PUT    | `/api/evidences/:id`                | Cập nhật minh chứng             | ✅            | -                            |
@@ -2294,6 +2295,68 @@ _Từ chối:_
   "reason": "Lý do từ chối minh chứng"
 }
 ```
+
+**Response - Get Evidences by Faculty (`/api/evidences/faculty/:facultyId`):**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "evidence_id_1",
+      "student_id": {
+        "_id": "student_profile_id",
+        "full_name": "Nguyễn Văn A",
+        "class_id": {
+          "_id": "class_id",
+          "name": "CNTT21.1",
+          "falcuty_id": {
+            "_id": "faculty_id",
+            "name": "Khoa Công nghệ Thông tin"
+          }
+        }
+      },
+      "title": "Minh chứng tham gia hoạt động",
+      "file_url": "https://example.com/files/certificate.pdf",
+      "self_point": 5,
+      "class_point": 8,
+      "faculty_point": 9,
+      "status": "approved",
+      "submitted_at": "2024-01-10T10:30:00.000Z",
+      "verified_at": "2024-01-10T14:00:00.000Z"
+    },
+    {
+      "_id": "evidence_id_2",
+      "student_id": {
+        "_id": "student_profile_id_2",
+        "full_name": "Trần Thị B",
+        "class_id": {
+          "_id": "class_id_2",
+          "name": "CNTT21.2",
+          "falcuty_id": {
+            "_id": "faculty_id",
+            "name": "Khoa Công nghệ Thông tin"
+          }
+        }
+      },
+      "title": "Minh chứng hoạt động khác",
+      "file_url": "https://example.com/files/certificate2.pdf",
+      "self_point": 4,
+      "class_point": 7,
+      "faculty_point": 8,
+      "status": "pending",
+      "submitted_at": "2024-01-15T09:00:00.000Z",
+      "verified_at": null
+    }
+  ]
+}
+```
+
+**Lưu ý - Get Evidences by Faculty:**
+
+- Trả về tất cả minh chứng của các sinh viên trong khoa (gồm tất cả lớp của khoa)
+- Minh chứng sắp xếp theo `submitted_at` giảm dần (mới nhất trước)
+- Yêu cầu permission `evidence:READ`
 
 **Response - Get Evidences by Student (`/api/evidences/student/:studentId`):**
 

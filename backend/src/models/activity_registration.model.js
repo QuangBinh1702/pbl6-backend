@@ -26,7 +26,7 @@ const activityRegistrationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
-    approved_at: Date,
+    approved_at: Date, // Thời gian duyệt hoặc từ chối
     cancellation_reason: String,
     cancelled_at: Date,
     cancelled_by: {

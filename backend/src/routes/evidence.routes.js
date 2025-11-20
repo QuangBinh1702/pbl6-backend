@@ -14,6 +14,13 @@ router.get('/',
   evidenceController.getAllEvidences
 );
 
+// Danh sách minh chứng theo khoa (admin/staff/teacher)
+router.get('/faculty/:facultyId', 
+  auth,
+  checkPermission('evidence', 'READ'),
+  evidenceController.getEvidencesByFaculty
+);
+
 // Danh sách minh chứng theo classId (admin/staff/teacher/class monitor)
 router.get('/class/:classId', 
   auth,

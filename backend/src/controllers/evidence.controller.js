@@ -14,6 +14,53 @@ module.exports = {
     }
   },
 
+  async getEvidencesByFaculty(req, res) {
+    try {
+      const { facultyId } = req.params;
+      if (!facultyId) {
+        return res.status(400).json({ success: false, message: 'facultyId is required' });
+      }
+
+      // Get all classes in this faculty
+      const Class = require('../models/class.model');
+      const classesInFaculty = await Class.find({ falcuty_id: facultyId }).select('_id');
+      const classIds = classesInFaculty.map((c) => c._id);
+
+      if (classIds.length === 0) {
+        return res.json({ success: true, data: [] });
+      }
+
+      // Get all students in classes of this faculty
+      const studentsInFaculty = await StudentProfile.find({ 
+        class_id: { $in: classIds } 
+      }).select('_id');
+      const studentIds = studentsInFaculty.map((s) => s._id);
+
+      if (studentIds.length === 0) {
+        return res.json({ success: true, data: [] });
+      }
+
+      // Get evidences for all students in this faculty
+      const evidences = await Evidence.find({ student_id: { $in: studentIds } })
+        .populate({
+          path: 'student_id',
+          populate: {
+            path: 'class_id',
+            select: '_id name',
+            populate: {
+              path: 'falcuty_id',
+              select: '_id name'
+            }
+          }
+        })
+        .sort({ submitted_at: -1 });
+
+      res.json({ success: true, data: evidences });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
   async getEvidencesByClass(req, res) {
     try {
       const { classId } = req.params;
