@@ -1636,5 +1636,93 @@ module.exports = {
       console.error('Get activities with filter error:', err);
       res.status(500).json({ success: false, message: err.message });
     }
+  },
+
+  async getActivityWithStudentStatus(req, res) {
+    try {
+      const { activityId, studentId } = req.params;
+      
+      // Get activity details
+      let activity = await Activity.findById(activityId)
+        .populate('org_unit_id', '_id name')
+        .populate('field_id', '_id name');
+      
+      if (!activity) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Hoạt động không tồn tại' 
+        });
+      }
+      
+      // Auto-update status
+      activity = await updateActivityStatus(activity);
+      
+      // Get registration count
+      const registrationCount = await ActivityRegistration.countDocuments({ 
+        activity_id: activity._id 
+      });
+      
+      // Get rejection info
+      const rejection = await ActivityRejection.findOne({ activity_id: activity._id })
+        .populate('rejected_by', 'username');
+      
+      // Get requirements
+      const requirements = await getActivityRequirementsData(activity._id);
+      
+      // Get student profile ID if studentId is a user ID
+      let studentProfileId = studentId;
+      const studentProfile = await StudentProfile.findOne({ user_id: studentId });
+      if (studentProfile) {
+        studentProfileId = studentProfile._id;
+      }
+      
+      // Get student's registration for this activity
+      let registration = null;
+      let registrationStatus = 'not_registered';
+      
+      const registrationRecord = await ActivityRegistration.findOne({
+        activity_id: activityId,
+        student_id: studentProfileId
+      });
+      
+      if (registrationRecord) {
+        registration = registrationRecord.toObject();
+        registrationStatus = registrationRecord.status;
+      }
+      
+      // Get student's attendance for this activity
+      let attendance = null;
+      const attendanceRecord = await Attendance.findOne({
+        activity_id: activityId,
+        student_id: studentProfileId
+      });
+      
+      if (attendanceRecord) {
+        attendance = attendanceRecord.toObject();
+      }
+      
+      // Transform activity to return Vietnamese status
+      const transformedActivity = transformActivity(activity);
+      
+      res.json({ 
+        success: true, 
+        data: {
+          activity: {
+            ...transformedActivity,
+            registrationCount,
+            rejection: rejection || null,
+            requirements
+          },
+          student: {
+            registration: registration || null,
+            registrationStatus,
+            attendance: attendance || null
+          }
+        }
+      });
+    } catch (err) {
+      console.error('Get activity with student status error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
   }
 };

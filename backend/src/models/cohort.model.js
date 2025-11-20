@@ -1,7 +1,11 @@
 const mongoose = require('mongoose');
 
 const cohortSchema = new mongoose.Schema({
-  year: Number
+  year: {
+    type: Number,
+    required: true,
+    unique: true
+  }
 }, { timestamps: false });
 
 // Index for faster queries

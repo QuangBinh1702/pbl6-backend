@@ -14,10 +14,8 @@ router.get('/',
   feedbackController.getAllFeedbacks
 );
 
-// Get feedbacks by activity
+// Get feedbacks by activity (public)
 router.get('/activity/:activityId', 
-  auth, 
-  checkPermission('student_feedback', 'READ'), 
   feedbackController.getFeedbacksByActivity
 );
 

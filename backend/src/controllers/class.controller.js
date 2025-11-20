@@ -36,6 +36,9 @@ module.exports = {
       await classData.populate('cohort_id');
       res.status(201).json(classData);
     } catch (err) {
+      if (err.code === 11000) {
+        return res.status(400).json({ message: `Lớp "${req.body.name}" đã tồn tại trong khoa/khóa này` });
+      }
       res.status(400).json({ message: err.message });
     }
   },

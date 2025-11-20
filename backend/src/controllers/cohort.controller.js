@@ -43,6 +43,9 @@ module.exports = {
       await cohort.save();
       res.status(201).json(cohort);
     } catch (err) {
+      if (err.code === 11000) {
+        return res.status(400).json({ message: `Khóa năm ${req.body.year} đã tồn tại` });
+      }
       res.status(400).json({ message: err.message });
     }
   },

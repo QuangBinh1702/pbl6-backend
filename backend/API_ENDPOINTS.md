@@ -950,6 +950,7 @@ The response format is the same as Staff Profile responses.
 | GET    | `/api/activities/my/activities`      | Lấy hoạt động của sinh viên hiện tại                                                          | ✅            | - (Own data)                   |
 | GET    | `/api/activities/student/:studentId` | Lấy hoạt động của một sinh viên cụ thể                                                        | ✅            | `activity_registration:READ`   |
 | GET    | `/api/activities/student/:student_id/filter` | Lọc hoạt động của sinh viên (đã đăng ký, đã duyệt, đã tham gia) | ✅            | `activity_registration:READ` hoặc `attendance:READ` |
+| GET    | `/api/activities/:activityId/student/:studentId` | Lấy chi tiết hoạt động + trạng thái đăng ký của sinh viên | ✅            | `activity_registration:READ`   |
 | GET    | `/api/activities/:id`                | Lấy chi tiết hoạt động theo ID (bao gồm requirements)                                         | ❌            | - (Public)                     |
 | POST   | `/api/activities`                    | Tạo hoạt động mới (có thể kèm yêu cầu khoa/khóa tham gia)                                     | ✅            | `activity:CREATE`              |
 | POST   | `/api/activities/suggest`            | Đề xuất hoạt động (status = chờ duyệt)                                                        | ✅            | - (Authenticated)              |
@@ -1296,6 +1297,117 @@ Same format as above.
 ### Registration Routes (`/api/registrations`)
 
 Quản lý đơn đăng ký tham gia hoạt động của sinh viên với hệ thống trạng thái và lịch sử thay đổi.
+
+---
+
+#### Get Activity Details with Student Registration Status (`GET /api/activities/:activityId/student/:studentId`)
+
+Lấy chi tiết hoạt động kèm thông tin đăng ký của sinh viên cụ thể. Yêu cầu authentication và permission `activity_registration:READ`.
+
+**URL Parameters:**
+
+| Parameter   | Type   | Required | Description           |
+| ----------- | ------ | -------- | --------------------- |
+| `activityId` | String | ✅       | ID của hoạt động      |
+| `studentId` | String | ✅       | User ID hoặc Student Profile ID |
+
+**Request:**
+
+```bash
+GET /api/activities/activity_id_123/student/user_id_or_student_id_456
+```
+
+**Response (Success):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "activity": {
+      "_id": "activity_id",
+      "title": "Hoạt động tình nguyện",
+      "description": "Mô tả hoạt động",
+      "location": "P101",
+      "start_time": "2024-01-15T08:00:00.000Z",
+      "end_time": "2024-01-15T12:00:00.000Z",
+      "capacity": 50,
+      "status": "chưa tổ chức",
+      "requires_approval": false,
+      "org_unit_id": {
+        "_id": "org_unit_id",
+        "name": "Phòng CTSV"
+      },
+      "field_id": {
+        "_id": "field_id",
+        "name": "Công nghệ thông tin"
+      },
+      "registrationCount": 25,
+      "rejection": null,
+      "requirements": [
+        {
+          "type": "falcuty",
+          "name": "Khoa Công nghệ Thông tin"
+        },
+        {
+          "type": "cohort",
+          "year": 2022
+        }
+      ]
+    },
+    "student": {
+      "registration": {
+        "_id": "registration_id",
+        "status": "approved",
+        "created_at": "2024-01-10T10:30:00.000Z",
+        "approved_at": "2024-01-10T14:00:00.000Z"
+      },
+      "registrationStatus": "approved",
+      "attendance": {
+        "_id": "attendance_id",
+        "points": 4,
+        "attended_at": "2024-01-15T08:15:00.000Z"
+      }
+    }
+  }
+}
+```
+
+**Response (Not Registered):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "activity": { /* activity details */ },
+    "student": {
+      "registration": null,
+      "registrationStatus": "not_registered",
+      "attendance": null
+    }
+  }
+}
+```
+
+**Response (Activity Not Found):**
+
+```json
+{
+  "success": false,
+  "message": "Hoạt động không tồn tại"
+}
+```
+
+**Notes:**
+
+- ✅ **Yêu cầu authentication** - cần JWT token
+- ✅ **Yêu cầu permission**: `activity_registration:READ`
+- `studentId` có thể là **user ID** hoặc **student profile ID** - hệ thống sẽ tự xác định
+- `registration` sẽ `null` nếu sinh viên chưa đăng ký
+- `registrationStatus` có thể là: `not_registered`, `pending`, `approved`, `rejected`, `cancelled`
+- `attendance` sẽ `null` nếu sinh viên chưa điểm danh
+- Activity status tự động cập nhật dựa trên thời gian hiện tại
+
+---
 
 **Status Values:**
 - `pending` - Chờ duyệt (hoạt động yêu cầu approval)
@@ -1987,7 +2099,7 @@ _Từ chối:_
 | ------ | ------------------------------------ | ------------------------------ | ------------- | ------------------------- |
 | GET    | `/api/feedback/my-feedbacks`         | Lấy danh sách phản hồi của tôi | ✅            | - (Own data)              |
 | GET    | `/api/feedback`                      | Lấy tất cả phản hồi            | ✅            | `student_feedback:READ`   |
-| GET    | `/api/feedback/activity/:activityId` | Lấy phản hồi theo hoạt động    | ✅            | `student_feedback:READ`   |
+| GET    | `/api/feedback/activity/:activityId` | Lấy phản hồi theo hoạt động    | ❌            | -                         |
 | GET    | `/api/feedback/:id`                  | Lấy chi tiết phản hồi theo ID  | ✅            | `student_feedback:READ`   |
 | POST   | `/api/feedback`                      | Tạo phản hồi mới               | ✅            | - (Students)              |
 | PUT    | `/api/feedback/:id`                  | Cập nhật phản hồi              | ✅            | - (Own feedback)          |

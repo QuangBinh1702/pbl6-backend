@@ -30,6 +30,9 @@ module.exports = {
       await faculty.save();
       res.status(201).json(faculty);
     } catch (err) {
+      if (err.code === 11000) {
+        return res.status(400).json({ message: `Khoa "${req.body.name}" đã tồn tại` });
+      }
       res.status(400).json({ message: err.message });
     }
   },

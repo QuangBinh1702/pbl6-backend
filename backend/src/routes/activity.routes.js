@@ -42,6 +42,13 @@ router.get('/student/:student_id/filter',
   activityController.getStudentActivitiesWithFilter
 );
 
+// Get activity details with student's registration status
+router.get('/:activityId/student/:studentId', 
+  auth,
+  checkPermission('activity_registration', 'READ'),
+  activityController.getActivityWithStudentStatus
+);
+
 router.get('/:id', activityController.getActivityById); // Public - view activity details (MUST be last)
 
 // Protected routes with permission checks
