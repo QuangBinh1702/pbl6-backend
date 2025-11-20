@@ -92,7 +92,10 @@ module.exports = {
         submitted_at: new Date()
       });
       
-      await feedback.populate('activity_id');
+      await feedback.populate({
+        path: 'activity_id',
+        select: 'title start_time end_time'
+      });
       await feedback.populate('student_id');
       
       res.status(201).json({ success: true, data: feedback });
@@ -112,7 +115,10 @@ module.exports = {
       if (rating) filter.rating = parseInt(rating);
       
       const feedbacks = await StudentFeedback.find(filter)
-        .populate('activity_id')
+        .populate({
+          path: 'activity_id',
+          select: 'title start_time end_time'
+        })
         .populate({
           path: 'student_id',
           populate: { path: 'user_id' }
@@ -129,7 +135,10 @@ module.exports = {
   async getFeedbackById(req, res) {
     try {
       const feedback = await StudentFeedback.findById(req.params.id)
-        .populate('activity_id')
+        .populate({
+          path: 'activity_id',
+          select: 'title start_time end_time'
+        })
         .populate({
           path: 'student_id',
           populate: { path: 'user_id' }
@@ -156,6 +165,10 @@ module.exports = {
       const feedbacks = await StudentFeedback.find({ 
         activity_id: activityId 
       })
+        .populate({
+          path: 'activity_id',
+          select: 'title start_time end_time'
+        })
         .populate({
           path: 'student_id',
           populate: { path: 'user_id' }
@@ -200,7 +213,10 @@ module.exports = {
         updates,
         { new: true, runValidators: true }
       )
-        .populate('activity_id')
+        .populate({
+          path: 'activity_id',
+          select: 'title start_time end_time'
+        })
         .populate({
           path: 'student_id',
           populate: { path: 'user_id' }
@@ -255,7 +271,10 @@ module.exports = {
       const feedbacks = await StudentFeedback.find({ 
         student_id: studentProfile._id 
       })
-        .populate('activity_id')
+        .populate({
+          path: 'activity_id',
+          select: 'title start_time end_time'
+        })
         .sort({ submitted_at: -1 });
       
       res.json({ success: true, data: feedbacks });
