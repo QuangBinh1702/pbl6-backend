@@ -166,12 +166,19 @@ module.exports = {
 
   async approveEvidence(req, res) {
     try {
+      const updateData = { 
+        status: 'approved', 
+        verified_at: new Date() 
+      };
+
+      // Add optional faculty_point if provided
+      if (req.body.faculty_point !== undefined) {
+        updateData.faculty_point = req.body.faculty_point;
+      }
+
       const evidence = await Evidence.findByIdAndUpdate(
         req.params.id,
-        { 
-          status: 'approved', 
-          verified_at: new Date() 
-        },
+        updateData,
         { new: true }
       )
         .populate('student_id');

@@ -30,10 +30,6 @@ const evidenceSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  class_point: {
-    type: Number,
-    default: 0
-  },
   faculty_point: {
     type: Number,
     default: 0

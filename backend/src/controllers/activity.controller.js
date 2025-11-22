@@ -1508,8 +1508,17 @@ module.exports = {
       let filtered = activities;
 
       if (status) {
-        const statusEn = getStatusEn(status);
-        filtered = filtered.filter(act => act.status === status || act.status === statusEn);
+        filtered = filtered.filter(act => {
+          // Filter by registration status if registration exists
+          if (act.registration) {
+            return act.registration.status === status;
+          }
+          // If no registration but has attendance, show only if looking for 'attended'
+          if (act.attendance) {
+            return status === 'attended';
+          }
+          return false;
+        });
       }
 
       if (field_id) {

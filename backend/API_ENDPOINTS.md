@@ -2326,7 +2326,6 @@ _Từ chối:_
 
 ```json
 {
-  "class_point": 8,
   "faculty_point": 9
 }
 ```
