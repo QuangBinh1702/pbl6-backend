@@ -12,7 +12,10 @@ const orgUnitSchema = new mongoose.Schema({
   leader_id: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'StaffProfile' 
-  }
+  },
+  founded_date: Date,
+  achievements: [String],
+  description: String
 }, { timestamps: false });
 
 // Index for faster queries

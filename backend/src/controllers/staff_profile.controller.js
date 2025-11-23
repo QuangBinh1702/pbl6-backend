@@ -7,7 +7,11 @@ module.exports = {
     try {
       const staffProfiles = await StaffProfile.find()
         .populate('user_id')
-        .populate('org_unit_id');
+        .populate('org_unit_id')
+        .populate({
+          path: 'faculty_id',
+          select: '_id name'
+        });
       res.json(staffProfiles);
     } catch (err) {
       res.status(500).json({ message: err.message });
@@ -18,7 +22,11 @@ module.exports = {
     try {
       const staffProfile = await StaffProfile.findById(req.params.id)
         .populate('user_id')
-        .populate('org_unit_id');
+        .populate('org_unit_id')
+        .populate({
+          path: 'faculty_id',
+          select: '_id name'
+        });
       if (!staffProfile) {
         return res.status(404).json({ message: 'Staff profile not found' });
       }
@@ -32,7 +40,11 @@ module.exports = {
     try {
       const staffProfile = await StaffProfile.findOne({ user_id: req.params.userId })
         .populate('user_id')
-        .populate('org_unit_id');
+        .populate('org_unit_id')
+        .populate({
+          path: 'faculty_id',
+          select: '_id name'
+        });
       if (!staffProfile) {
         return res.status(404).json({ message: 'Staff profile not found' });
       }
@@ -59,7 +71,11 @@ module.exports = {
         user_id: user._id 
       })
         .populate('user_id')
-        .populate('org_unit_id');
+        .populate('org_unit_id')
+        .populate({
+          path: 'faculty_id',
+          select: '_id name'
+        });
       
       if (!staffProfile) {
         return res.status(404).json({ 
@@ -79,7 +95,11 @@ module.exports = {
     try {
       const staffProfile = await StaffProfile.findOne({ staff_number: req.params.staffNumber })
         .populate('user_id')
-        .populate('org_unit_id');
+        .populate('org_unit_id')
+        .populate({
+          path: 'faculty_id',
+          select: '_id name'
+        });
       if (!staffProfile) {
         return res.status(404).json({ message: 'Staff profile not found' });
       }
@@ -99,6 +119,8 @@ module.exports = {
         staff_number,
         orgUnitId,
         org_unit_id,
+        facultyId,
+        faculty_id,
         fullName,
         full_name,
         dateOfBirth,
@@ -118,6 +140,7 @@ module.exports = {
         user_id: user_id || userId,
         staff_number: staff_number || staffNumber,
         org_unit_id: org_unit_id || orgUnitId,
+        faculty_id: faculty_id || facultyId,
         full_name: full_name || fullName,
         date_of_birth: date_of_birth || dateOfBirth ? new Date(date_of_birth || dateOfBirth) : null,
         gender: gender,
@@ -155,6 +178,10 @@ module.exports = {
       await staffProfile.save();
       await staffProfile.populate('user_id');
       await staffProfile.populate('org_unit_id');
+      await staffProfile.populate({
+        path: 'faculty_id',
+        select: '_id name'
+      });
       res.status(201).json(staffProfile);
     } catch (err) {
       res.status(400).json({ 
@@ -174,6 +201,8 @@ module.exports = {
         staff_number,
         orgUnitId,
         org_unit_id,
+        facultyId,
+        faculty_id,
         fullName,
         full_name,
         dateOfBirth,
@@ -193,6 +222,7 @@ module.exports = {
       if (user_id || userId) updateData.user_id = user_id || userId;
       if (staff_number || staffNumber) updateData.staff_number = staff_number || staffNumber;
       if (org_unit_id !== undefined || orgUnitId !== undefined) updateData.org_unit_id = org_unit_id || orgUnitId;
+      if (faculty_id !== undefined || facultyId !== undefined) updateData.faculty_id = faculty_id || facultyId;
       if (full_name !== undefined || fullName !== undefined) updateData.full_name = full_name || fullName;
       if (date_of_birth || dateOfBirth) updateData.date_of_birth = new Date(date_of_birth || dateOfBirth);
       if (gender !== undefined) updateData.gender = gender;
@@ -208,7 +238,11 @@ module.exports = {
         { new: true, runValidators: true }
       )
         .populate('user_id')
-        .populate('org_unit_id');
+        .populate('org_unit_id')
+        .populate({
+          path: 'faculty_id',
+          select: '_id name'
+        });
       if (!staffProfile) {
         return res.status(404).json({ 
           success: false,
@@ -240,7 +274,11 @@ module.exports = {
     try {
       const staffProfiles = await StaffProfile.find({ org_unit_id: req.params.orgUnitId })
         .populate('user_id')
-        .populate('org_unit_id');
+        .populate('org_unit_id')
+        .populate({
+          path: 'faculty_id',
+          select: '_id name'
+        });
       res.json(staffProfiles);
     } catch (err) {
       res.status(500).json({ message: err.message });

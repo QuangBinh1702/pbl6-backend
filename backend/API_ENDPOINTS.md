@@ -383,7 +383,14 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 ```json
 {
-  "name": "Khoa Công nghệ Thông tin"
+  "name": "Khoa Công nghệ Thông tin",
+  "founded_date": "2000-01-01",
+  "achievements": [
+    "Top 3 Quốc Gia Về Tré 2020",
+    "Tổ chức 50+ workshop trong 3 năm gần nhất"
+  ],
+  "description": "Khoa đào tạo lập trình viên chất lượng cao...",
+  "leader_id": "staff_id_here"
 }
 ```
 
@@ -391,7 +398,11 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 ```json
 {
-  "name": "Khoa Kỹ thuật Máy tính (cập nhật)"
+  "name": "Khoa Kỹ thuật Máy tính (cập nhật)",
+  "founded_date": "2000-01-01",
+  "achievements": [...],
+  "description": "...",
+  "leader_id": "staff_id_here"
 }
 ```
 
@@ -400,14 +411,54 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 ```json
 [
   {
-    "_id": "faculty_id_1",
-    "name": "Khoa Công nghệ Thông tin"
+    "_id": "691d6303db9ec83878f1b66c",
+    "name": "Khoa Công Nghệ Thông Tin",
+    "type": "faculty",
+    "founded_date": "2000-01-01T00:00:00.000Z",
+    "achievements": [
+      "Top 3 Quốc Gia Về Tré 2020",
+      "Tổ chức 50+ workshop trong 3 năm gần nhất",
+      "Hợp tác cùng Google Developer Group Việt Nam - 2024"
+    ],
+    "description": "Khoa Công Nghệ Thông Tin - Trung tâm đào tạo lập trình viên chất lượng cao, với cơ sở vật chất hiện đại và giảng viên giàu kinh nghiệm.",
+    "leader_id": {
+      "_id": "staff_leader_id",
+      "full_name": "Nguyễn Văn A",
+      "position": "Trưởng khoa"
+    }
   },
   {
     "_id": "faculty_id_2",
-    "name": "Khoa Kỹ thuật Phần mềm"
+    "name": "Khoa Kỹ thuật Phần mềm",
+    "type": "faculty",
+    "founded_date": "2005-03-15T00:00:00.000Z",
+    "achievements": [...],
+    "description": "...",
+    "leader_id": {...}
   }
 ]
+```
+
+**Response - Get Faculty By ID:**
+
+```json
+{
+  "_id": "691d6303db9ec83878f1b66c",
+  "name": "Khoa Công Nghệ Thông Tin",
+  "type": "faculty",
+  "founded_date": "2000-01-01T00:00:00.000Z",
+  "achievements": [
+    "Top 3 Quốc Gia Về Tré 2020",
+    "Tổ chức 50+ workshop trong 3 năm gần nhất",
+    "Hợp tác cùng Google Developer Group Việt Nam - 2024"
+  ],
+  "description": "Khoa Công Nghệ Thông Tin - Trung tâm đào tạo lập trình viên chất lượng cao...",
+  "leader_id": {
+    "_id": "staff_leader_id",
+    "full_name": "Nguyễn Văn A",
+    "position": "Trưởng khoa"
+  }
+}
 ```
 
 ---
@@ -512,6 +563,7 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
   "staff_number": "STAFF001",
   "full_name": "Nguyễn Văn A",
   "org_unit_id": "org_unit_uuid_here",
+  "faculty_id": "faculty_uuid_here",
   "position": "Trưởng phòng",
   "email": "staff@example.com",
   "phone": "0123456789",
@@ -529,12 +581,44 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
   "full_name": "Nguyễn Văn B",
   "position": "Phó phòng",
   "org_unit_id": "org_unit_uuid_here",
+  "faculty_id": "faculty_uuid_here",
   "email": "staff2@example.com",
   "phone": "0987654321",
   "date_of_birth": "1985-05-20",
   "gender": "female",
   "contact_address": "456 Đường XYZ, Hà Nội",
   "staff_image": "https://example.com/images/staff.jpg"
+}
+```
+
+**Response - Get Staff Profile By ID:**
+
+```json
+{
+  "_id": "691d5c6df46edc8ea94f0a0e",
+  "user_id": {
+    "_id": "691d5c6df46edc8ea94f0a01",
+    "username": "staff001",
+    "email": "staff001@example.com"
+  },
+  "staff_number": "GV001",
+  "full_name": "Phạm Thị Giáo viên A",
+  "date_of_birth": "1986-03-25T00:00:00.000Z",
+  "gender": "female",
+  "email": "teachera@ptit.edu.vn",
+  "phone": "0912345004",
+  "org_unit_id": {
+    "_id": "691d5c6df46edc8ea94f09fc",
+    "name": "Khoa Công Nghệ Thông Tin",
+    "type": "faculty"
+  },
+  "faculty_id": {
+    "_id": "691d6303db9ec83878f1b66c",
+    "name": "Khoa Công Nghệ Thông Tin"
+  },
+  "position": "Giảng viên",
+  "staff_image": "",
+  "contact_address": "Hanoi, Vietnam"
 }
 ```
 
@@ -994,16 +1078,17 @@ The response format is the same as Staff Profile responses.
 - Trường `requirements` là **optional** khi tạo hoạt động.
 - Nếu gửi lên, phải là một mảng các đối tượng, mỗi đối tượng có:
   - `type`: Loại yêu cầu (`falcuty` hoặc `cohort`)
-  - `id`: ID của khoa hoặc khóa học (tương ứng với bảng `falcuty` hoặc `cohort`)
+  - Nếu `type = "falcuty"`: cần `name` (tên khoa)
+  - Nếu `type = "cohort"`: cần `year` (năm khóa)
 - Ví dụ: Chỉ sinh viên thuộc khoa CNTT và khóa 2022 mới được tham gia:
   ```json
   "requirements": [
-    { "type": "falcuty", "id": "faculty_id_here" },
-    { "type": "cohort", "id": "cohort_id_here" }
+    { "type": "falcuty", "name": "Khoa Công nghệ Thông tin" },
+    { "type": "cohort", "year": 2022 }
   ]
   ```
 - Nếu không gửi trường này, hoạt động sẽ **không giới hạn** khoa/khóa tham gia.
-- Khi tạo, hệ thống sẽ tự động lưu các yêu cầu này vào bảng `activity_eligibility`.
+- Khi tạo hoặc cập nhật, hệ thống sẽ tự động tìm khoa/khóa tương ứng và lưu vào bảng `activity_eligibility`.
 
 **Lưu ý - Create Activity:**
 
@@ -1013,6 +1098,36 @@ The response format is the same as Staff Profile responses.
   - Nếu `start_time > now`: status = `chưa tổ chức`
 - Hoạt động được tạo sẽ có status = `chưa tổ chức` (nếu start_time trong tương lai) hoặc `đang tổ chức`/`đã tổ chức` (nếu đang diễn ra hoặc đã kết thúc)
 - Yêu cầu permission: `activity:CREATE`
+
+**Request Body - Update Activity:**
+
+```json
+{
+  "title": "Hoạt động tình nguyện (cập nhật)",
+  "description": "Mô tả hoạt động (cập nhật)",
+  "location": "P102",
+  "start_time": "2024-01-20T08:00:00.000Z",
+  "end_time": "2024-01-20T12:00:00.000Z",
+  "capacity": 60,
+  "registration_open": "2024-01-15T00:00:00.000Z",
+  "registration_close": "2024-01-19T23:59:59.000Z",
+  "requires_approval": true,
+  "org_unit_id": "org_unit_id_here",
+  "field_id": "field_id_here",
+  "activity_image": "https://example.com/image-updated.jpg",
+  "requirements": [
+    { "type": "falcuty", "name": "cntt" },
+    { "type": "cohort", "year": 2023 }
+  ]
+}
+```
+
+**Lưu ý - Update Activity:**
+
+- Tất cả các trường đều **optional** - chỉ gửi những trường cần cập nhật
+- **`requirements`**: Nếu gửi trường này, tất cả requirements cũ sẽ bị xóa và thay thế bằng những requirements mới
+- Nếu gửi `requirements: []` (mảng rỗng), tất cả requirements sẽ bị xóa (hoạt động không còn giới hạn)
+- Nếu không gửi trường `requirements`, các requirements cũ sẽ giữ nguyên
 
 **Request Body - Suggest Activity (Đề xuất hoạt động):**
 

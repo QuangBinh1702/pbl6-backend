@@ -571,6 +571,10 @@ module.exports = {
   async updateActivity(req, res) {
     try {
       const updates = { ...req.body };
+      const requirements = updates.requirements;
+      
+      // Remove requirements from updates object (handle separately)
+      delete updates.requirements;
       
       // Update time_updated fields if start_time or end_time changed
       if (updates.start_time) {
@@ -593,6 +597,37 @@ module.exports = {
           success: false, 
           message: 'Activity not found' 
         });
+      }
+      
+      // Handle requirements update
+      if (Array.isArray(requirements)) {
+        // Delete all existing requirements for this activity
+        await ActivityEligibility.deleteMany({ activity_id: activity._id });
+        
+        // Create new requirements if provided
+        if (requirements.length > 0) {
+          for (const reqItem of requirements) {
+            if (reqItem.type === 'falcuty' && reqItem.name) {
+              const falcuty = await Falcuty.findOne({ name: reqItem.name });
+              if (falcuty) {
+                await ActivityEligibility.create({
+                  activity_id: activity._id,
+                  type: 'falcuty',
+                  reference_id: falcuty._id
+                });
+              }
+            } else if (reqItem.type === 'cohort' && reqItem.year) {
+              const cohort = await Cohort.findOne({ year: reqItem.year });
+              if (cohort) {
+                await ActivityEligibility.create({
+                  activity_id: activity._id,
+                  type: 'cohort',
+                  reference_id: cohort._id
+                });
+              }
+            }
+          }
+        }
       }
       
       // Auto-update status based on time if start_time or end_time changed

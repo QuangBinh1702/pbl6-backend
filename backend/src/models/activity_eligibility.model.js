@@ -7,7 +7,7 @@ const activityEligibilitySchema = new mongoose.Schema({
   },
   type: { 
     type: String, 
-    enum: ['falcuty', 'cohort'] 
+    enum: ['faculty', 'cohort'] 
   },
   reference_id: { 
     type: mongoose.Schema.Types.ObjectId 

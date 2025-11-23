@@ -20,6 +20,10 @@ const staffProfileSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'OrgUnit' 
   },
+  faculty_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'OrgUnit'
+  },
   position: {
     type: String,
     trim: true

@@ -1,11 +1,13 @@
 // Quản lý khoa
-const Falcuty = require('../models/falcuty.model');
+const OrgUnit = require('../models/org_unit.model');
 const Class = require('../models/class.model');
 
 module.exports = {
   async getAllFaculties(req, res) {
     try {
-      const faculties = await Falcuty.find().sort({ name: 1 });
+      const faculties = await OrgUnit.find({ type: 'faculty' })
+        .populate('leader_id')
+        .sort({ name: 1 });
       res.json(faculties);
     } catch (err) {
       res.status(500).json({ message: err.message });
@@ -14,7 +16,8 @@ module.exports = {
 
   async getFacultyById(req, res) {
     try {
-      const faculty = await Falcuty.findById(req.params.id);
+      const faculty = await OrgUnit.findById(req.params.id)
+        .populate('leader_id');
       if (!faculty) {
         return res.status(404).json({ message: 'Faculty not found' });
       }
@@ -26,8 +29,13 @@ module.exports = {
 
   async createFaculty(req, res) {
     try {
-      const faculty = new Falcuty(req.body);
+      const facultyData = {
+        ...req.body,
+        type: 'faculty'
+      };
+      const faculty = new OrgUnit(facultyData);
       await faculty.save();
+      await faculty.populate('leader_id');
       res.status(201).json(faculty);
     } catch (err) {
       if (err.code === 11000) {
@@ -39,11 +47,12 @@ module.exports = {
 
   async updateFaculty(req, res) {
     try {
-      const faculty = await Falcuty.findByIdAndUpdate(
+      const faculty = await OrgUnit.findByIdAndUpdate(
         req.params.id,
         req.body,
         { new: true, runValidators: true }
-      );
+      )
+        .populate('leader_id');
       if (!faculty) {
         return res.status(404).json({ message: 'Faculty not found' });
       }
@@ -55,7 +64,7 @@ module.exports = {
 
   async deleteFaculty(req, res) {
     try {
-      const faculty = await Falcuty.findByIdAndDelete(req.params.id);
+      const faculty = await OrgUnit.findByIdAndDelete(req.params.id);
       if (!faculty) {
         return res.status(404).json({ message: 'Faculty not found' });
       }
