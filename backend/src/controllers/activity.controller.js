@@ -242,7 +242,7 @@ module.exports = {
       
       // Get rejection info if exists
       const rejection = await ActivityRejection.findOne({ activity_id: activity._id })
-        .populate('rejected_by', 'username');
+        .populate('rejected_by', 'name email');
       
       // Get requirements
       const requirements = await getActivityRequirementsData(activity._id);

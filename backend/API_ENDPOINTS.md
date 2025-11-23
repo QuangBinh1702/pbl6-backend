@@ -1373,6 +1373,16 @@ The response format is the same as Staff Profile responses.
       "start_time": "2024-01-15T08:00:00.000Z",
       "end_time": "2024-01-15T12:00:00.000Z",
       "capacity": 50,
+      "status": "từ chối",
+      "rejection": {
+        "reason": "Không đủ điều kiện tham gia",
+        "rejected_by": {
+          "_id": "staff_id",
+          "name": "Nguyễn Văn A",
+          "email": "staff@example.com"
+        },
+        "rejected_at": "2024-01-14T10:00:00.000Z"
+      },
       "registration": {
         "id": "registration_id",
         "status": "approved",
@@ -1457,7 +1467,15 @@ GET /api/activities/activity_id_123/student/user_id_or_student_id_456
         "name": "Công nghệ thông tin"
       },
       "registrationCount": 25,
-      "rejection": null,
+      "rejection": {
+        "reason": "Không đủ điều kiện tham gia",
+        "rejected_by": {
+          "_id": "staff_id",
+          "name": "Nguyễn Văn A",
+          "email": "staff@example.com"
+        },
+        "rejected_at": "2024-01-14T10:00:00.000Z"
+      },
       "requirements": [
         {
           "type": "falcuty",
