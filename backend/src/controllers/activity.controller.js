@@ -144,10 +144,10 @@ async function getActivityRequirementsData(activityId) {
   
   const detailedRequirements = await Promise.all(
     requirements.map(async (req) => {
-      if (req.type === 'falcuty') {
+      if (req.type === 'faculty') {
         const falcuty = await Falcuty.findById(req.reference_id);
         return {
-          type: 'falcuty',
+          type: 'faculty',
           name: falcuty ? falcuty.name : 'Unknown'
         };
       } else if (req.type === 'cohort') {
@@ -412,17 +412,17 @@ module.exports = {
         approved_at: activityStatus === 'approved' || activityStatus === 'in_progress' ? new Date() : null
       });
       // Xử lý requirements nếu có
-      if (Array.isArray(requirements) && requirements.length > 0) {
-        for (const reqItem of requirements) {
-          if (reqItem.type === 'falcuty' && reqItem.name) {
-            const falcuty = await Falcuty.findOne({ name: reqItem.name });
-            if (falcuty) {
-              await ActivityEligibility.create({
-                activity_id: activity._id,
-                type: 'falcuty',
-                reference_id: falcuty._id
-              });
-            }
+       if (Array.isArray(requirements) && requirements.length > 0) {
+         for (const reqItem of requirements) {
+           if (reqItem.type === 'faculty' && reqItem.name) {
+             const falcuty = await Falcuty.findOne({ name: reqItem.name });
+             if (falcuty) {
+               await ActivityEligibility.create({
+                 activity_id: activity._id,
+                 type: 'faculty',
+                 reference_id: falcuty._id
+               });
+             }
           } else if (reqItem.type === 'cohort' && reqItem.year) {
             const cohort = await Cohort.findOne({ year: reqItem.year });
             if (cohort) {
@@ -607,12 +607,12 @@ module.exports = {
         // Create new requirements if provided
         if (requirements.length > 0) {
           for (const reqItem of requirements) {
-            if (reqItem.type === 'falcuty' && reqItem.name) {
+            if (reqItem.type === 'faculty' && reqItem.name) {
               const falcuty = await Falcuty.findOne({ name: reqItem.name });
               if (falcuty) {
                 await ActivityEligibility.create({
                   activity_id: activity._id,
-                  type: 'falcuty',
+                  type: 'faculty',
                   reference_id: falcuty._id
                 });
               }

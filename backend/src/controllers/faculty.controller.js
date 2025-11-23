@@ -1,12 +1,11 @@
 // Quản lý khoa
-const OrgUnit = require('../models/org_unit.model');
+const Falcuty = require('../models/falcuty.model');
 const Class = require('../models/class.model');
 
 module.exports = {
   async getAllFaculties(req, res) {
     try {
-      const faculties = await OrgUnit.find({ type: 'faculty' })
-        .populate('leader_id')
+      const faculties = await Falcuty.find()
         .sort({ name: 1 });
       res.json(faculties);
     } catch (err) {
@@ -16,8 +15,7 @@ module.exports = {
 
   async getFacultyById(req, res) {
     try {
-      const faculty = await OrgUnit.findById(req.params.id)
-        .populate('leader_id');
+      const faculty = await Falcuty.findById(req.params.id);
       if (!faculty) {
         return res.status(404).json({ message: 'Faculty not found' });
       }
@@ -29,13 +27,8 @@ module.exports = {
 
   async createFaculty(req, res) {
     try {
-      const facultyData = {
-        ...req.body,
-        type: 'faculty'
-      };
-      const faculty = new OrgUnit(facultyData);
+      const faculty = new Falcuty(req.body);
       await faculty.save();
-      await faculty.populate('leader_id');
       res.status(201).json(faculty);
     } catch (err) {
       if (err.code === 11000) {
@@ -47,12 +40,11 @@ module.exports = {
 
   async updateFaculty(req, res) {
     try {
-      const faculty = await OrgUnit.findByIdAndUpdate(
+      const faculty = await Falcuty.findByIdAndUpdate(
         req.params.id,
         req.body,
         { new: true, runValidators: true }
-      )
-        .populate('leader_id');
+      );
       if (!faculty) {
         return res.status(404).json({ message: 'Faculty not found' });
       }
@@ -64,7 +56,7 @@ module.exports = {
 
   async deleteFaculty(req, res) {
     try {
-      const faculty = await OrgUnit.findByIdAndDelete(req.params.id);
+      const faculty = await Falcuty.findByIdAndDelete(req.params.id);
       if (!faculty) {
         return res.status(404).json({ message: 'Faculty not found' });
       }
@@ -76,9 +68,9 @@ module.exports = {
 
   async getFacultyClasses(req, res) {
     try {
-      const classes = await Class.find({ falcuty: req.params.id })
-        .populate('falcuty')
-        .populate('cohort');
+      const classes = await Class.find({ falcuty_id: req.params.id })
+        .populate('falcuty_id')
+        .populate('cohort_id');
       res.json(classes);
     } catch (err) {
       res.status(500).json({ message: err.message });
