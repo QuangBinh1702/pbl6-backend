@@ -1048,7 +1048,7 @@ module.exports = {
       // Check rejections for all activities
       const rejections = await ActivityRejection.find({
         activity_id: { $in: Array.from(activityIds) }
-      });
+      }).populate('rejected_by', 'name email');
       const rejectionMap = new Map();
       rejections.forEach(rej => {
         rejectionMap.set(rej.activity_id.toString(), rej);
@@ -1063,8 +1063,14 @@ module.exports = {
           const activityData = reg.activity_id.toObject();
           
           // Check if activity is rejected and update status
-          if (rejectionMap.has(activityData._id.toString())) {
+          const rejectionInfo = rejectionMap.get(activityData._id.toString());
+          if (rejectionInfo) {
             activityData.status = 'rejected';
+            activityData.rejection = {
+              reason: rejectionInfo.reason,
+              rejected_by: rejectionInfo.rejected_by,
+              rejected_at: rejectionInfo.rejected_at
+            };
           } else {
             // Update status based on time if not rejected
             const now = new Date();
@@ -1118,8 +1124,14 @@ module.exports = {
             const activityData = att.activity_id.toObject();
             
             // Check if activity is rejected and update status
-            if (rejectionMap.has(activityId)) {
+            const rejectionInfo = rejectionMap.get(activityId);
+            if (rejectionInfo) {
               activityData.status = 'rejected';
+              activityData.rejection = {
+                reason: rejectionInfo.reason,
+                rejected_by: rejectionInfo.rejected_by,
+                rejected_at: rejectionInfo.rejected_at
+              };
             } else {
               // Update status based on time if not rejected
               const now = new Date();
