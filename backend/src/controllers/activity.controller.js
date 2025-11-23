@@ -1362,6 +1362,16 @@ module.exports = {
 
   async cancelActivity(req, res) {
     try {
+      const { cancellation_reason } = req.body;
+      
+      // Validate cancellation_reason is required
+      if (!cancellation_reason || cancellation_reason.trim() === '') {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Vui lòng nhập lý do hủy hoạt động' 
+        });
+      }
+      
       const activity = await Activity.findById(req.params.id);
       if (!activity) {
         return res.status(404).json({ 
@@ -1380,6 +1390,8 @@ module.exports = {
 
       // Update activity status to cancelled
       activity.status = 'cancelled';
+      activity.cancelled_at = new Date();
+      activity.cancellation_reason = cancellation_reason.trim();
       await activity.save();
 
       // Transform activity to return Vietnamese status

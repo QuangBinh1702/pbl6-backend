@@ -1043,7 +1043,7 @@ The response format is the same as Staff Profile responses.
 | PUT    | `/api/activities/:id/approve`        | Phê duyệt hoạt động (chuyển từ chờ duyệt -> chưa tổ chức/đang tổ chức/đã tổ chức)             | ✅            | `activity:APPROVE`             |
 | PUT    | `/api/activities/:id/reject`         | Từ chối hoạt động (tạo bản ghi trong bảng activity_rejection)                                 | ✅            | `activity:REJECT`              |
 | PUT    | `/api/activities/:id/complete`       | Đánh dấu hoàn thành hoạt động (status = đã tổ chức)                                           | ✅            | `activity:UPDATE`              |
-| PUT    | `/api/activities/:id/cancel`         | Hủy hoạt động (status = hủy hoạt động)                                                        | ✅            | `activity:UPDATE`              |
+| PUT    | `/api/activities/:id/cancel`         | Hủy hoạt động (status = hủy hoạt động). Body: `{cancellation_reason: string}` (bắt buộc)    | ✅            | `activity:UPDATE`              |
 | POST   | `/api/activities/:id/register`       | Đăng ký tham gia hoạt động                                                                    | ✅            | `activity_registration:CREATE` |
 | GET    | `/api/activities/:id/registrations`  | Lấy danh sách đăng ký của hoạt động                                                           | ✅            | `activity_registration:READ`   |
 | GET    | `/api/activities/rejections`         | Lấy tất cả các hoạt động bị từ chối                                                           | ✅            | `activity:READ`                |

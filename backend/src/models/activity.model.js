@@ -48,7 +48,12 @@ const activitySchema = new mongoose.Schema({
     default: 'pending'
   },
   completed_at: Date,
-  approved_at: Date
+  approved_at: Date,
+  cancelled_at: Date,
+  cancellation_reason: {
+    type: String,
+    trim: true
+  }
 }, { timestamps: false, collection: 'activity' });
 
 // Index for faster queries
