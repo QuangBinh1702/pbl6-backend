@@ -17,7 +17,13 @@ module.exports = {
       const registrations = await ActivityRegistration.find(filter)
         .populate({
           path: "student_id",
-          populate: { path: "user_id" },
+          populate: [
+            { path: "user_id" },
+            {
+              path: "class_id",
+              populate: { path: "falcuty_id" },
+            },
+          ],
         })
         .populate("activity_id")
         .populate("approved_by")
@@ -37,7 +43,13 @@ module.exports = {
       const registration = await ActivityRegistration.findById(req.params.id)
         .populate({
           path: "student_id",
-          populate: { path: "user_id" },
+          populate: [
+            { path: "user_id" },
+            {
+              path: "class_id",
+              populate: { path: "falcuty_id" },
+            },
+          ],
         })
         .populate("activity_id")
         .populate("approved_by")
@@ -68,7 +80,13 @@ module.exports = {
       const registrations = await ActivityRegistration.find(filter)
         .populate({
           path: "student_id",
-          populate: { path: "user_id" },
+          populate: [
+            { path: "user_id" },
+            {
+              path: "class_id",
+              populate: { path: "falcuty_id" },
+            },
+          ],
         })
         .populate("approved_by")
         .populate("cancelled_by")
@@ -190,7 +208,13 @@ module.exports = {
 
       await registration.populate({
         path: "student_id",
-        populate: { path: "user_id" },
+        populate: [
+          { path: "user_id" },
+          {
+            path: "class_id",
+            populate: { path: "falcuty_id" },
+          },
+        ],
       });
       await registration.populate("activity_id");
       await registration.populate("approved_by");
@@ -219,7 +243,13 @@ module.exports = {
       )
         .populate({
           path: "student_id",
-          populate: { path: "user_id" },
+          populate: [
+            { path: "user_id" },
+            {
+              path: "class_id",
+              populate: { path: "falcuty_id" },
+            },
+          ],
         })
         .populate("activity_id")
         .populate("approved_by")
@@ -346,7 +376,13 @@ module.exports = {
 
       await registration.populate({
         path: "student_id",
-        populate: { path: "user_id" },
+        populate: [
+          { path: "user_id" },
+          {
+            path: "class_id",
+            populate: { path: "falcuty_id" },
+          },
+        ],
       });
       await registration.populate("activity_id");
       await registration.populate("approved_by");
@@ -404,7 +440,13 @@ module.exports = {
 
       await registration.populate({
         path: "student_id",
-        populate: { path: "user_id" },
+        populate: [
+          { path: "user_id" },
+          {
+            path: "class_id",
+            populate: { path: "falcuty_id" },
+          },
+        ],
       });
       await registration.populate("activity_id");
       await registration.populate("approved_by");
@@ -442,13 +484,23 @@ module.exports = {
       if (status) filter.status = status;
 
       const registrations = await ActivityRegistration.find(filter)
-        .populate("activity_id")
-        .populate("approved_by")
-        .populate("cancelled_by")
-        .populate("status_history.changed_by")
-        .sort({ createdAt: -1 });
+         .populate({
+           path: "student_id",
+           populate: [
+             { path: "user_id" },
+             {
+               path: "class_id",
+               populate: { path: "falcuty_id" },
+             },
+           ],
+         })
+         .populate("activity_id")
+         .populate("approved_by")
+         .populate("cancelled_by")
+         .populate("status_history.changed_by")
+         .sort({ createdAt: -1 });
 
-      res.json({ success: true, data: registrations });
+       res.json({ success: true, data: registrations });
     } catch (err) {
       console.error("Get my registrations error:", err);
       res.status(500).json({ success: false, message: err.message });
