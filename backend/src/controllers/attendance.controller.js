@@ -4,7 +4,10 @@ const Activity = require('../models/activity.model');
 const StudentProfile = require('../models/student_profile.model');
 const Notification = require('../models/notification.model');
 const ActivityRegistration = require('../models/activity_registration.model');
+const AttendanceSession = require('../models/attendance_session.model');
 const registrationController = require('./registration.controller');
+const QRCode = require('qrcode');
+const attendanceCalculator = require('../utils/attendance_calculator');
 
 module.exports = {
   async getAllAttendances(req, res) {
@@ -441,49 +444,308 @@ module.exports = {
     }
   },
 
+  // Lấy danh sách sinh viên tham gia theo hoạt động (có thống kê: số lần điểm danh, điểm,...)
+  async getStudentsWithStatsByActivity(req, res) {
+    try {
+      const { activityId } = req.params;
+      
+      // Get activity to get total_sessions_required
+      const activity = await Activity.findById(activityId);
+      if (!activity) {
+        return res.status(404).json({ success: false, message: 'Activity not found' });
+      }
+
+      const totalSessionsRequired = activity.total_sessions_required || 1;
+      
+      // Get all attendance records for the activity
+      const attendances = await Attendance.find({ activity_id: activityId })
+        .populate({
+          path: 'student_id',
+          populate: {
+            path: 'user_id',
+            select: '-password_hash'
+          }
+        })
+        .lean();
+
+      // Group by student and calculate stats
+      const studentStatsMap = new Map();
+      attendances.forEach(att => {
+        if (att.student_id) {
+          const key = att.student_id._id.toString();
+          
+          if (!studentStatsMap.has(key)) {
+            studentStatsMap.set(key, {
+              student_id: att.student_id._id,
+              student: att.student_id,
+              attendance_count: 0,
+              last_attended: null,
+              status: att.status
+            });
+          }
+          
+          const stats = studentStatsMap.get(key);
+          stats.attendance_count += 1;
+          
+          // Update last_attended to most recent
+          if (!stats.last_attended || new Date(att.scanned_at) > new Date(stats.last_attended)) {
+            stats.last_attended = att.scanned_at;
+          }
+        }
+      });
+
+      // Calculate total_points based on attendance rate
+      const result = Array.from(studentStatsMap.values()).map(stats => {
+        const attendanceRate = stats.attendance_count / totalSessionsRequired;
+        const total_points = Math.round(attendanceRate * 10 * 100) / 100; // Làm tròn 2 số thập phân
+        return {
+          ...stats,
+          total_points: total_points,
+          attendance_rate: attendanceRate
+        };
+      });
+
+      res.json({ 
+        success: true, 
+        data: result, 
+        count: result.length 
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
   async scanQRCode(req, res) {
     try {
       const { qrData } = req.body;
-      // Parse QR code data
-      const data = JSON.parse(qrData);
+      const userId = req.user._id;
       
-      // Find student profile
-      const studentProfile = await StudentProfile.findOne({ user_id: data.userId });
+      if (!qrData) {
+        return res.status(400).json({ success: false, message: 'QR code data is required' });
+      }
+
+      // Parse QR code data
+      let data;
+      try {
+        data = JSON.parse(qrData);
+      } catch (parseErr) {
+        return res.status(400).json({ success: false, message: 'Invalid QR code format' });
+      }
+
+      const { activityId, sessionId } = data;
+      
+      if (!activityId) {
+        return res.status(400).json({ success: false, message: 'Invalid QR code: missing activityId' });
+      }
+
+      // 1. Find student profile
+      const studentProfile = await StudentProfile.findOne({ user_id: userId });
       if (!studentProfile) {
         return res.status(404).json({ success: false, message: 'Student profile not found' });
       }
 
-      // Check if attendance already exists
-      const existingAttendance = await Attendance.findOne({
-        student_id: studentProfile._id,
-        activity_id: data.activityId
-      });
-
-      if (existingAttendance) {
-        return res.status(400).json({ success: false, message: 'Attendance already recorded' });
+      // 2. Check if activity exists
+      const activity = await Activity.findById(activityId);
+      if (!activity) {
+        return res.status(404).json({ success: false, message: 'Activity not found' });
       }
 
-      // Create attendance record
-      const attendance = new Attendance({
+      // 3. Check registration
+      const registration = await ActivityRegistration.findOne({
         student_id: studentProfile._id,
-        activity_id: data.activityId,
-        status: 'present',
-        scanned_at: new Date()
+        activity_id: activityId,
+        status: 'approved'
       });
 
-      await attendance.save();
-      await attendance.populate({
-        path: 'student_id',
-        populate: {
-          path: 'user_id',
-          select: '-password_hash'
+      if (!registration) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Bạn chưa được duyệt để tham gia hoạt động này' 
+        });
+      }
+
+      // ===== Handle Multiple Sessions =====
+      let attendanceSession = null;
+      let sessionName = 'Activity';
+
+      if (sessionId && activity.attendance_sessions && activity.attendance_sessions.length > 0) {
+        // Find the session
+        attendanceSession = await AttendanceSession.findById(sessionId);
+        
+        if (!attendanceSession) {
+          return res.status(404).json({ 
+            success: false, 
+            message: 'Attendance session not found' 
+          });
         }
-      });
-      await attendance.populate('activity_id');
 
-      res.status(201).json({ success: true, data: attendance });
+        sessionName = attendanceSession.name;
+
+        // Validate session timing
+        const timingValidation = attendanceCalculator.validateSessionTiming(
+          attendanceSession.start_time,
+          attendanceSession.end_time,
+          30
+        );
+
+        if (!timingValidation.isValid) {
+          return res.status(400).json({ 
+            success: false, 
+            message: timingValidation.message 
+          });
+        }
+
+        // Check if already scanned this session
+        let attendance = await Attendance.findOne({
+          student_id: studentProfile._id,
+          activity_id: activityId
+        });
+
+        if (!attendance) {
+          // Create new attendance record
+          attendance = new Attendance({
+            student_id: studentProfile._id,
+            activity_id: activityId,
+            total_sessions_required: activity.attendance_sessions.length,
+            attendance_sessions: [],
+            scanned_at: new Date()
+          });
+        }
+
+        // Check if already attended this session
+        const alreadyAttendedThisSession = attendance.attendance_sessions.some(
+          s => s.session_id.toString() === sessionId
+        );
+
+        if (alreadyAttendedThisSession) {
+          return res.status(400).json({
+            success: false,
+            message: `Bạn đã điểm danh session "${sessionName}" rồi`
+          });
+        }
+
+        // Add session to attendance
+        attendance.attendance_sessions.push({
+          session_id: sessionId,
+          session_number: attendanceSession.session_number,
+          session_name: sessionName,
+          scanned_at: new Date(),
+          session_status: 'present'
+        });
+
+        // Calculate attendance status and points
+        const calculation = attendanceCalculator.calculateAttendanceStatus(
+          activity,
+          attendance.attendance_sessions.length
+        );
+
+        attendance.status = calculation.status;
+        attendance.attendance_rate = calculation.attendanceRate;
+        attendance.total_sessions_attended = attendance.attendance_sessions.length;
+        attendance.points_earned = calculation.earnedPoints;
+        attendance.points = calculation.earnedPoints; // For backward compatibility
+        attendance.scanned_at = new Date();
+
+        await attendance.save();
+
+        // ===== Auto-update Registration Status =====
+        if (calculation.status === 'present') {
+          await ActivityRegistration.findByIdAndUpdate(
+            registration._id,
+            {
+              status: 'attended',
+              attendance_record_id: attendance._id
+            }
+          );
+        }
+
+        // Populate for response
+        await attendance.populate({
+          path: 'student_id',
+          populate: { path: 'user_id', select: '-password_hash' }
+        });
+        await attendance.populate('activity_id');
+
+        res.status(201).json({
+          success: true,
+          message: `Điểm danh ${sessionName} thành công`,
+          data: {
+            attendance,
+            summary: attendanceCalculator.formatAttendanceSummary(attendance, calculation)
+          }
+        });
+      } else {
+        // ===== Single Session Mode (Backward Compatible) =====
+        const now = new Date();
+        const startTime = new Date(activity.start_time);
+        const endTime = new Date(activity.end_time);
+        const scanStartWindow = new Date(startTime.getTime() - 30 * 60000);
+        
+        if (now < scanStartWindow) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Hoạt động chưa bắt đầu. Vui lòng quay lại gần giờ bắt đầu' 
+          });
+        }
+
+        if (now > endTime) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Hoạt động đã kết thúc. Không thể điểm danh' 
+          });
+        }
+
+        // Check if already attended
+        const existingAttendance = await Attendance.findOne({
+          student_id: studentProfile._id,
+          activity_id: activityId
+        });
+
+        if (existingAttendance) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Bạn đã điểm danh rồi' 
+          });
+        }
+
+        // Create attendance
+        const attendance = new Attendance({
+          student_id: studentProfile._id,
+          activity_id: activityId,
+          status: 'present',
+          scanned_at: new Date(),
+          total_sessions_required: 1,
+          total_sessions_attended: 1,
+          attendance_rate: 1.0,
+          verified: false
+        });
+
+        await attendance.save();
+
+        // Auto-update registration
+        await ActivityRegistration.findByIdAndUpdate(
+          registration._id,
+          { 
+            status: 'attended',
+            attendance_record_id: attendance._id
+          }
+        );
+
+        await attendance.populate({
+          path: 'student_id',
+          populate: { path: 'user_id', select: '-password_hash' }
+        });
+        await attendance.populate('activity_id');
+
+        res.status(201).json({ 
+          success: true, 
+          message: 'Điểm danh thành công',
+          data: attendance 
+        });
+      }
     } catch (err) {
-      res.status(400).json({ success: false, message: err.message });
+      console.error('Scan QR code error:', err);
+      res.status(500).json({ success: false, message: err.message });
     }
   },
 };

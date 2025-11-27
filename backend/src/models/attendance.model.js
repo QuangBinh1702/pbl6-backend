@@ -11,20 +11,63 @@ const attendanceSchema = new mongoose.Schema({
     ref: 'Activity', 
     required: true 
   },
+  
+  // ← NEW: Track multiple sessions
+  attendance_sessions: [{
+    session_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'AttendanceSession'
+    },
+    session_number: Number,
+    session_name: String,
+    scanned_at: Date,
+    session_status: {
+      type: String,
+      enum: ['present', 'absent'],
+      default: 'present'
+    }
+  }],
+  
+  // ← NEW: Summary fields
+  total_sessions_required: {
+    type: Number,
+    default: 1
+  },
+  total_sessions_attended: {
+    type: Number,
+    default: 0
+  },
+  attendance_rate: {
+    type: Number,  // 0.0 - 1.0 (0% - 100%)
+    default: 0
+  },
+  
+  // ← UPDATED: Calculated status based on attendance config
+  status: { 
+    type: String,
+    enum: ['present', 'absent', 'partial'],
+    default: 'absent' 
+  },
+  
   scanned_at: { 
     type: Date, 
     default: Date.now 
-  },
-  status: { 
-    type: String, 
-    default: 'present' 
   },
   verified: { 
     type: Boolean, 
     default: false 
   },
   verified_at: Date,
+  
+  // ← NEW: Points earned based on calculation
+  points_earned: {
+    type: Number,
+    default: 0
+  },
+  
+  // ← OLD: Kept for backward compatibility
   points: Number,
+  
   feedback: String,
   feedback_time: Date,
   feedback_status: {

@@ -2130,9 +2130,10 @@ _Từ chối:_
 | ------ | ------------------------------------------------ | -------------------------------------------------- | ------------- | ------------------------- |
 | GET    | `/api/attendances`                               | Lấy tất cả bản ghi điểm danh                       | ✅            | admin, ctsv, staff        |
 | GET    | `/api/attendances/:id`                           | Lấy chi tiết điểm danh theo ID                     | ✅            | -                         |
-| GET    | `/api/attendances/activity/:activityId`          | Lấy điểm danh theo hoạt động                       | ✅            | -                         |
-| GET    | `/api/attendances/student/:studentId`            | Lấy điểm danh theo sinh viên                       | ✅            | -                         |
-| GET    | `/api/attendances/student/:studentId/activities` | Lấy tất cả hoạt động đã tham gia (theo attendance) | ✅            | -                         |
+| GET    | `/api/attendances/activity/:activityId`                   | Lấy điểm danh theo hoạt động                                   | ✅            | -                         |
+| GET    | `/api/attendances/activity/:activityId/students-stats`    | Lấy danh sách SV tham gia với thống kê (số lần, điểm, v.v)   | ✅            | -                         |
+| GET    | `/api/attendances/student/:studentId`                     | Lấy điểm danh theo sinh viên                                   | ✅            | -                         |
+| GET    | `/api/attendances/student/:studentId/activities`          | Lấy tất cả hoạt động đã tham gia (theo attendance)            | ✅            | -                         |
 | POST   | `/api/attendances`                               | Tạo bản ghi điểm danh mới                          | ✅            | admin, ctsv, staff, union |
 | PUT    | `/api/attendances/:id`                           | Cập nhật điểm danh                                 | ✅            | admin, ctsv, staff, union |
 | DELETE | `/api/attendances/:id`                           | Xóa điểm danh                                      | ✅            | admin, ctsv, staff, union |
@@ -2176,6 +2177,63 @@ _Từ chối:_
 {
   "feedback": "Sinh viên tham gia tốt",
   "points": 5
+}
+```
+
+**GET /api/attendances/activity/:activityId/students-stats** - Response Example:
+
+Lấy danh sách sinh viên duy nhất tham gia hoạt động với thống kê (số lần điểm danh, tổng điểm dựa trên tỷ lệ).
+
+**Công thức tính điểm:**
+- `total_points = (attendance_count / total_sessions_required) * 10`
+- `attendance_rate = attendance_count / total_sessions_required`
+
+**Ví dụ:**
+- Hoạt động yêu cầu 2 lần, SV điểm danh 1 lần: `total_points = (1/2) * 10 = 5` điểm
+- Hoạt động yêu cầu 3 lần, SV điểm danh 3 lần: `total_points = (3/3) * 10 = 10` điểm
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "student_id": "691d63565bcc1aa642a2f078",
+      "student": {
+        "_id": "691d63565bcc1aa642a2f078",
+        "student_number": "102220115",
+        "full_name": "Nguyễn Thị Trà My",
+        "email": "102220115@sv1.dut.udn.vn",
+        "user_id": {
+          "_id": "691d6cdac4ea11f403e6479b",
+          "username": "102220115"
+        }
+      },
+      "attendance_count": 2,
+      "total_points": 10,
+      "attendance_rate": 1,
+      "last_attended": "2024-12-15T10:30:00.000Z",
+      "status": "present"
+    },
+    {
+      "student_id": "691d63565bcc1aa642a2f079",
+      "student": {
+        "_id": "691d63565bcc1aa642a2f079",
+        "student_number": "102220116",
+        "full_name": "Trần Văn B",
+        "email": "102220116@sv1.dut.udn.vn",
+        "user_id": {
+          "_id": "691d6cdac4ea11f403e6479c",
+          "username": "102220116"
+        }
+      },
+      "attendance_count": 1,
+      "total_points": 5,
+      "attendance_rate": 0.5,
+      "last_attended": "2024-12-14T09:00:00.000Z",
+      "status": "present"
+    }
+  ],
+  "count": 2
 }
 ```
 

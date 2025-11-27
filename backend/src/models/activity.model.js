@@ -35,6 +35,62 @@ const activitySchema = new mongoose.Schema({
     min: 0
   },
   qr_code: String,
+  
+  // ← NEW: Attendance Sessions Configuration
+  attendance_sessions: [{
+    _id: mongoose.Schema.Types.ObjectId,
+    session_number: Number,
+    name: String,
+    description: String,
+    start_time: Date,
+    end_time: Date,
+    qr_code: String,
+    required: { type: Boolean, default: true }
+  }],
+  
+  // ← NEW: How to calculate attendance
+  attendance_config: {
+    enabled: { type: Boolean, default: true },
+    
+    total_sessions_required: {
+      type: Number,
+      default: 1
+    },
+    
+    calculation_method: {
+      type: String,
+      enum: ['all', 'partial', 'first_match'],
+      default: 'partial'
+      // all: phải quét tất cả để tính là "present"
+      // partial: quét >= threshold tính là "present"
+      // first_match: chỉ cần quét 1 lần
+    },
+    
+    attendance_threshold: {
+      type: Number,
+      min: 0,
+      max: 1,
+      default: 0.5  // >= 50%
+    },
+    
+    points_config: {
+      points_per_session: {
+        type: Number,
+        default: 5
+      },
+      
+      partial_points: {
+        type: Boolean,
+        default: true  // Quét 1/2 được 50% điểm?
+      },
+      
+      max_points: {
+        type: Number,
+        default: 5
+      }
+    }
+  },
+  
   registration_open: Date,
   registration_close: Date,
   activity_image: String,

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const attendanceController = require('../controllers/attendance.controller');
+const attendanceSessionController = require('../controllers/attendance_session.controller');
 const auth = require('../middlewares/auth.middleware');
 const { checkPermission } = require('../middlewares/check_permission.middleware');
 
@@ -11,11 +12,13 @@ router.get('/',
   attendanceController.getAllAttendances
 );
 
-// Lấy điểm danh theo ID
-router.get('/:id', 
-  auth, 
+// ====== SPECIFIC ROUTES (phải trước /:id) ======
+
+// Lấy danh sách sinh viên tham gia với thống kê (số lần điểm danh, điểm,...)
+router.get('/activity/:activityId/students-stats', 
+  auth,
   checkPermission('attendance', 'READ'),
-  attendanceController.getAttendanceById
+  attendanceController.getStudentsWithStatsByActivity
 );
 
 // Lấy điểm danh theo hoạt động
@@ -23,6 +26,15 @@ router.get('/activity/:activityId',
   auth,
   checkPermission('attendance', 'READ'),
   attendanceController.getAttendancesByActivity
+);
+
+// ====== GENERIC ROUTES (sau specific routes) ======
+
+// Lấy điểm danh theo ID
+router.get('/:id', 
+  auth, 
+  checkPermission('attendance', 'READ'),
+  attendanceController.getAttendanceById
 );
 
 // Lấy điểm danh theo sinh viên (own data - no permission check)
@@ -102,6 +114,56 @@ router.post('/scan-qr',
   auth, 
   checkPermission('attendance', 'SCAN'),
   attendanceController.scanQRCode
+);
+
+// ============================================
+// ATTENDANCE SESSIONS ROUTES
+// ============================================
+
+// Tạo attendance sessions cho hoạt động
+router.post('/activity/:id/sessions',
+  auth,
+  checkPermission('activity', 'CREATE'),
+  attendanceSessionController.createAttendanceSessions
+);
+
+// Lấy attendance sessions của hoạt động
+router.get('/activity/:id/sessions',
+  auth,
+  checkPermission('activity', 'READ'),
+  attendanceSessionController.getAttendanceSessions
+);
+
+// Lấy QR code của một session
+router.get('/session/:sessionId/qr',
+  auth,
+  checkPermission('attendance', 'READ'),
+  attendanceSessionController.getSessionQRCode
+);
+
+// Cập nhật attendance session
+router.put('/session/:sessionId',
+  auth,
+  checkPermission('activity', 'UPDATE'),
+  attendanceSessionController.updateAttendanceSession
+);
+
+// Xóa attendance session
+router.delete('/session/:sessionId',
+  auth,
+  checkPermission('activity', 'DELETE'),
+  attendanceSessionController.deleteAttendanceSession
+);
+
+// ============================================
+// ATTENDANCE CONFIG ROUTES
+// ============================================
+
+// Cập nhật attendance configuration cho hoạt động
+router.put('/activity/:id/config',
+  auth,
+  checkPermission('activity', 'UPDATE'),
+  attendanceSessionController.updateAttendanceConfig
 );
 
 module.exports = router;
