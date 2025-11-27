@@ -49,6 +49,12 @@ router.get('/:activityId/student/:studentId',
   activityController.getActivityWithStudentStatus
 );
 
+// Get QR code for activity (MUST be before /:id)
+router.get('/:id/qr-code',
+  auth,
+  activityController.getActivityQRCode
+);
+
 router.get('/:id', activityController.getActivityById); // Public - view activity details (MUST be last)
 
 // Protected routes with permission checks
