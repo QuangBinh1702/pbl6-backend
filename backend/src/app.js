@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
+const multer = require('multer');
 const errorMiddleware = require('./middlewares/error.middleware');
 const ensureDBConnection = require('./middlewares/db.middleware');
 
@@ -37,7 +38,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.use(morgan('dev'));
 
@@ -83,8 +84,15 @@ app.use('/api/evidences', require('./routes/evidence.routes'));
 // Communication
 app.use('/api/notifications', require('./routes/notification.routes'));
 
-// Chatbot
-app.use('/api/chatbot', require('./routes/chatbot.route'));
+// Chatbot - Debug
+app.use('/api/chatbot', (req, res, next) => {
+  console.log('🟡 Request to /api/chatbot:', req.method, req.path, 'file:', req.file ? 'yes' : 'no');
+  next();
+});
+
+// Use only enhanced route (new version)
+// app.use('/api/chatbot', require('./routes/chatbot.route')); // OLD - disabled
+app.use('/api/chatbot', require('./routes/chatbot.enhanced.route')); // NEW - active
 
 // System
 app.use('/api/permissions', require('./routes/permission.routes'));

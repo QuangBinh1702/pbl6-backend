@@ -8,6 +8,7 @@ const User = require('../models/user.model');
 const ActivityEligibility = require('../models/activity_eligibility.model');
 const Falcuty = require('../models/falcuty.model');
 const Cohort = require('../models/cohort.model');
+const QRCode = require('qrcode');
 
 // Mapping status từ tiếng Anh (database) sang tiếng Việt (response)
 const statusMapping = {
@@ -411,6 +412,33 @@ module.exports = {
         status: activityStatus,
         approved_at: activityStatus === 'approved' || activityStatus === 'in_progress' ? new Date() : null
       });
+      
+      // Generate QR code for the activity
+      try {
+        const qrData = JSON.stringify({
+          activityId: activity._id.toString(),
+          activityTitle: activity.title,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Generate QR code as Base64 data URL
+        const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
+          errorCorrectionLevel: 'H',
+          type: 'image/png',
+          width: 300,
+          margin: 1,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+        
+        activity.qr_code = qrCodeDataUrl;
+        await activity.save();
+      } catch (qrError) {
+        console.error('Error generating QR code:', qrError);
+        // Don't fail the entire request if QR generation fails
+      }
       // Xử lý requirements nếu có
        if (Array.isArray(requirements) && requirements.length > 0) {
          for (const reqItem of requirements) {
@@ -1790,6 +1818,64 @@ module.exports = {
       });
     } catch (err) {
       console.error('Get activity with student status error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  async getActivityQRCode(req, res) {
+    try {
+      const { id } = req.params;
+      
+      const activity = await Activity.findById(id);
+      if (!activity) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Activity not found' 
+        });
+      }
+
+      // If QR code doesn't exist, generate it
+      if (!activity.qr_code) {
+        try {
+          const qrData = JSON.stringify({
+            activityId: activity._id.toString(),
+            activityTitle: activity.title,
+            timestamp: new Date().toISOString()
+          });
+
+          const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
+            errorCorrectionLevel: 'H',
+            type: 'image/png',
+            width: 300,
+            margin: 1,
+            color: {
+              dark: '#000000',
+              light: '#FFFFFF'
+            }
+          });
+
+          activity.qr_code = qrCodeDataUrl;
+          await activity.save();
+        } catch (qrError) {
+          console.error('Error generating QR code:', qrError);
+          return res.status(500).json({ 
+            success: false, 
+            message: 'Failed to generate QR code' 
+          });
+        }
+      }
+
+      // Return QR code as Base64 data URL
+      res.json({ 
+        success: true, 
+        data: {
+          activityId: activity._id,
+          title: activity.title,
+          qr_code: activity.qr_code
+        }
+      });
+    } catch (err) {
+      console.error('Get activity QR code error:', err);
       res.status(500).json({ success: false, message: err.message });
     }
   }
