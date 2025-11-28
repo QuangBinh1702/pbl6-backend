@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Manager - PHASE 2.5</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 25px;
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.95em;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .qr-display {
+            text-align: center;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .qr-display img {
+            max-width: 300px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+
+        .qr-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+
+        .qr-info p {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .qr-history {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .qr-item {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+
+        .qr-item.active {
+            border: 2px solid #10b981;
+            background: #f0fdf4;
+        }
+
+        .qr-item.expired {
+            border: 2px solid #ef4444;
+            background: #fef2f2;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-expired {
+            background: #fee2e2;
+            color: #7f1d1d;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+            display: block;
+        }
+
+        .message.error {
+            background: #fee2e2;
+            color: #7f1d1d;
+            border: 1px solid #fca5a5;
+            display: block;
+        }
+
+        .message.info {
+            background: #dbeafe;
+            color: #0c4a6e;
+            border: 1px solid #bfdbfe;
+            display: block;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 QR Code Manager</h1>
+            <p>PHASE 2.5: On-Demand QR Generation</p>
+        </div>
+
+        <!-- Auth Card -->
+        <div class="card" id="authCard">
+            <h2>Authentication</h2>
+            <div class="form-group">
+                <label>Token (Paste from frontend)</label>
+                <input type="password" id="token" placeholder="eyJhbGc...">
+            </div>
+            <button class="btn-primary" onclick="authenticate()">Login</button>
+            <button class="btn-success" onclick="loadFromLocalStorage()" style="margin-left: 10px;">Use Saved Token</button>
+            <div id="authMessage" class="message" style="margin-top: 15px;"></div>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" style="display: none;">
+            <!-- Activity Selection -->
+            <div class="card">
+                <h2>Select Activity</h2>
+                <div class="form-group">
+                    <label>Activity</label>
+                    <select id="activitySelect" onchange="loadActivity()">
+                        <option value="">-- Choose Activity --</option>
+                    </select>
+                </div>
+                <div id="activityMessage" class="message"></div>
+            </div>
+
+            <!-- Current QR Display -->
+            <div class="card" id="currentQRCard" style="display: none;">
+                <h2>✅ Current QR (Active)</h2>
+                
+                <div class="qr-display" id="currentQRDisplay">
+                    <img id="currentQRImage" src="" alt="Current QR">
+                    <div class="qr-info">
+                        <p><strong>Name:</strong> <span id="currentQRName">-</span></p>
+                        <p><strong>Created:</strong> <span id="currentQRCreated">-</span></p>
+                        <p><strong>Expires:</strong> <span id="currentQRExpires">-</span></p>
+                        <p><strong>Scans:</strong> <span id="currentQRScans">0</span></p>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-success" onclick="copyQRData()">📋 Copy Data</button>
+                    <button class="btn-success" onclick="printQR()">🖨️ Print QR</button>
+                </div>
+            </div>
+
+            <!-- Generate New QR -->
+            <div class="card">
+                <h2>Generate New QR</h2>
+                
+                <div class="form-group">
+                    <label>QR Name (e.g., "Buổi Sáng", "Round 1")</label>
+                    <input type="text" id="qrName" placeholder="Điểm danh Buổi Sáng">
+                </div>
+
+                <div class="form-group">
+                    <label>Duration (Minutes) - Leave blank for no expiry</label>
+                    <input type="number" id="duration" placeholder="60" min="1">
+                </div>
+
+                <button class="btn-primary" onclick="generateNewQR()">🔄 Generate New QR</button>
+                <div id="generateMessage" class="message" style="margin-top: 15px;"></div>
+            </div>
+
+            <!-- QR History -->
+            <div class="card" id="historyCard" style="display: none;">
+                <h2>📜 QR History</h2>
+                <div id="qrHistoryList" class="qr-history"></div>
+                
+                <div class="button-group" style="margin-top: 20px;">
+                    <button class="btn-danger" onclick="deleteOldQRs()">🗑️ Delete Old QRs (Keep Latest 3)</button>
+                </div>
+                <div id="historyMessage" class="message" style="margin-top: 15px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+
+        // ===== TOKEN MANAGEMENT =====
+        function getToken() {
+            return document.getElementById('token').value.trim() || localStorage.getItem('qrManagerToken');
+        }
+
+        function saveToken(token) {
+            const cleanToken = token.replace(/^Bearer\s+/i, '').trim();
+            localStorage.setItem('qrManagerToken', cleanToken);
+            document.getElementById('token').value = cleanToken;
+            console.log('Token saved');
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('qrManagerToken');
+            if (saved) {
+                document.getElementById('token').value = saved;
+                authenticate();
+            } else {
+                showMessage('authMessage', 'No saved token found', 'error');
+            }
+        }
+
+        // ===== AUTHENTICATION =====
+        async function authenticate() {
+            const token = getToken();
+            if (!token) {
+                showMessage('authMessage', 'Please enter token', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/attendances`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) throw new Error('Authentication failed');
+
+                saveToken(token);
+                showMessage('authMessage', '✅ Authenticated!', 'success');
+                
+                document.getElementById('authCard').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                
+                loadActivities();
+            } catch (err) {
+                showMessage('authMessage', `❌ ${err.message}`, 'error');
+            }
+        }
+
+        // ===== LOAD ACTIVITIES =====
+        async function loadActivities() {
+            try {
+                const token = getToken();
+                const res = await fetch(`${API_BASE}/activities`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) throw new Error('Failed to load activities');
+
+                const data = await res.json();
+                const activities = data.data || [];
+
+                const select = document.getElementById('activitySelect');
+                select.innerHTML = '<option value="">-- Choose Activity --</option>';
+                activities.forEach(act => {
+                    select.innerHTML += `<option value="${act._id}">${act.title}</option>`;
+                });
+            } catch (err) {
+                console.error('Error loading activities:', err);
+            }
+        }
+
+        // ===== LOAD ACTIVITY QRs =====
+        async function loadActivity() {
+            const activityId = document.getElementById('activitySelect').value;
+            if (!activityId) {
+                document.getElementById('currentQRCard').style.display = 'none';
+                document.getElementById('historyCard').style.display = 'none';
+                return;
+            }
+
+            try {
+                const token = getToken();
+                const res = await fetch(`${API_BASE}/attendances/activity/${activityId}/qr-codes`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) throw new Error('Failed to load QRs');
+
+                const data = await res.json();
+                displayQRs(data.data);
+            } catch (err) {
+                showMessage('activityMessage', `❌ ${err.message}`, 'error');
+            }
+        }
+
+        // ===== DISPLAY QRs =====
+        function displayQRs(data) {
+            if (!data) return;
+
+            // Display current QR
+            if (data.current) {
+                const current = data.current;
+                document.getElementById('currentQRImage').src = current.qr_code;
+                document.getElementById('currentQRName').textContent = current.qr_name || 'N/A';
+                document.getElementById('currentQRCreated').textContent = new Date(current.created_at).toLocaleString('vi-VN');
+                document.getElementById('currentQRExpires').textContent = current.expires_at 
+                    ? new Date(current.expires_at).toLocaleString('vi-VN')
+                    : 'No Expiration';
+                document.getElementById('currentQRScans').textContent = current.scans_count;
+                document.getElementById('currentQRCard').style.display = 'block';
+            } else {
+                document.getElementById('currentQRCard').style.display = 'none';
+            }
+
+            // Display history
+            if (data.history && data.history.length > 0) {
+                const historyHTML = data.history.map(qr => `
+                    <div class="qr-item ${qr.is_active ? 'active' : 'expired'}">
+                        <p><strong>${qr.qr_name}</strong></p>
+                        <p style="font-size: 0.8em; color: #666;">
+                            ${new Date(qr.created_at).toLocaleString('vi-VN')}
+                        </p>
+                        <p style="font-size: 0.8em;">Scans: ${qr.scans_count}</p>
+                        <span class="status-badge ${qr.is_active ? 'status-active' : 'status-expired'}">
+                            ${qr.status === 'active' ? '✅ Active' : '⏰ Expired'}
+                        </span>
+                    </div>
+                `).join('');
+                document.getElementById('qrHistoryList').innerHTML = historyHTML;
+                document.getElementById('historyCard').style.display = 'block';
+            } else {
+                document.getElementById('historyCard').style.display = 'none';
+            }
+        }
+
+        // ===== GENERATE NEW QR =====
+        async function generateNewQR() {
+            const activityId = document.getElementById('activitySelect').value;
+            if (!activityId) {
+                showMessage('generateMessage', 'Please select activity first', 'error');
+                return;
+            }
+
+            const qrName = document.getElementById('qrName').value.trim();
+            const duration = document.getElementById('duration').value;
+
+            try {
+                const token = getToken();
+                const res = await fetch(`${API_BASE}/attendances/generate-qr`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        activity_id: activityId,
+                        qr_name: qrName || `QR #${new Date().toLocaleTimeString()}`,
+                        duration_minutes: duration ? parseInt(duration) : null
+                    })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message || 'Failed to generate QR');
+                }
+
+                showMessage('generateMessage', '✅ QR Generated!', 'success');
+                document.getElementById('qrName').value = '';
+                document.getElementById('duration').value = '';
+                
+                setTimeout(() => loadActivity(), 1000);
+            } catch (err) {
+                showMessage('generateMessage', `❌ ${err.message}`, 'error');
+            }
+        }
+
+        // ===== COPY QR DATA =====
+        function copyQRData() {
+            const img = document.getElementById('currentQRImage').src;
+            navigator.clipboard.writeText(img);
+            showMessage('currentQRDisplay', '✅ QR copied to clipboard!', 'info');
+        }
+
+        // ===== PRINT QR =====
+        function printQR() {
+            const printWindow = window.open();
+            printWindow.document.write('<img src="' + document.getElementById('currentQRImage').src + '" style="width: 400px;">');
+            printWindow.print();
+        }
+
+        // ===== DELETE OLD QRs =====
+        async function deleteOldQRs() {
+            const activityId = document.getElementById('activitySelect').value;
+            if (!activityId) {
+                showMessage('historyMessage', 'Please select activity first', 'error');
+                return;
+            }
+
+            if (!confirm('Delete old QRs? (Keep latest 3)')) return;
+
+            try {
+                const token = getToken();
+                const res = await fetch(`${API_BASE}/attendances/activity/${activityId}/qr-codes?keep_latest=3`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) throw new Error('Failed to delete');
+
+                showMessage('historyMessage', '✅ Old QRs deleted!', 'success');
+                setTimeout(() => loadActivity(), 1000);
+            } catch (err) {
+                showMessage('historyMessage', `❌ ${err.message}`, 'error');
+            }
+        }
+
+        // ===== UTILITIES =====
+        function showMessage(elementId, msg, type) {
+            const el = document.getElementById(elementId);
+            if (el.classList) {
+                el.classList.remove('success', 'error', 'info');
+                el.classList.add(type);
+            }
+            el.innerHTML = msg;
+            if (type === 'success') {
+                setTimeout(() => el.innerHTML = '', 3000);
+            }
+        }
+
+        // Auto-load if token saved
+        window.addEventListener('load', () => {
+            if (localStorage.getItem('qrManagerToken')) {
+                loadFromLocalStorage();
+            }
+        });
+    </script>
+</body>
+</html>

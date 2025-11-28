@@ -12,7 +12,14 @@ const attendanceSchema = new mongoose.Schema({
     required: true 
   },
   
-  // ← NEW: Track multiple sessions
+  // ← PHASE 2.5: Track which QR was scanned (replaces session_id)
+  qr_code_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'QRCode',
+    sparse: true
+  },
+  
+  // ← OLD: Track multiple sessions (keep for backward compatibility)
   attendance_sessions: [{
     session_id: {
       type: mongoose.Schema.Types.ObjectId,
@@ -42,11 +49,62 @@ const attendanceSchema = new mongoose.Schema({
     default: 0
   },
   
+  // ← PHASE 2: Student submitted info for approval
+  student_info: {
+    student_id_number: {
+      type: String,
+      validate: /^\d{5,6}$/,  // 5-6 digits (MSSV)
+      sparse: true
+    },
+    class: {
+      type: mongoose.Schema.Types.ObjectId,  // Reference to Class model
+      ref: 'Class',
+      sparse: true
+    },
+    faculty: {
+      type: mongoose.Schema.Types.ObjectId,  // Reference to Falcuty model
+      ref: 'Falcuty',
+      sparse: true
+    },
+    phone: {
+      type: String,
+      validate: /^(0|\+84)\d{9,10}$/,  // Vietnamese phone format
+      sparse: true
+    },
+    notes: {
+      type: String,
+      maxlength: 500
+    },
+    submitted_at: {
+      type: Date,
+      default: Date.now
+    }
+  },
+
+  // ← PHASE 2.5: Track mismatches and warnings
+  student_info_flags: {
+    class_mismatch: {
+      type: Boolean,
+      default: false,
+      index: true  // Fast queries for mismatches
+    },
+    registered_class: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Class',
+      sparse: true
+    },
+    student_in_system: {
+      type: Boolean,
+      default: false
+    }
+  },
+
   // ← UPDATED: Calculated status based on attendance config
   status: { 
     type: String,
-    enum: ['present', 'absent', 'partial'],
-    default: 'absent' 
+    enum: ['present', 'absent', 'partial', 'pending', 'approved', 'rejected'],
+    default: 'pending',
+    index: true  // Fast queries for pending/approved
   },
   
   scanned_at: { 
@@ -57,7 +115,21 @@ const attendanceSchema = new mongoose.Schema({
     type: Boolean, 
     default: false 
   },
+  
+  // ← PHASE 2: Approval workflow fields
+  verified_by: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'  // Staff/Admin who verified
+  },
   verified_at: Date,
+  
+  rejection_reason: {
+    type: String,
+    enum: ['MISSING_INFO', 'INVALID_CLASS', 'DUPLICATE', 'NOT_PARTICIPANT', 'OUT_OF_TIME', 'NO_EVIDENCE', 'INVALID_PHONE'],
+    sparse: true
+  },
+  
+  verified_comment: String,  // Notes from staff
   
   // ← NEW: Points earned based on calculation
   points_earned: {
@@ -128,9 +200,14 @@ attendanceSchema.post('save', async function(doc) {
   }
 });
 
-// Index for faster queries
+// ← PHASE 2: Performance indexes for approval workflow
 attendanceSchema.index({ student_id: 1 });
 attendanceSchema.index({ activity_id: 1 });
+attendanceSchema.index({ activity_id: 1, status: 1 });  // ← Query pending by activity
+attendanceSchema.index({ activity_id: 1, 'attendance_sessions.session_id': 1 });  // ← By session
+attendanceSchema.index({ verified_at: -1 });  // ← Sort by verification date
+attendanceSchema.index({ 'student_info.class': 1 });  // ← Filter by class
+attendanceSchema.index({ 'student_info.faculty': 1 });  // ← Filter by faculty
 attendanceSchema.index({ scanned_at: -1 });
 
 module.exports = mongoose.model('Attendance', attendanceSchema, 'attendance');

@@ -803,6 +803,11 @@
                     };">Status: ${
               qr.is_active ? "✅ Active" : "❌ Inactive"
             }</p>
+                    ${
+                      qr.qr_code
+                        ? `<img src="${qr.qr_code}" alt="QR Code" style="width: 100%; max-width: 200px; margin: 15px 0; border: 2px solid #ddd; border-radius: 6px;">`
+                        : ""
+                    }
                     <button class="btn-secondary" style="width: 100%; margin-top: 10px;" onclick="useQRCode('${
                       qr._id
                     }', '${qr.qr_data}')">

@@ -5,9 +5,13 @@ const StudentProfile = require('../models/student_profile.model');
 const Notification = require('../models/notification.model');
 const ActivityRegistration = require('../models/activity_registration.model');
 const AttendanceSession = require('../models/attendance_session.model');
+const QRCodeModel = require('../models/qr_code.model');  // ← PHASE 2.5: QR Manager
+const Class = require('../models/class.model');
+const Falcuty = require('../models/falcuty.model');
 const registrationController = require('./registration.controller');
 const QRCode = require('qrcode');
 const attendanceCalculator = require('../utils/attendance_calculator');
+const XLSX = require('xlsx');  // ← For Excel export
 
 module.exports = {
   async getAllAttendances(req, res) {
@@ -748,6 +752,660 @@ module.exports = {
       res.status(500).json({ success: false, message: err.message });
     }
   },
+
+  // ===== PHASE 2.5: scanQRCodeV2 - New on-demand QR scanning (replaces old scanQRCode) =====
+  async scanQRCodeV2(req, res) {
+    try {
+      const { qrData } = req.body;
+      const userId = req.user._id;
+      
+      if (!qrData) {
+        return res.status(400).json({ success: false, message: 'QR code data is required' });
+      }
+
+      // Parse QR code data
+      let data;
+      try {
+        data = JSON.parse(qrData);
+      } catch (parseErr) {
+        return res.status(400).json({ success: false, message: 'Invalid QR code format' });
+      }
+
+      const { activityId, qrId } = data;
+      
+      if (!activityId) {
+        return res.status(400).json({ success: false, message: 'Invalid QR code: missing activityId' });
+      }
+
+      // 1. Find student profile
+      const studentProfile = await StudentProfile.findOne({ user_id: userId });
+      if (!studentProfile) {
+        return res.status(404).json({ success: false, message: 'Student profile not found' });
+      }
+
+      // 2. Check if activity exists
+      const activity = await Activity.findById(activityId);
+      if (!activity) {
+        return res.status(404).json({ success: false, message: 'Activity not found' });
+      }
+
+      // 3. Check registration
+      const registration = await ActivityRegistration.findOne({
+        student_id: studentProfile._id,
+        activity_id: activityId,
+        status: 'approved'
+      });
+
+      if (!registration) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Bạn chưa được duyệt để tham gia hoạt động này' 
+        });
+      }
+
+      // ===== NEW: Check QR exists and not expired =====
+      let qrRecord = null;
+      let qrName = 'QR Code';
+
+      if (qrId) {
+        qrRecord = await QRCodeModel.findById(qrId);
+        if (!qrRecord) {
+          return res.status(404).json({ success: false, message: 'QR code not found' });
+        }
+        
+        if (!qrRecord.is_active) {
+          return res.status(400).json({ success: false, message: 'QR code has been deactivated' });
+        }
+        
+        // Check expiry
+        if (qrRecord.expires_at && new Date() > qrRecord.expires_at) {
+          return res.status(400).json({ success: false, message: 'QR code has expired' });
+        }
+
+        qrName = qrRecord.qr_name || 'QR Code';
+      }
+
+      // ✅ NO TIME WINDOW VALIDATION - Can scan anytime!
+
+      // Check if already scanned THIS QR (prevent duplicate)
+      const alreadyScanned = await Attendance.findOne({
+        student_id: studentProfile._id,
+        activity_id: activityId,
+        qr_code_id: qrId
+      });
+
+      if (alreadyScanned) {
+        return res.status(400).json({
+          success: false,
+          message: `Bạn đã quét QR này rồi (${qrName})`
+        });
+      }
+
+      // ===== Create temporary attendance record =====
+      // This is just to record the QR scan
+      // Student still needs to submit form with details
+      const attendance = new Attendance({
+        student_id: studentProfile._id,
+        activity_id: activityId,
+        qr_code_id: qrId,  // Track which QR
+        status: 'pending',  // Waiting for approval
+        scanned_at: new Date()
+      });
+
+      await attendance.save();
+
+      // ===== Increment QR scan count =====
+      if (qrRecord) {
+        await QRCodeModel.findByIdAndUpdate(qrId, {
+          $inc: { scans_count: 1 }
+        });
+      }
+
+      // Populate for response
+      await attendance.populate({
+        path: 'student_id',
+        populate: { path: 'user_id', select: '-password_hash' }
+      });
+      await attendance.populate('activity_id');
+      await attendance.populate('qr_code_id', 'qr_name');
+
+      res.status(201).json({
+        success: true,
+        message: `✅ QR scanned! Now fill in your information below.`,
+        data: {
+          attendance,
+          activity: {
+            _id: activity._id,
+            title: activity.title
+          },
+          qr_info: {
+            qr_id: qrId,
+            qr_name: qrName
+          }
+        }
+      });
+    } catch (err) {
+      console.error('Error scanning QR:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // ===== PHASE 2: APPROVAL WORKFLOW =====
+
+  // 1. Submit Attendance (Student submission for approval)
+  async submitAttendance(req, res) {
+    try {
+      const { activity_id, session_id, student_info } = req.body;
+      const userId = req.user._id;
+
+      // Validate required fields
+      if (!activity_id || !student_info) {
+        return res.status(400).json({ success: false, message: 'Missing required fields' });
+      }
+
+      if (!student_info.student_id_number || !student_info.class || !student_info.faculty) {
+        return res.status(400).json({ success: false, message: 'student_id_number, class, and faculty are required' });
+      }
+
+      // Validate MSSV format
+      if (!/^\d{5,6}$/.test(student_info.student_id_number)) {
+        return res.status(400).json({ success: false, message: 'MSSV must be 5-6 digits' });
+      }
+
+      // Validate phone format if provided
+      if (student_info.phone && !/^(0|\+84)\d{9,10}$/.test(student_info.phone)) {
+        return res.status(400).json({ success: false, message: 'Invalid Vietnamese phone number format' });
+      }
+
+      // Validate notes length
+      if (student_info.notes && student_info.notes.length > 500) {
+        return res.status(400).json({ success: false, message: 'Notes cannot exceed 500 characters' });
+      }
+
+      // Get student profile (optional - create minimal record if needed)
+      let studentProfile = await StudentProfile.findOne({ user_id: userId });
+      const studentId = studentProfile ? studentProfile._id : userId;
+
+      // Check if activity exists
+      const activity = await Activity.findById(activity_id);
+      if (!activity) {
+        return res.status(404).json({ success: false, message: 'Activity not found' });
+      }
+
+      // Validate class exists (from database)
+      const classData = await Class.findById(student_info.class);
+      if (!classData) {
+        return res.status(400).json({ success: false, message: 'Invalid class. Class not found in database.' });
+      }
+
+      // Validate faculty exists (from database)
+      const facultyData = await Falcuty.findById(student_info.faculty);
+      if (!facultyData) {
+        return res.status(400).json({ success: false, message: 'Invalid faculty. Faculty not found in database.' });
+      }
+
+      // ===== NEW: Check if student in system & class mismatch (Option B+) =====
+      let registeredClass = null;
+      let classMismatch = false;
+
+      if (studentProfile && studentProfile.class_id) {
+        registeredClass = studentProfile.class_id;
+        
+        // ⚠️ WARNING: Class mismatch but ALLOW submit
+        if (registeredClass.toString() !== student_info.class) {
+          classMismatch = true;
+          console.warn(`⚠️ Class mismatch for student ${userId}: registered=${registeredClass}, submitted=${student_info.class}`);
+        }
+      }
+
+      // Create attendance with pending status
+      const attendance = new Attendance({
+        student_id: studentId,
+        activity_id: activity_id,
+        session_id: session_id,
+        student_info: {
+          student_id_number: student_info.student_id_number,
+          class: student_info.class,  // Now ObjectId
+          faculty: student_info.faculty,  // Now ObjectId
+          phone: student_info.phone || null,
+          notes: student_info.notes || null,
+          submitted_at: new Date()
+        },
+        // 🆕 Track mismatches
+        student_info_flags: {
+          class_mismatch: classMismatch,
+          registered_class: registeredClass,
+          student_in_system: !!studentProfile
+        },
+        status: 'pending',
+        scanned_at: new Date()
+      });
+
+      await attendance.save();
+
+      // Populate with try-catch to handle missing student profile
+      try {
+        await attendance.populate({
+          path: 'student_id',
+          populate: { path: 'user_id', select: '-password_hash' }
+        });
+        await attendance.populate({
+          path: 'student_info.class',
+          select: 'name'
+        });
+        await attendance.populate({
+          path: 'student_info.faculty',
+          select: 'name'
+        });
+        await attendance.populate({
+          path: 'student_info_flags.registered_class',
+          select: 'name'
+        });
+        await attendance.populate('activity_id');
+      } catch (e) {
+        // If populate fails, just continue without it
+        console.log('Could not populate fields:', e.message);
+      }
+
+      res.status(201).json({
+        success: true,
+        message: classMismatch 
+          ? '⚠️ Attendance submitted (Class mismatch detected - Admin will review)' 
+          : '✅ Attendance submission received. Waiting for approval.',
+        data: attendance,
+        warnings: classMismatch ? {
+          class_mismatch: true,
+          registered_class: registeredClass ? registeredClass.toString() : null,
+          submitted_class: student_info.class
+        } : null
+      });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
+    }
+  },
+
+  // 2. Get Pending Attendances (Admin view)
+  async getPendingAttendances(req, res) {
+    try {
+      const { activity_id } = req.query;
+
+      const query = { status: 'pending' };
+      if (activity_id) query.activity_id = activity_id;
+
+      const attendances = await Attendance.find(query)
+        .populate({
+          path: 'student_id',
+          populate: { path: 'user_id', select: '-password_hash' }
+        })
+        .populate('activity_id')
+        .sort({ 'student_info.submitted_at': -1 });
+
+      res.json({
+        success: true,
+        total: attendances.length,
+        data: attendances
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // 3. Approve Attendance (Admin approval)
+  async approveAttendance(req, res) {
+    try {
+      const { id } = req.params;
+      const { verified_comment } = req.body;
+      const admin_id = req.user._id;
+
+      const attendance = await Attendance.findById(id);
+      if (!attendance) {
+        return res.status(404).json({ success: false, message: 'Attendance not found' });
+      }
+
+      if (attendance.status !== 'pending') {
+        return res.status(400).json({ success: false, message: 'This attendance is not pending' });
+      }
+
+      // Get activity to calculate points
+      const activity = await Activity.findById(attendance.activity_id);
+      const pointsEarned = activity?.points_per_attendance || 10;
+
+      // Update attendance
+      attendance.status = 'approved';
+      attendance.verified_by = admin_id;
+      attendance.verified_at = new Date();
+      attendance.verified_comment = verified_comment || '';
+      attendance.points_earned = pointsEarned;
+      attendance.points = pointsEarned;  // For backward compatibility
+
+      await attendance.save();
+
+      await attendance.populate({
+        path: 'student_id',
+        populate: { path: 'user_id', select: '-password_hash' }
+      });
+      await attendance.populate('activity_id');
+      await attendance.populate('verified_by', '-password_hash');
+
+      res.json({
+        success: true,
+        message: 'Attendance approved',
+        data: attendance
+      });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
+    }
+  },
+
+  // 4. Reject Attendance (Admin rejection)
+  async rejectAttendance(req, res) {
+    try {
+      const { id } = req.params;
+      const { rejection_reason, verified_comment } = req.body;
+      const admin_id = req.user._id;
+
+      if (!rejection_reason) {
+        return res.status(400).json({ success: false, message: 'Rejection reason is required' });
+      }
+
+      const attendance = await Attendance.findById(id);
+      if (!attendance) {
+        return res.status(404).json({ success: false, message: 'Attendance not found' });
+      }
+
+      if (attendance.status !== 'pending') {
+        return res.status(400).json({ success: false, message: 'This attendance is not pending' });
+      }
+
+      // Update attendance
+      attendance.status = 'rejected';
+      attendance.rejection_reason = rejection_reason;
+      attendance.verified_by = admin_id;
+      attendance.verified_at = new Date();
+      attendance.verified_comment = verified_comment || '';
+      attendance.points_earned = 0;
+
+      await attendance.save();
+
+      await attendance.populate({
+        path: 'student_id',
+        populate: { path: 'user_id', select: '-password_hash' }
+      });
+      await attendance.populate('activity_id');
+      await attendance.populate('verified_by', '-password_hash');
+
+      res.json({
+        success: true,
+        message: 'Attendance rejected',
+        data: attendance
+      });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
+    }
+  },
+
+  // 5. Export Pending Attendances to Excel
+  async exportPendingAttendances(req, res) {
+    try {
+      const { activity_id } = req.query;
+
+      const query = { status: 'pending' };
+      if (activity_id) query.activity_id = activity_id;
+
+      const attendances = await Attendance.find(query)
+        .populate({
+          path: 'student_id',
+          populate: { path: 'user_id' }
+        })
+        .populate('activity_id')
+        .populate('student_info.class', 'name')
+        .populate('student_info.faculty', 'name');
+
+      // Get activity name
+      let activityName = 'Attendance';
+      if (activity_id && attendances.length > 0) {
+        activityName = attendances[0].activity_id?.title || 'Attendance';
+      }
+
+      // Prepare data for Excel
+      const excelData = attendances.map((att, index) => {
+        const className = att.student_info?.class?.name || att.student_info?.class || 'N/A';
+        const facultyName = att.student_info?.faculty?.name || att.student_info?.faculty || 'N/A';
+        
+        return {
+          'STT': index + 1,
+          'Tên sinh viên': att.student_id?.user_id?.full_name || 'N/A',
+          'MSSV': att.student_info?.student_id_number || 'N/A',
+          'Lớp': className,
+          'Khoa': facultyName,
+          'SĐT': att.student_info?.phone || 'N/A',
+          'Ghi chú': att.student_info?.notes || '',
+          'Thời gian nộp': att.student_info?.submitted_at ? new Date(att.student_info.submitted_at).toLocaleString('vi-VN') : 'N/A'
+        };
+      });
+
+      // Create workbook
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+      // Set column widths
+      worksheet['!cols'] = [
+        { wch: 5 },   // STT
+        { wch: 20 },  // Name
+        { wch: 10 },  // MSSV
+        { wch: 10 },  // Class
+        { wch: 15 },  // Faculty
+        { wch: 15 },  // Phone
+        { wch: 30 },  // Notes
+        { wch: 20 }   // Submission time
+      ];
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Danh sách điểm danh');
+
+      // Generate Excel file
+      const fileName = `attendance_${activityName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.send(buffer);
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // 6. Get Rejection Reasons (for dropdown)
+  async getRejectionReasons(req, res) {
+    try {
+      const reasons = [
+        { code: 'MISSING_INFO', label: 'Thông tin không đủ' },
+        { code: 'INVALID_CLASS', label: 'Lớp không tồn tại' },
+        { code: 'DUPLICATE', label: 'Đã điểm danh rồi' },
+        { code: 'NOT_PARTICIPANT', label: 'Không phải thành viên' },
+        { code: 'OUT_OF_TIME', label: 'Quét ngoài thời gian' },
+        { code: 'NO_EVIDENCE', label: 'Không có bằng chứng' },
+        { code: 'INVALID_PHONE', label: 'Số điện thoại sai' }
+      ];
+
+      res.json({
+        success: true,
+        data: reasons
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // 7. Get Master Data (Classes & Faculties for dropdowns) - FROM DATABASE
+  async getMasterData(req, res) {
+    try {
+      // Get all classes with their faculty info
+      const classes = await Class.find()
+        .populate('falcuty_id', 'name _id')
+        .select('name _id falcuty_id');
+
+      // Get all faculties
+      const faculties = await Falcuty.find()
+        .select('name _id')
+        .sort({ name: 1 });
+
+      res.json({
+        success: true,
+        data: {
+          classes: classes.map(c => ({
+            _id: c._id,
+            name: c.name,
+            faculty_id: c.falcuty_id?._id,
+            faculty_name: c.falcuty_id?.name
+          })),
+          faculties: faculties.map(f => ({
+            _id: f._id,
+            name: f.name
+          }))
+        }
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // ===== PHASE 2.5: ON-DEMAND QR MANAGEMENT =====
+
+  // 8. Generate On-Demand QR Code
+  async generateQRCode(req, res) {
+    try {
+      const { activity_id, qr_name, duration_minutes } = req.body;
+      const userId = req.user._id;
+
+      if (!activity_id) {
+        return res.status(400).json({ success: false, message: 'activity_id is required' });
+      }
+
+      // Check activity exists
+      const activity = await Activity.findById(activity_id);
+      if (!activity) {
+        return res.status(404).json({ success: false, message: 'Activity not found' });
+      }
+
+      // Generate unique QR ID
+      const qrId = new (require('mongoose')).Types.ObjectId();
+
+      // Calculate expiry time if duration provided
+      let expiresAt = null;
+      if (duration_minutes) {
+        expiresAt = new Date(Date.now() + duration_minutes * 60 * 1000);
+      }
+
+      // Create QR data (what gets encoded in the QR image)
+      const qrData = {
+        activityId: activity_id.toString(),
+        qrId: qrId.toString(),
+        createdAt: new Date().toISOString(),
+        expiresAt: expiresAt ? expiresAt.toISOString() : null
+      };
+
+      // Generate QR code image (Base64)
+      const qrCodeImage = await QRCode.toDataURL(JSON.stringify(qrData));
+
+      // Save to database
+      const qrRecord = new QRCodeModel({
+        _id: qrId,
+        activity_id: activity_id,
+        qr_name: qr_name || `QR #${Date.now()}`,
+        qr_data: JSON.stringify(qrData),
+        qr_code: qrCodeImage,
+        created_by: userId,
+        created_at: new Date(),
+        expires_at: expiresAt,
+        is_active: true,
+        scans_count: 0
+      });
+
+      await qrRecord.save();
+
+      res.status(201).json({
+        success: true,
+        message: 'QR code generated successfully',
+        data: {
+          qr_id: qrRecord._id,
+          qr_name: qrRecord.qr_name,
+          qr_code: qrRecord.qr_code,
+          created_at: qrRecord.created_at,
+          expires_at: qrRecord.expires_at,
+          scans_count: 0
+        }
+      });
+    } catch (err) {
+      console.error('Error generating QR:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // 9. Get All QRs for Activity
+  async getQRCodesForActivity(req, res) {
+    try {
+      const { activity_id } = req.params;
+
+      const qrCodes = await QRCodeModel.find({ activity_id })
+        .sort({ created_at: -1 });
+
+      // Separate current (active) and history (expired/inactive)
+      const current = qrCodes.find(qr => qr.is_active && (!qr.expires_at || new Date() < qr.expires_at));
+      const history = qrCodes.filter(qr => qr._id !== current?._id);
+
+      res.json({
+        success: true,
+        data: {
+          current: current ? {
+            _id: current._id,
+            qr_name: current.qr_name,
+            qr_code: current.qr_code,
+            created_at: current.created_at,
+            expires_at: current.expires_at,
+            scans_count: current.scans_count,
+            is_active: current.is_active
+          } : null,
+          history: history.map(qr => ({
+            _id: qr._id,
+            qr_name: qr.qr_name,
+            created_at: qr.created_at,
+            expires_at: qr.expires_at,
+            scans_count: qr.scans_count,
+            is_active: qr.is_active,
+            status: qr.is_active && (!qr.expires_at || new Date() < qr.expires_at) ? 'active' : 'expired'
+          }))
+        }
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // 10. Delete old QR codes (keep latest N)
+  async deleteOldQRCodes(req, res) {
+    try {
+      const { activity_id } = req.params;
+      const { keep_latest } = req.query;
+      const keepCount = parseInt(keep_latest) || 3;
+
+      const qrCodes = await QRCodeModel.find({ activity_id })
+        .sort({ created_at: -1 });
+
+      // Delete all except latest N
+      const toDelete = qrCodes.slice(keepCount);
+      for (const qr of toDelete) {
+        await QRCodeModel.deleteOne({ _id: qr._id });
+      }
+
+      res.json({
+        success: true,
+        message: `Deleted ${toDelete.length} old QR codes`,
+        kept: keepCount
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  }
 };
 
 

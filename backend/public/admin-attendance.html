@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Approval Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 25px;
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.95em;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+            padding: 8px 15px;
+            font-size: 0.85em;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            padding: 8px 15px;
+            font-size: 0.85em;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f0f0f0;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #ddd;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        tr:hover {
+            background: #f9fafb;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.8em;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-approved {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-rejected {
+            background: #fee2e2;
+            color: #7f1d1d;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .message.success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+
+        .message.error {
+            background: #fee2e2;
+            color: #7f1d1d;
+            border-left: 4px solid #ef4444;
+        }
+
+        .message.info {
+            background: #dbeafe;
+            color: #0c4a6e;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            font-size: 0.85em;
+        }
+
+        .pagination button.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .info-box {
+            background: #f0f9ff;
+            border: 2px solid #3b82f6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #0c4a6e;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Attendance Approval Dashboard</h1>
+            <p>Manage and approve student attendance submissions</p>
+        </div>
+
+        <!-- Authentication -->
+        <div class="card" id="authCard">
+            <h2>🔐 Authentication</h2>
+            <div class="info-box">
+                Paste your admin JWT token to access this dashboard.
+            </div>
+
+            <div class="form-group">
+                <label>JWT Token (Admin)</label>
+                <textarea id="token" placeholder="Paste JWT token..." style="min-height: 60px;"></textarea>
+            </div>
+
+            <div class="form-group">
+                <button class="btn-primary" onclick="authenticate()">Authenticate</button>
+                <button class="btn-secondary" onclick="clearToken()">Clear Token</button>
+            </div>
+
+            <div id="authMessage"></div>
+        </div>
+
+        <!-- Main Dashboard (hidden until authenticated) -->
+        <div id="dashboard" style="display: none;">
+            <!-- Statistics -->
+            <div class="stats" id="statistics"></div>
+
+            <!-- Filters & Actions -->
+            <div class="card">
+                <h2>🔍 Filters & Actions</h2>
+                
+                <div class="filters">
+                    <div class="form-group">
+                        <label>Select Activity</label>
+                        <select id="activityFilter" onchange="loadPendingAttendances()">
+                            <option value="">-- All Activities --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Filter by Status</label>
+                        <select id="statusFilter" onchange="loadPendingAttendances()">
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="">All</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-top: 32px; display: flex; gap: 10px;">
+                        <button class="btn-primary" onclick="loadPendingAttendances()">🔄 Refresh</button>
+                        <button class="btn-secondary" onclick="exportToExcel()">📥 Export Excel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Attendances Table -->
+            <div class="card">
+                <h2>📋 Attendance Submissions</h2>
+
+                <div id="tableMessage"></div>
+
+                <div class="table-wrapper">
+                    <table id="attendanceTable">
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Name</th>
+                                <th>MSSV</th>
+                                <th>Class</th>
+                                <th>Faculty</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                                <th>Submitted</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr>
+                                <td colspan="9" style="text-align: center; padding: 40px; color: #999;">
+                                    No data yet. Select an activity or refresh.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination" id="pagination"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approve Modal -->
+    <div id="approveModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeApproveModal()">&times;</span>
+            <div class="modal-header">✅ Approve Attendance</div>
+            
+            <div id="approveDetails"></div>
+
+            <div class="form-group">
+                <label>Comments (optional)</label>
+                <textarea id="approveComment" placeholder="Your comments..." maxlength="500"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn-success" style="flex: 1;" onclick="confirmApprove()">Approve</button>
+                <button class="btn-secondary" style="flex: 1;" onclick="closeApproveModal()">Cancel</button>
+            </div>
+
+            <div id="approveMessage"></div>
+        </div>
+    </div>
+
+    <!-- Reject Modal -->
+    <div id="rejectModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeRejectModal()">&times;</span>
+            <div class="modal-header">❌ Reject Attendance</div>
+            
+            <div id="rejectDetails"></div>
+
+            <div class="form-group">
+                <label>Rejection Reason *</label>
+                <select id="rejectionReason" required>
+                    <option value="">-- Select Reason --</option>
+                    <option value="MISSING_INFO">Thông tin không đủ</option>
+                    <option value="INVALID_CLASS">Lớp không tồn tại</option>
+                    <option value="DUPLICATE">Đã điểm danh rồi</option>
+                    <option value="NOT_PARTICIPANT">Không phải thành viên</option>
+                    <option value="OUT_OF_TIME">Quét ngoài thời gian</option>
+                    <option value="NO_EVIDENCE">Không có bằng chứng</option>
+                    <option value="INVALID_PHONE">Số điện thoại sai</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Comments (optional)</label>
+                <textarea id="rejectComment" placeholder="Your comments..." maxlength="500"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn-danger" style="flex: 1;" onclick="confirmReject()">Reject</button>
+                <button class="btn-secondary" style="flex: 1;" onclick="closeRejectModal()">Cancel</button>
+            </div>
+
+            <div id="rejectMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        let currentToken = null;
+        let currentAttendances = [];
+        let currentPage = 1;
+        const pageSize = 10;
+        let selectedAttendanceId = null;
+
+        // ===== AUTHENTICATION =====
+        function getToken() {
+            let token = document.getElementById('token').value.trim() || localStorage.getItem('adminToken');
+            if (!token) return null;
+            token = token.replace(/^Bearer\s+/i, '').trim();
+            return token;
+        }
+
+        function saveToken(token) {
+            const cleanToken = token.replace(/^Bearer\s+/i, '').trim();
+            localStorage.setItem('adminToken', cleanToken);
+            document.getElementById('token').value = cleanToken;
+            currentToken = cleanToken;
+        }
+
+        async function authenticate() {
+            const token = getToken();
+            if (!token) {
+                showAuthMessage('Please paste a token', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/attendances`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) throw new Error('Authentication failed');
+
+                saveToken(token);
+                showAuthMessage('✅ Authenticated successfully!', 'success');
+                
+                setTimeout(() => {
+                    document.getElementById('authCard').style.display = 'none';
+                    document.getElementById('dashboard').style.display = 'block';
+                    loadActivities();
+                    loadStatistics();
+                    loadPendingAttendances();
+                }, 1000);
+            } catch (error) {
+                showAuthMessage(`❌ ${error.message}`, 'error');
+            }
+        }
+
+        function clearToken() {
+            document.getElementById('token').value = '';
+            localStorage.removeItem('adminToken');
+            showAuthMessage('Token cleared', 'info');
+        }
+
+        function showAuthMessage(msg, type) {
+            const el = document.getElementById('authMessage');
+            el.innerHTML = `<div class="message ${type}">${msg}</div>`;
+        }
+
+        // ===== LOAD DATA =====
+        async function loadActivities() {
+            try {
+                const token = getToken();
+                const res = await fetch(`${API_BASE}/activities`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) throw new Error('Failed to load activities');
+
+                const data = await res.json();
+                const activities = data.data || [];
+
+                const select = document.getElementById('activityFilter');
+                select.innerHTML = '<option value="">-- All Activities --</option>';
+                activities.forEach(act => {
+                    select.innerHTML += `<option value="${act._id}">${act.title}</option>`;
+                });
+            } catch (error) {
+                console.error('Error loading activities:', error);
+            }
+        }
+
+        async function loadStatistics() {
+            try {
+                const token = getToken();
+                const res = await fetch(`${API_BASE}/attendances/pending`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) throw new Error('Failed to load stats');
+
+                const data = await res.json();
+                const attendances = data.data || [];
+
+                const pending = attendances.filter(a => a.status === 'pending').length;
+                const approved = attendances.filter(a => a.status === 'approved').length;
+                const rejected = attendances.filter(a => a.status === 'rejected').length;
+
+                document.getElementById('statistics').innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-value">${pending}</div>
+                        <div class="stat-label">⏳ Pending</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        <div class="stat-value">${approved}</div>
+                        <div class="stat-label">✅ Approved</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                        <div class="stat-value">${rejected}</div>
+                        <div class="stat-label">❌ Rejected</div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+            }
+        }
+
+        async function loadPendingAttendances() {
+            try {
+                const token = getToken();
+                const activityId = document.getElementById('activityFilter').value;
+                const status = document.getElementById('statusFilter').value || 'pending';
+
+                let url = `${API_BASE}/attendances/${status === 'pending' ? 'pending' : ''}`;
+                if (activityId) url += `?activity_id=${activityId}`;
+
+                // For non-pending, use different endpoint
+                if (status !== 'pending') {
+                    const res = await fetch(`${API_BASE}/attendances`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const data = await res.json();
+                    currentAttendances = (data.data || []).filter(a => a.status === status);
+                } else {
+                    const res = await fetch(url, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (!res.ok) throw new Error('Failed to load attendances');
+                    const data = await res.json();
+                    currentAttendances = data.data || [];
+                }
+
+                currentPage = 1;
+                displayTable();
+            } catch (error) {
+                showTableMessage(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function displayTable() {
+            const tbody = document.getElementById('tableBody');
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const pageData = currentAttendances.slice(start, end);
+
+            if (pageData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #999;">No records found</td></tr>';
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            tbody.innerHTML = pageData.map((att, idx) => `
+                <tr>
+                    <td>${start + idx + 1}</td>
+                    <td>${att.student_id?.user_id?.full_name || 'N/A'}</td>
+                    <td>${att.student_info?.student_id_number || 'N/A'}</td>
+                    <td>
+                        ${att.student_info?.class?.name || (typeof att.student_info?.class === 'string' ? att.student_info.class : 'N/A')}
+                        ${att.student_info_flags?.class_mismatch ? `<span title="Class mismatch detected" style="color: #ff9800; font-weight: bold; margin-left: 5px;">⚠️</span>` : ''}
+                    </td>
+                    <td>${att.student_info?.faculty?.name || (typeof att.student_info?.faculty === 'string' ? att.student_info.faculty : 'N/A')}</td>
+                    <td>${att.student_info?.phone || 'N/A'}</td>
+                    <td><span class="status-badge status-${att.status}">${att.status.toUpperCase()}</span></td>
+                    <td>${att.student_info?.submitted_at ? new Date(att.student_info.submitted_at).toLocaleString('vi-VN') : 'N/A'}</td>
+                    <td>
+                        ${att.status === 'pending' ? `
+                            <button class="btn-success" onclick="openApproveModal('${att._id}')">✅</button>
+                            <button class="btn-danger" onclick="openRejectModal('${att._id}')">❌</button>
+                        ` : ''}
+                    </td>
+                </tr>
+            `).join('');
+
+            // Pagination
+            const totalPages = Math.ceil(currentAttendances.length / pageSize);
+            let paginationHTML = '';
+            for (let i = 1; i <= totalPages; i++) {
+                paginationHTML += `
+                    <button class="${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>
+                `;
+            }
+            document.getElementById('pagination').innerHTML = paginationHTML;
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            displayTable();
+        }
+
+        // ===== MODALS =====
+        function openApproveModal(attId) {
+            selectedAttendanceId = attId;
+            const att = currentAttendances.find(a => a._id === attId);
+            const className = att.student_info?.class?.name || att.student_info?.class || 'N/A';
+            const facultyName = att.student_info?.faculty?.name || att.student_info?.faculty || 'N/A';
+            const registeredClass = att.student_info_flags?.registered_class?.name || 'N/A';
+            
+            let mismatchHTML = '';
+            if (att.student_info_flags?.class_mismatch) {
+                mismatchHTML = `
+                    <div style="background: #fff3cd; border-left: 4px solid #ff9800; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                        <p style="color: #ff6b00; margin: 0;"><strong>⚠️ WARNING: Class Mismatch Detected</strong></p>
+                        <p style="color: #666; margin: 5px 0 0 0;">Registered Class: <strong>${registeredClass}</strong></p>
+                        <p style="color: #666; margin: 5px 0 0 0;">Submitted Class: <strong>${className}</strong></p>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('approveDetails').innerHTML = `
+                ${mismatchHTML}
+                <div style="background: #f9fafb; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                    <p><strong>Name:</strong> ${att.student_id?.user_id?.full_name}</p>
+                    <p><strong>MSSV:</strong> ${att.student_info?.student_id_number}</p>
+                    <p><strong>Class:</strong> ${className}</p>
+                    <p><strong>Faculty:</strong> ${facultyName}</p>
+                </div>
+            `;
+
+            document.getElementById('approveModal').style.display = 'block';
+        }
+
+        function closeApproveModal() {
+            document.getElementById('approveModal').style.display = 'none';
+            document.getElementById('approveComment').value = '';
+        }
+
+        async function confirmApprove() {
+            try {
+                const token = getToken();
+                const comment = document.getElementById('approveComment').value;
+
+                const res = await fetch(`${API_BASE}/attendances/${selectedAttendanceId}/approve`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ verified_comment: comment })
+                });
+
+                if (!res.ok) throw new Error('Approval failed');
+
+                showMessage('approveMessage', '✅ Approved successfully!', 'success');
+                setTimeout(() => {
+                    closeApproveModal();
+                    loadPendingAttendances();
+                    loadStatistics();
+                }, 1000);
+            } catch (error) {
+                showMessage('approveMessage', `❌ ${error.message}`, 'error');
+            }
+        }
+
+        function openRejectModal(attId) {
+            selectedAttendanceId = attId;
+            const att = currentAttendances.find(a => a._id === attId);
+            const className = att.student_info?.class?.name || att.student_info?.class || 'N/A';
+            const facultyName = att.student_info?.faculty?.name || att.student_info?.faculty || 'N/A';
+            const registeredClass = att.student_info_flags?.registered_class?.name || 'N/A';
+            
+            let mismatchHTML = '';
+            if (att.student_info_flags?.class_mismatch) {
+                mismatchHTML = `
+                    <div style="background: #fff3cd; border-left: 4px solid #ff9800; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                        <p style="color: #ff6b00; margin: 0;"><strong>⚠️ WARNING: Class Mismatch Detected</strong></p>
+                        <p style="color: #666; margin: 5px 0 0 0;">Registered Class: <strong>${registeredClass}</strong></p>
+                        <p style="color: #666; margin: 5px 0 0 0;">Submitted Class: <strong>${className}</strong></p>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('rejectDetails').innerHTML = `
+                ${mismatchHTML}
+                <div style="background: #f9fafb; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                    <p><strong>Name:</strong> ${att.student_id?.user_id?.full_name}</p>
+                    <p><strong>MSSV:</strong> ${att.student_info?.student_id_number}</p>
+                    <p><strong>Class:</strong> ${className}</p>
+                    <p><strong>Faculty:</strong> ${facultyName}</p>
+                </div>
+            `;
+
+            document.getElementById('rejectModal').style.display = 'block';
+        }
+
+        function closeRejectModal() {
+            document.getElementById('rejectModal').style.display = 'none';
+            document.getElementById('rejectionReason').value = '';
+            document.getElementById('rejectComment').value = '';
+        }
+
+        async function confirmReject() {
+            try {
+                const token = getToken();
+                const reason = document.getElementById('rejectionReason').value;
+                const comment = document.getElementById('rejectComment').value;
+
+                if (!reason) {
+                    showMessage('rejectMessage', 'Please select a reason', 'error');
+                    return;
+                }
+
+                const res = await fetch(`${API_BASE}/attendances/${selectedAttendanceId}/reject`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        rejection_reason: reason,
+                        verified_comment: comment
+                    })
+                });
+
+                if (!res.ok) throw new Error('Rejection failed');
+
+                showMessage('rejectMessage', '✅ Rejected successfully!', 'success');
+                setTimeout(() => {
+                    closeRejectModal();
+                    loadPendingAttendances();
+                    loadStatistics();
+                }, 1000);
+            } catch (error) {
+                showMessage('rejectMessage', `❌ ${error.message}`, 'error');
+            }
+        }
+
+        async function exportToExcel() {
+            try {
+                const token = getToken();
+                const activityId = document.getElementById('activityFilter').value;
+                let url = `${API_BASE}/attendances/export-pending`;
+                if (activityId) url += `?activity_id=${activityId}`;
+
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) throw new Error('Export failed');
+
+                const blob = await res.blob();
+                const download = document.createElement('a');
+                download.href = URL.createObjectURL(blob);
+                download.download = `attendance_${new Date().toISOString().split('T')[0]}.xlsx`;
+                download.click();
+            } catch (error) {
+                showTableMessage(`❌ Export failed: ${error.message}`, 'error');
+            }
+        }
+
+        function showTableMessage(msg, type) {
+            const el = document.getElementById('tableMessage');
+            el.innerHTML = `<div class="message ${type}">${msg}</div>`;
+        }
+
+        function showMessage(elementId, msg, type) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = `<div class="message ${type}">${msg}</div>`;
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            const token = getToken();
+            if (token) {
+                authenticate();
+            }
+        });
+    </script>
+</body>
+</html>
