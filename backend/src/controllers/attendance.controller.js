@@ -480,8 +480,23 @@ module.exports = {
           
           if (!studentStatsMap.has(key)) {
             studentStatsMap.set(key, {
-              student_id: att.student_id._id,
-              student: att.student_id,
+              student_id: {
+                _id: att.student_id._id,
+                student_number: att.student_id.student_number,
+                full_name: att.student_id.full_name,
+                email: att.student_id.email,
+                gender: att.student_id.gender,
+                phone: att.student_id.phone,
+                class_id: att.student_id.class_id,
+                contact_address: att.student_id.contact_address,
+                date_of_birth: att.student_id.date_of_birth,
+                student_image: att.student_id.student_image,
+                isClassMonitor: att.student_id.isClassMonitor,
+                user_id: att.student_id.user_id?._id || null,
+                username: att.student_id.user_id?.username || null,
+                active: att.student_id.user_id?.active || false,
+                isLocked: att.student_id.user_id?.isLocked || false
+              },
               attendance_count: 0,
               last_attended: null,
               status: att.status
