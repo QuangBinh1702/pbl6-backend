@@ -756,7 +756,13 @@
           }
 
           const qrData = await qrRes.json();
-          currentQRCodes = qrData.data || [];
+
+          // API returns { current, history }
+          const allQRs = [];
+          if (qrData.data?.current) allQRs.push(qrData.data.current);
+          if (qrData.data?.history) allQRs.push(...qrData.data.history);
+
+          currentQRCodes = allQRs;
 
           // Render QR codes
           renderQRCodesList(currentQRCodes);
