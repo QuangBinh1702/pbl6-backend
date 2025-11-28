@@ -827,7 +827,13 @@ module.exports = {
     try {
       const registrations = await ActivityRegistration.find({ 
         activity_id: req.params.id 
-      }).populate('student_id');
+      }).populate({
+        path: 'student_id',
+        populate: {
+          path: 'class_id',
+          populate: { path: 'falcuty_id' }
+        }
+      });
       
       res.json({ success: true, data: registrations });
     } catch (err) {
