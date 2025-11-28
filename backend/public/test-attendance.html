@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attendance Sessions Test</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .header {
+        text-align: center;
+        color: white;
+        margin-bottom: 40px;
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .header p {
+        font-size: 1.1em;
+        opacity: 0.9;
+      }
+
+      .content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+      }
+
+      .card {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+
+      .card h2 {
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 1.5em;
+        border-bottom: 3px solid #667eea;
+        padding-bottom: 10px;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        color: #555;
+        font-weight: 500;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.95em;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      button {
+        flex: 1;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.95em;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-secondary {
+        background: #f0f0f0;
+        color: #333;
+      }
+
+      .btn-secondary:hover {
+        background: #e0e0e0;
+      }
+
+      .btn-success {
+        background: #10b981;
+        color: white;
+      }
+
+      .btn-success:hover {
+        background: #059669;
+        transform: translateY(-2px);
+      }
+
+      .btn-danger {
+        background: #ef4444;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: #dc2626;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85em;
+        margin-top: 10px;
+      }
+
+      .status-present {
+        background: #d1fae5;
+        color: #065f46;
+      }
+
+      .status-partial {
+        background: #fef3c7;
+        color: #92400e;
+      }
+
+      .status-absent {
+        background: #fee2e2;
+        color: #7f1d1d;
+      }
+
+      .message {
+        padding: 15px;
+        border-radius: 6px;
+        margin-top: 15px;
+        font-weight: 500;
+      }
+
+      .message.success {
+        background: #d1fae5;
+        color: #065f46;
+        border-left: 4px solid #10b981;
+      }
+
+      .message.error {
+        background: #fee2e2;
+        color: #7f1d1d;
+        border-left: 4px solid #ef4444;
+      }
+
+      .message.info {
+        background: #dbeafe;
+        color: #0c4a6e;
+        border-left: 4px solid #3b82f6;
+      }
+
+      .session-list {
+        margin-top: 20px;
+      }
+
+      .session-item {
+        background: #f9fafb;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        border-left: 4px solid #667eea;
+      }
+
+      .session-item h3 {
+        color: #333;
+        margin-bottom: 5px;
+        font-size: 0.95em;
+      }
+
+      .session-item p {
+        color: #666;
+        font-size: 0.85em;
+        margin-bottom: 3px;
+      }
+
+      .session-item .time {
+        color: #667eea;
+        font-weight: 600;
+      }
+
+      .qr-container {
+        text-align: center;
+        margin-top: 20px;
+        padding: 20px;
+        background: #f9fafb;
+        border-radius: 6px;
+      }
+
+      .qr-container img {
+        max-width: 250px;
+        height: auto;
+        margin-top: 10px;
+        border: 2px solid #ddd;
+        padding: 10px;
+        border-radius: 6px;
+      }
+
+      .qr-container button {
+        margin-top: 10px;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-top: 20px;
+      }
+
+      .stat {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 6px;
+        text-align: center;
+      }
+
+      .stat-value {
+        font-size: 1.5em;
+        font-weight: bold;
+      }
+
+      .stat-label {
+        font-size: 0.85em;
+        opacity: 0.9;
+        margin-top: 5px;
+      }
+
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(102, 126, 234, 0.3);
+        border-radius: 50%;
+        border-top-color: #667eea;
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .full-width {
+        grid-column: 1 / -1;
+      }
+
+      @media (max-width: 768px) {
+        .content {
+          grid-template-columns: 1fr;
+        }
+
+        .header h1 {
+          font-size: 1.8em;
+        }
+      }
+
+      .info-box {
+        background: #f0f9ff;
+        border: 2px solid #3b82f6;
+        border-radius: 6px;
+        padding: 15px;
+        margin-bottom: 20px;
+        color: #0c4a6e;
+        font-size: 0.9em;
+        line-height: 1.6;
+      }
+
+      .info-box strong {
+        display: block;
+        margin-bottom: 5px;
+        color: #1e40af;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🎯 Attendance Sessions Test</h1>
+        <p>Test multiple attendance sessions with QR codes</p>
+      </div>
+
+      <div class="content">
+        <!-- Token Panel -->
+        <div class="card full-width" style="margin-bottom: 30px">
+          <h2>🔐 Authentication</h2>
+
+          <div class="info-box">
+            <strong>⚠️ Required:</strong>
+            Paste your JWT token below. Get it from login or use test
+            credentials.
+          </div>
+
+          <div class="form-group">
+            <label>JWT Token</label>
+            <textarea
+              id="token"
+              placeholder="Paste JWT token here..."
+              style="min-height: 80px"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label style="font-weight: 600">OR Quick Login (Username)</label>
+            <div
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px"
+            >
+              <div>
+                <input type="text" id="loginUsername" placeholder="Username" />
+              </div>
+              <div>
+                <input
+                  type="password"
+                  id="loginPassword"
+                  placeholder="Password"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="button-group">
+            <button class="btn-primary" onclick="quickLogin()">
+              Quick Login
+            </button>
+            <button class="btn-secondary" onclick="clearToken()">
+              Clear Token
+            </button>
+          </div>
+
+          <div id="tokenMessage"></div>
+        </div>
+
+        <!-- Left Panel: Select Activity & Load QR -->
+        <div class="card">
+          <h2>📋 Select Activity & Load QR Codes</h2>
+
+          <div class="info-box">
+            <strong>ℹ️ Flow:</strong>
+            1. Select Activity<br />
+            2. Load QR codes from qr-manager.html<br />
+            3. Choose QR to scan
+          </div>
+
+          <div class="form-group">
+            <label>Select Activity *</label>
+            <select
+              id="activitySelect"
+              onchange="loadQRCodesForActivity()"
+              required
+            >
+              <option value="">-- Loading activities... --</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Activity Details</label>
+            <div
+              id="activityDetails"
+              style="
+                background: #f9fafb;
+                padding: 15px;
+                border-radius: 6px;
+                display: none;
+              "
+            >
+              <p><strong>Title:</strong> <span id="actTitle">-</span></p>
+              <p><strong>Description:</strong> <span id="actDesc">-</span></p>
+              <p><strong>Location:</strong> <span id="actLocation">-</span></p>
+              <p><strong>Time:</strong> <span id="actTime">-</span></p>
+            </div>
+          </div>
+
+          <div class="button-group">
+            <button class="btn-primary" onclick="loadActivities()">
+              Refresh Activities
+            </button>
+          </div>
+
+          <div id="activityMessage"></div>
+        </div>
+
+        <!-- Right Panel: QR Codes List -->
+        <div class="card">
+          <h2>📱 QR Codes for Activity</h2>
+
+          <div class="info-box">
+            <strong>📌 Instructions:</strong>
+            1. Create activity first<br />
+            2. Sessions auto-generate with QR codes<br />
+            3. Test scanning each session
+          </div>
+
+          <div id="sessionInfo" style="display: none">
+            <div class="stats">
+              <div class="stat">
+                <div class="stat-value" id="sessionCount">2</div>
+                <div class="stat-label">Sessions</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value" id="maxPointsDisplay">10</div>
+                <div class="stat-label">Max Points</div>
+              </div>
+            </div>
+
+            <div class="session-list" id="sessionList"></div>
+
+            <div
+              style="
+                margin-top: 20px;
+                padding: 15px;
+                background: #f0f0f0;
+                border-radius: 6px;
+              "
+            >
+              <h3 style="margin-bottom: 10px">⚙️ Attendance Config</h3>
+              <p>
+                <strong>Method:</strong> <span id="configMethod">partial</span>
+              </p>
+              <p>
+                <strong>Threshold:</strong>
+                <span id="configThreshold">50%</span>
+              </p>
+              <p>
+                <strong>Points per Session:</strong>
+                <span id="pointsPerSession">5</span>
+              </p>
+            </div>
+
+            <div class="button-group" style="margin-top: 20px">
+              <button class="btn-danger" onclick="deleteActivity()">
+                Delete Activity
+              </button>
+            </div>
+          </div>
+
+          <div
+            id="noActivity"
+            style="text-align: center; padding: 30px; color: #999"
+          >
+            <p style="font-size: 1.2em; margin-bottom: 10px">📭</p>
+            <p>Create an activity to see sessions</p>
+          </div>
+
+          <div id="sessionMessage"></div>
+        </div>
+
+        <!-- QR Code Scanner Section -->
+        <div class="card full-width" id="scannerCard" style="display: none">
+          <h2>📱 QR Code Scan Simulation</h2>
+
+          <div class="info-box">
+            <strong>ℹ️ How it works:</strong>
+            1. Select QR code from the list on the left<br />
+            2. Click "Use This QR" button<br />
+            3. Click "Simulate Scan" below<br />
+            4. Fill student information and submit
+          </div>
+
+          <div class="form-group">
+            <label>QR Data (Auto-filled from selected QR)</label>
+            <textarea
+              id="qrData"
+              placeholder='{"activityId": "...", "qrId": "...", ...}'
+              readonly
+              style="background: #f0f0f0"
+            ></textarea>
+          </div>
+
+          <div class="button-group">
+            <button class="btn-success" onclick="simulateScan()">
+              📸 Simulate Scan
+            </button>
+            <button class="btn-secondary" onclick="clearScans()">Clear</button>
+          </div>
+
+          <div id="scanMessage"></div>
+        </div>
+
+        <!-- Attendance Submission Form (Phase 2) -->
+        <div
+          class="card full-width"
+          id="submissionFormCard"
+          style="display: none"
+        >
+          <h2>📋 Attendance Submission (For Approval)</h2>
+
+          <div class="info-box">
+            <strong>📌 Phase 2:</strong> Submit attendance information for admin
+            verification/approval
+          </div>
+
+          <div id="submissionFormContent">
+            <!-- Form will be populated after QR scan -->
+          </div>
+        </div>
+
+        <!-- Test Results -->
+        <div class="card full-width" id="resultsCard" style="display: none">
+          <h2>📊 Test Results</h2>
+          <div id="resultsContent"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API_BASE = "http://localhost:5000/api";
+      let currentActivityId = null;
+      let currentActivities = [];
+      let currentQRCodes = [];
+      let currentOrgUnitId = null;
+
+      // Token Management
+      function getToken() {
+        let token =
+          document.getElementById("token").value.trim() ||
+          localStorage.getItem("testToken");
+        if (!token) return null;
+        // Remove 'Bearer ' prefix if accidentally included
+        token = token.replace(/^Bearer\s+/i, "").trim();
+        return token;
+      }
+
+      function saveToken(token) {
+        // Remove 'Bearer ' prefix if present
+        const cleanToken = token.replace(/^Bearer\s+/i, "").trim();
+        localStorage.setItem("testToken", cleanToken);
+        document.getElementById("token").value = cleanToken;
+        console.log("Token saved:", cleanToken.substring(0, 50) + "...");
+      }
+
+      async function quickLogin() {
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loading"></div> Logging in...';
+
+        try {
+          const username = document.getElementById("loginUsername").value;
+          const password = document.getElementById("loginPassword").value;
+
+          if (!username || !password) {
+            showMessage(
+              "tokenMessage",
+              "Please enter username and password",
+              "error"
+            );
+            btn.disabled = false;
+            btn.innerHTML = "Quick Login";
+            return;
+          }
+
+          const res = await fetch(`${API_BASE}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password }),
+          });
+
+          if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.message || "Login failed");
+          }
+
+          const data = await res.json();
+          const token = data.token || data.data?.token;
+
+          if (!token) {
+            console.error("Response data:", data);
+            throw new Error("No token in response: " + JSON.stringify(data));
+          }
+
+          saveToken(token);
+          showMessage("tokenMessage", `✅ Logged in! Token saved.`, "success");
+          document.getElementById("loginUsername").value = "";
+          document.getElementById("loginPassword").value = "";
+        } catch (error) {
+          showMessage(
+            "tokenMessage",
+            `❌ Login failed: ${error.message}`,
+            "error"
+          );
+          console.error(error);
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = "Quick Login";
+        }
+      }
+
+      function clearToken() {
+        document.getElementById("token").value = "";
+        localStorage.removeItem("testToken");
+        showMessage("tokenMessage", "Token cleared", "info");
+      }
+
+      // 📋 Load Activities from Database
+      async function loadActivities() {
+        const btn = event?.target;
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<div class="loading"></div> Loading...';
+        }
+
+        try {
+          const token = getToken();
+          if (!token) {
+            showMessage(
+              "activityMessage",
+              "Please login or paste token first",
+              "error"
+            );
+            return;
+          }
+
+          // Fetch all activities
+          const res = await fetch(`${API_BASE}/activities`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!res.ok) {
+            throw new Error("Failed to load activities");
+          }
+
+          const data = await res.json();
+          currentActivities = Array.isArray(data.data)
+            ? data.data
+            : data.data?.activities || [];
+
+          // Update dropdown
+          const select = document.getElementById("activitySelect");
+          select.innerHTML =
+            '<option value="">-- Select Activity --</option>' +
+            currentActivities
+              .map((act) => `<option value="${act._id}">${act.title}</option>`)
+              .join("");
+
+          showMessage(
+            "activityMessage",
+            `✅ Loaded ${currentActivities.length} activities`,
+            "success"
+          );
+        } catch (error) {
+          showMessage("activityMessage", `❌ Error: ${error.message}`, "error");
+          console.error(error);
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = "Refresh Activities";
+          }
+        }
+      }
+
+      // 📱 Load QR Codes for Selected Activity
+      async function loadQRCodesForActivity() {
+        const activityId = document.getElementById("activitySelect").value;
+
+        if (!activityId) {
+          document.getElementById("activityDetails").style.display = "none";
+          document.getElementById("sessionList").innerHTML = "";
+          return;
+        }
+
+        try {
+          const token = getToken();
+
+          // Get activity details
+          const actRes = await fetch(`${API_BASE}/activities/${activityId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!actRes.ok) throw new Error("Failed to load activity");
+
+          const actData = await actRes.json();
+          const activity = actData.data;
+
+          // Show activity details
+          document.getElementById("actTitle").textContent = activity.title;
+          document.getElementById("actDesc").textContent =
+            activity.description || "-";
+          document.getElementById("actLocation").textContent =
+            activity.location || "-";
+          document.getElementById("actTime").textContent = `${new Date(
+            activity.start_time
+          ).toLocaleString("vi-VN")} - ${new Date(
+            activity.end_time
+          ).toLocaleString("vi-VN")}`;
+          document.getElementById("activityDetails").style.display = "block";
+
+          currentActivityId = activityId;
+
+          // Load QR codes from qr-manager
+          const qrRes = await fetch(
+            `${API_BASE}/attendances/activity/${activityId}/qr-codes`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          if (!qrRes.ok) {
+            throw new Error("Failed to load QR codes");
+          }
+
+          const qrData = await qrRes.json();
+          currentQRCodes = qrData.data || [];
+
+          // Render QR codes
+          renderQRCodesList(currentQRCodes);
+        } catch (error) {
+          showMessage("activityMessage", `❌ Error: ${error.message}`, "error");
+          console.error(error);
+        }
+      }
+
+      // Render QR codes list
+      function renderQRCodesList(qrCodes) {
+        const sessionList = document.getElementById("sessionList");
+
+        if (!qrCodes || qrCodes.length === 0) {
+          sessionList.innerHTML =
+            '<p style="text-align: center; color: #999;">No QR codes created yet. Go to qr-manager.html to create one.</p>';
+          return;
+        }
+
+        const html = qrCodes
+          .map(
+            (qr, idx) => `
+                <div class="session-item">
+                    <h3>📱 ${qr.qr_name}</h3>
+                    <p>Created: ${new Date(qr.created_at).toLocaleString(
+                      "vi-VN"
+                    )}</p>
+                    ${
+                      qr.expires_at
+                        ? `<p style="color: #ff6b6b;">⏰ Expires: ${new Date(
+                            qr.expires_at
+                          ).toLocaleString("vi-VN")}</p>`
+                        : ""
+                    }
+                    <p>Scans: ${qr.scans_count || 0}</p>
+                    <p style="color: ${
+                      qr.is_active ? "#10b981" : "#999"
+                    };">Status: ${
+              qr.is_active ? "✅ Active" : "❌ Inactive"
+            }</p>
+                    <button class="btn-secondary" style="width: 100%; margin-top: 10px;" onclick="useQRCode('${
+                      qr._id
+                    }', '${qr.qr_data}')">
+                        📸 Use This QR
+                    </button>
+                </div>
+            `
+          )
+          .join("");
+
+        sessionList.innerHTML = html;
+      }
+
+      // Use selected QR code for scanning
+      function useQRCode(qrId, qrDataStr) {
+        try {
+          const qrData = JSON.parse(qrDataStr);
+          document.getElementById("qrData").value = JSON.stringify(
+            qrData,
+            null,
+            2
+          );
+
+          // Scroll to scanner section
+          document
+            .getElementById("scannerCard")
+            .scrollIntoView({ behavior: "smooth" });
+          showMessage(
+            "scanMessage",
+            '✅ QR data loaded. Click "Simulate Scan" to proceed.',
+            "success"
+          );
+        } catch (error) {
+          showMessage(
+            "scanMessage",
+            `❌ Error parsing QR: ${error.message}`,
+            "error"
+          );
+        }
+      }
+
+      let currentScanData = null; // Store for form submission
+
+      async function simulateScan() {
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loading"></div> Scanning...';
+
+        try {
+          const qrDataStr = document.getElementById("qrData").value;
+
+          if (!qrDataStr) {
+            showMessage(
+              "scanMessage",
+              "Please select a QR code from the list",
+              "error"
+            );
+            throw new Error("No QR data");
+          }
+
+          const qrData = JSON.parse(qrDataStr);
+          currentScanData = qrData;
+
+          const token = getToken();
+
+          // Use scanQRCodeV2 for on-demand QR (Phase 2.5)
+          const scanRes = await fetch(`${API_BASE}/attendances/scan-qr`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ qrData }),
+          });
+
+          if (!scanRes.ok) {
+            const error = await scanRes.json();
+            throw new Error(error.message || "Scan failed");
+          }
+
+          const scanResult = await scanRes.json();
+
+          // Show results
+          const resultsHTML = `
+                    <div class="message success" style="border: none;">
+                        <h3>✅ QR Code Scanned Successfully</h3>
+                    </div>
+                    <div style="background: #f9fafb; padding: 15px; border-radius: 6px; margin-top: 15px;">
+                        <p><strong>Activity:</strong> ${qrData.activityId}</p>
+                        <p><strong>QR ID:</strong> ${qrData.qrId}</p>
+                        <p><strong>Message:</strong> ${
+                          scanResult.message || "QR scanned successfully"
+                        }</p>
+                        <p style="color: #10b981; font-weight: 600;">✅ Ready to submit attendance info below</p>
+                    </div>
+                `;
+
+          document.getElementById("resultsContent").innerHTML = resultsHTML;
+          document.getElementById("resultsCard").style.display = "block";
+
+          // Show submission form for Phase 2
+          showSubmissionForm(qrData);
+
+          showMessage(
+            "scanMessage",
+            "✅ QR Scanned! Now submit your information below.",
+            "success"
+          );
+        } catch (error) {
+          showMessage("scanMessage", `❌ Error: ${error.message}`, "error");
+          console.error(error);
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = "Simulate Scan";
+        }
+      }
+
+      async function showSubmissionForm(qrData) {
+        const token = getToken();
+
+        try {
+          // Get activity name
+          const actRes = await fetch(
+            `${API_BASE}/activities/${qrData.activityId}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          const actData = await actRes.json();
+          const activity = actData.data;
+
+          // Load classes and faculties from master-data endpoint
+          const masterRes = await fetch(`${API_BASE}/attendances/master-data`);
+          const masterData = await masterRes.json();
+          const classes = masterData.data?.classes || [];
+          const faculties = masterData.data?.faculties || [];
+
+          // Build class options
+          const classOptions = classes
+            .map((c) => `<option value="${c._id}">${c.name}</option>`)
+            .join("");
+
+          // Build faculty options
+          const facultyOptions = faculties
+            .map((f) => `<option value="${f._id}">${f.name}</option>`)
+            .join("");
+
+          // Render form
+          const formHTML = `
+                    <div style="background: #f9fafb; padding: 20px; border-radius: 6px; margin-bottom: 20px;">
+                        <p><strong>Activity:</strong> ${activity.title}</p>
+                        <p><strong>QR ID:</strong> ${qrData.qrId}</p>
+                        <p style="font-size: 0.9em; color: #666;">Created: ${new Date(
+                          qrData.createdAt
+                        ).toLocaleString("vi-VN")}</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Student Full Name *</label>
+                        <input type="text" id="studentName" placeholder="Nguyễn Văn A" maxlength="100" required>
+                        <small>Max 100 characters</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Student MSSV (5-6 digits) *</label>
+                        <input type="text" id="mssv" placeholder="20001" maxlength="6" pattern="\\d{5,6}">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Class *</label>
+                        <select id="class" required>
+                            <option value="">-- Select Class from Database --</option>
+                            ${classOptions}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Faculty *</label>
+                        <select id="faculty" required>
+                            <option value="">-- Select Faculty from Database --</option>
+                            ${facultyOptions}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Phone (0xxxxxxxxx) - Optional</label>
+                        <input type="tel" id="phone" placeholder="0123456789" pattern="^(0|\\+84)\\d{9,10}$">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Notes (max 500 chars)</label>
+                        <textarea id="notes" placeholder="Optional notes..." maxlength="500"></textarea>
+                        <small style="color: #999;">Characters: <span id="charCount">0</span>/500</small>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-success" onclick="submitAttendanceForm('${
+                          qrData.activityId
+                        }')">Submit Attendance</button>
+                        <button class="btn-secondary" onclick="clearSubmissionForm()">Cancel</button>
+                    </div>
+
+                    <div id="submissionMessage"></div>
+                `;
+
+          document.getElementById("submissionFormContent").innerHTML = formHTML;
+          document.getElementById("submissionFormCard").style.display = "block";
+          document
+            .getElementById("scannerCard")
+            .scrollIntoView({ behavior: "smooth" });
+
+          // Character counter
+          document.getElementById("notes").addEventListener("input", (e) => {
+            document.getElementById("charCount").textContent =
+              e.target.value.length;
+          });
+        } catch (error) {
+          console.error("Error loading form:", error);
+          showMessage(
+            "submissionMessage",
+            `Error loading form: ${error.message}`,
+            "error"
+          );
+        }
+      }
+
+      async function submitAttendanceForm(activityId) {
+        try {
+          const studentName = document.getElementById("studentName").value;
+          const mssv = document.getElementById("mssv").value;
+          const studentClass = document.getElementById("class").value;
+          const faculty = document.getElementById("faculty").value;
+          const phone = document.getElementById("phone").value;
+          const notes = document.getElementById("notes").value;
+
+          if (!studentName || !mssv || !studentClass || !faculty) {
+            showMessage(
+              "submissionMessage",
+              "Please fill in all required fields (*)",
+              "error"
+            );
+            return;
+          }
+
+          // Validate MSSV format (5-6 digits)
+          if (!/^\d{5,6}$/.test(mssv)) {
+            showMessage(
+              "submissionMessage",
+              "MSSV must be 5-6 digits",
+              "error"
+            );
+            return;
+          }
+
+          const token = getToken();
+
+          // Submit to Phase 2 endpoint
+          const submitRes = await fetch(
+            `${API_BASE}/attendances/submit-attendance`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                activity_id: activityId,
+                student_info: {
+                  student_id_number: mssv,
+                  student_name: studentName,
+                  class: studentClass,
+                  faculty: faculty,
+                  phone: phone || null,
+                  notes: notes || null,
+                },
+              }),
+            }
+          );
+
+          if (!submitRes.ok) {
+            const error = await submitRes.json();
+            throw new Error(error.message || "Submission failed");
+          }
+
+          const submitData = await submitRes.json();
+
+          // Handle warnings (class mismatch)
+          let message = "✅ Attendance submitted successfully!";
+          let messageType = "success";
+
+          if (submitData.warnings?.class_mismatch) {
+            messageType = "info";
+            message =
+              "⚠️ Submission accepted with class mismatch warning. Admin will review your submission.";
+          }
+
+          showMessage("submissionMessage", message, messageType);
+
+          setTimeout(() => {
+            clearSubmissionForm();
+          }, 3000);
+        } catch (error) {
+          showMessage(
+            "submissionMessage",
+            `❌ Error: ${error.message}`,
+            "error"
+          );
+          console.error(error);
+        }
+      }
+
+      function clearSubmissionForm() {
+        document.getElementById("submissionFormCard").style.display = "none";
+        document.getElementById("submissionFormContent").innerHTML = "";
+        document.getElementById("submissionMessage").innerHTML = "";
+      }
+
+      function clearScans() {
+        document.getElementById("qrData").value = "";
+        document.getElementById("resultsContent").innerHTML = "";
+        showMessage("scanMessage", "Test data cleared", "info");
+      }
+
+      function showMessage(elementId, message, type) {
+        const element = document.getElementById(elementId);
+        element.innerHTML = `<div class="message ${type}">${message}</div>`;
+        setTimeout(() => {
+          if (element.innerHTML.includes(message)) {
+            element.innerHTML = "";
+          }
+        }, 5000);
+      }
+
+      // Auto-load activities on page load
+      window.addEventListener("load", () => {
+        setTimeout(() => {
+          // Trigger load if token already exists
+          const token = getToken();
+          if (token) {
+            const mockEvent = {
+              target: document.querySelector(
+                'button[onclick="loadActivities()"]'
+              ),
+            };
+            loadActivities.call(mockEvent);
+          }
+        }, 500);
+      });
+    </script>
+  </body>
+</html>
