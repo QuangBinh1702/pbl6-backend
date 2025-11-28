@@ -1319,8 +1319,12 @@ module.exports = {
         expiresAt: expiresAt ? expiresAt.toISOString() : null
       };
 
-      // Generate QR code image (Base64)
-      const qrCodeImage = await QRCode.toDataURL(JSON.stringify(qrData));
+      // QR code contains custom form link with activity_id
+      // When scanned, phone will redirect to the form with activity_id parameter
+      const formUrl = `https://pbl6-backend-iy5q.onrender.com/qr-attendance-form.html?activity_id=${activity_id}&qr_code_id=${qrId}`;
+
+      // Generate QR code image (Base64) - encode form URL
+      const qrCodeImage = await QRCode.toDataURL(formUrl);
 
       // Save to database
       const qrRecord = new QRCodeModel({

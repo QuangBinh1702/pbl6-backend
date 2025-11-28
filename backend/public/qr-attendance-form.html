@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Điểm Danh Hoạt Động</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 500px;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="tel"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="tel"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .required {
+            color: #e74c3c;
+        }
+
+        .char-count {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .alert.error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .alert.success {
+            background: #efe;
+            color: #3c3;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Điểm Danh Hoạt Động</h1>
+            <p>Vui lòng điền đầy đủ thông tin</p>
+        </div>
+
+        <div id="errorMsg" class="alert error"></div>
+        <div id="successMsg" class="alert success"></div>
+
+        <form id="attendanceForm">
+            <input type="hidden" id="activity_id" value="">
+            <input type="hidden" id="session_id" value="">
+
+            <!-- Tên sinh viên -->
+            <div class="form-group">
+                <label for="student_name">
+                    Tên sinh viên <span class="required">*</span>
+                </label>
+                <input 
+                    type="text" 
+                    id="student_name" 
+                    placeholder="Nhập tên đầy đủ"
+                    required
+                >
+            </div>
+
+            <!-- MSSV -->
+            <div class="form-group">
+                <label for="student_id">
+                    MSSV <span class="required">*</span>
+                </label>
+                <input 
+                    type="text" 
+                    id="student_id" 
+                    placeholder="Ví dụ: 20001"
+                    maxlength="6"
+                    required
+                >
+                <div class="help-text">Nhập mã số sinh viên (5-6 chữ số)</div>
+            </div>
+
+            <!-- Khoa và Lớp -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="faculty">
+                        Khoa <span class="required">*</span>
+                    </label>
+                    <select id="faculty" required>
+                        <option value="">-- Chọn khoa --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="class">
+                        Lớp <span class="required">*</span>
+                    </label>
+                    <select id="class" required disabled>
+                        <option value="">-- Chọn lớp --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- SĐT -->
+            <div class="form-group">
+                <label for="phone">
+                    Số điện thoại (tùy chọn)
+                </label>
+                <input 
+                    type="tel" 
+                    id="phone" 
+                    placeholder="0123456789"
+                >
+                <div class="help-text">Định dạng: 0xxxxxxxxx</div>
+            </div>
+
+            <!-- Ghi chú -->
+            <div class="form-group">
+                <label for="notes">
+                    Ghi chú (tùy chọn)
+                </label>
+                <textarea 
+                    id="notes" 
+                    placeholder="Ghi chú thêm"
+                    maxlength="500"
+                ></textarea>
+                <div class="char-count">
+                    <span id="charCount">0</span>/500 ký tự
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn">Nộp Điểm Danh</button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Đang xử lý...</p>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://pbl6-backend-iy5q.onrender.com/api';
+        let allClasses = [];
+        let allFaculties = [];
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadMasterData();
+            parseURLParams();
+            setupEventListeners();
+        });
+
+        // Load classes and faculties from API
+        async function loadMasterData() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/attendances/master-data`);
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.message || 'Failed to load data');
+                }
+
+                allClasses = result.data.classes || [];
+                allFaculties = result.data.faculties || [];
+
+                // Populate faculty dropdown
+                const facultySelect = document.getElementById('faculty');
+                allFaculties.forEach(faculty => {
+                    const option = document.createElement('option');
+                    option.value = faculty._id;
+                    option.textContent = faculty.name;
+                    facultySelect.appendChild(option);
+                });
+            } catch (error) {
+                showError('Lỗi tải dữ liệu: ' + error.message);
+            }
+        }
+
+        // Parse URL parameters (activity_id, session_id, etc.)
+        function parseURLParams() {
+            const params = new URLSearchParams(window.location.search);
+            const activityId = params.get('activity_id');
+            const sessionId = params.get('session_id');
+
+            if (activityId) {
+                document.getElementById('activity_id').value = activityId;
+            }
+            if (sessionId) {
+                document.getElementById('session_id').value = sessionId;
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Faculty change: update class dropdown
+            document.getElementById('faculty').addEventListener('change', (e) => {
+                updateClassDropdown(e.target.value);
+            });
+
+            // Character counter for notes
+            document.getElementById('notes').addEventListener('input', (e) => {
+                document.getElementById('charCount').textContent = e.target.value.length;
+            });
+
+            // Form submission
+            document.getElementById('attendanceForm').addEventListener('submit', handleSubmit);
+        }
+
+        // Update class dropdown based on selected faculty
+        function updateClassDropdown(facultyId) {
+            const classSelect = document.getElementById('class');
+            classSelect.innerHTML = '<option value="">-- Chọn lớp --</option>';
+            classSelect.disabled = true;
+
+            if (!facultyId) return;
+
+            // Filter classes by faculty
+            const filteredClasses = allClasses.filter(c => c.faculty_id === facultyId);
+
+            if (filteredClasses.length === 0) {
+                classSelect.innerHTML = '<option value="">Không có lớp nào</option>';
+                return;
+            }
+
+            filteredClasses.forEach(classItem => {
+                const option = document.createElement('option');
+                option.value = classItem._id;
+                option.textContent = classItem.name;
+                classSelect.appendChild(option);
+            });
+
+            classSelect.disabled = false;
+        }
+
+        // Handle form submission
+        async function handleSubmit(e) {
+            e.preventDefault();
+            clearMessages();
+
+            const studentName = document.getElementById('student_name').value.trim();
+            const studentId = document.getElementById('student_id').value.trim();
+            const faculty = document.getElementById('faculty').value;
+            const classId = document.getElementById('class').value;
+            const phone = document.getElementById('phone').value.trim();
+            const notes = document.getElementById('notes').value.trim();
+
+            // Validation
+            if (!studentName || !studentId || !faculty || !classId) {
+                showError('Vui lòng điền đầy đủ thông tin bắt buộc (*)');
+                return;
+            }
+
+            if (!/^\d{5,6}$/.test(studentId)) {
+                showError('MSSV phải là 5-6 chữ số');
+                return;
+            }
+
+            if (phone && !/^(0|\+84)\d{9,10}$/.test(phone)) {
+                showError('Số điện thoại không hợp lệ (định dạng: 0xxxxxxxxx)');
+                return;
+            }
+
+            // Disable submit button and show loading
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                const payload = {
+                    activity_id: document.getElementById('activity_id').value,
+                    session_id: document.getElementById('session_id').value || null,
+                    student_info: {
+                        student_id_number: studentId,
+                        student_name: studentName,
+                        class: classId,
+                        faculty: faculty,
+                        phone: phone || null,
+                        notes: notes || null
+                    }
+                };
+
+                const response = await fetch(`${API_BASE_URL}/attendances/submit-attendance`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showSuccess('✅ Điểm danh thành công! Chờ xác nhận từ quản lý.');
+                    
+                    // Reset form
+                    document.getElementById('attendanceForm').reset();
+                    document.getElementById('class').disabled = true;
+                    document.getElementById('charCount').textContent = '0';
+
+                    // Redirect after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                } else {
+                    showError(result.message || 'Lỗi nộp điểm danh');
+                }
+            } catch (error) {
+                showError('Lỗi: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Helper functions
+        function getToken() {
+            return localStorage.getItem('token') || 
+                   new URLSearchParams(window.location.search).get('token') || 
+                   '';
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMsg');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+
+        function showSuccess(message) {
+            const successEl = document.getElementById('successMsg');
+            successEl.textContent = message;
+            successEl.style.display = 'block';
+        }
+
+        function clearMessages() {
+            document.getElementById('errorMsg').style.display = 'none';
+            document.getElementById('successMsg').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
