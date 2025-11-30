@@ -98,6 +98,22 @@ const activitySchema = new mongoose.Schema({
     type: Boolean, 
     default: false 
   },
+  
+  // 🆕 DYNAMIC QR SCORING: Track total QR codes created for this activity
+  total_qr_created: {
+    type: Number,
+    default: 0,
+    min: 0,
+    description: 'Total QR codes created for this activity (auto-incremented)'
+  },
+  
+  // 🆕 DYNAMIC QR SCORING: Max points for this activity
+  max_points: {
+    type: Number,
+    default: 10,
+    min: 0,
+    description: 'Maximum points that can be earned for this activity'
+  },
   status: {
     type: String,
     enum: ['pending', 'approved', 'in_progress', 'completed', 'rejected', 'cancelled'],
@@ -118,5 +134,8 @@ activitySchema.index({ field_id: 1 });
 activitySchema.index({ start_time: 1 });
 activitySchema.index({ registration_open: 1, registration_close: 1 });
 activitySchema.index({ status: 1 });
+// 🆕 DYNAMIC QR SCORING: Indexes for dynamic scoring
+activitySchema.index({ total_qr_created: 1 });
+activitySchema.index({ max_points: 1 });
 
 module.exports = mongoose.model('Activity', activitySchema);

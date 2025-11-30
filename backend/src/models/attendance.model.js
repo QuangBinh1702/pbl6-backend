@@ -18,6 +18,16 @@ const attendanceSchema = new mongoose.Schema({
     ref: 'QRCode',
     sparse: true
   },
+
+  // 🆕 DYNAMIC QR SCORING: Track scan order and total QR at scan time
+  scan_order: {
+    type: Number,
+    description: "Which scan this is for the student (1st, 2nd, 3rd...)"
+  },
+  total_qr_at_scan: {
+    type: Number,
+    description: "Total QR codes that existed when this was scanned"
+  },
   
   // ← OLD: Track multiple sessions (keep for backward compatibility)
   attendance_sessions: [{
@@ -55,6 +65,10 @@ const attendanceSchema = new mongoose.Schema({
       type: String,
       validate: /^\d{5,6}$/,  // 5-6 digits (MSSV)
       sparse: true
+    },
+    student_name: {
+      type: String,
+      maxlength: 100  // 🆕 Student name from form
     },
     class: {
       type: mongoose.Schema.Types.ObjectId,  // Reference to Class model
@@ -209,5 +223,8 @@ attendanceSchema.index({ verified_at: -1 });  // ← Sort by verification date
 attendanceSchema.index({ 'student_info.class': 1 });  // ← Filter by class
 attendanceSchema.index({ 'student_info.faculty': 1 });  // ← Filter by faculty
 attendanceSchema.index({ scanned_at: -1 });
+// 🆕 DYNAMIC QR SCORING: Indexes for counting scans and duplicate detection
+attendanceSchema.index({ student_id: 1, activity_id: 1 });  // ← Count scans for student
+attendanceSchema.index({ student_id: 1, qr_code_id: 1 });  // ← Detect duplicates
 
 module.exports = mongoose.model('Attendance', attendanceSchema, 'attendance');

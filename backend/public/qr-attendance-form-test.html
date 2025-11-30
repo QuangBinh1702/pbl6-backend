@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Điểm Danh Hoạt Động</title>
+    <title>Điểm Danh Hoạt Động - Test</title>
     <style>
         * {
             margin: 0;
@@ -175,6 +175,30 @@
             100% { transform: rotate(360deg); }
         }
 
+        .test-badge {
+            background: #ff9800;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .mock-data {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .mock-data strong {
+            color: #1565c0;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 20px;
@@ -195,13 +219,20 @@
         <div class="header">
             <h1>📋 Điểm Danh Hoạt Động</h1>
             <p>Vui lòng điền đầy đủ thông tin</p>
+            <span class="test-badge">🧪 TEST MODE - Mock Data</span>
+        </div>
+
+        <div class="mock-data">
+            <strong>📝 Test Mode:</strong> Form này dùng dữ liệu giả để test UI/UX. Khoa và Lớp sẽ tự động lọc khi bạn chọn.
+            <br><strong>Khoa test:</strong> CNTT, Quản Trị Kinh Doanh
+            <br><strong>Lớp CNTT:</strong> 22T_DT1, 22T_DT2
         </div>
 
         <div id="errorMsg" class="alert error"></div>
         <div id="successMsg" class="alert success"></div>
 
         <form id="attendanceForm">
-            <input type="hidden" id="activity_id" value="">
+            <input type="hidden" id="activity_id" value="activity_001">
             <input type="hidden" id="session_id" value="">
 
             <!-- Tên sinh viên -->
@@ -291,156 +322,47 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'https://pbl6-backend-iy5q.onrender.com/api';
+        // Mock data - không cần server
+        const MOCK_DATA = {
+            faculties: [
+                { _id: 'fac_001', name: 'CNTT (Công Nghệ Thông Tin)' },
+                { _id: 'fac_002', name: 'Quản Trị Kinh Doanh' },
+                { _id: 'fac_003', name: 'Kỹ Thuật' }
+            ],
+            classes: [
+                { _id: 'class_001', name: '22T_DT1', faculty_id: 'fac_001' },
+                { _id: 'class_002', name: '22T_DT2', faculty_id: 'fac_001' },
+                { _id: 'class_003', name: '22T_KTPM1', faculty_id: 'fac_001' },
+                { _id: 'class_004', name: '22T_QTK1', faculty_id: 'fac_002' },
+                { _id: 'class_005', name: '22T_QTK2', faculty_id: 'fac_002' },
+                { _id: 'class_006', name: '22T_KT1', faculty_id: 'fac_003' }
+            ]
+        };
+
         let allClasses = [];
         let allFaculties = [];
 
         // Initialize on page load
-        document.addEventListener('DOMContentLoaded', async () => {
-            await loadMasterData();
-            parseURLParams();
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMockData();
             setupEventListeners();
         });
 
-        // Load classes and faculties from API
-        async function loadMasterData() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/attendances/master-data`);
-                const result = await response.json();
+        // Load mock data
+        function loadMockData() {
+            allClasses = MOCK_DATA.classes;
+            allFaculties = MOCK_DATA.faculties;
 
-                if (!result.success) {
-                    throw new Error(result.message || 'Failed to load data');
-                }
-
-                allClasses = result.data.classes || [];
-                allFaculties = result.data.faculties || [];
-
-                // Populate faculty dropdown
-                const facultySelect = document.getElementById('faculty');
-                allFaculties.forEach(faculty => {
-                    const option = document.createElement('option');
-                    option.value = faculty._id;
-                    option.textContent = faculty.name;
-                    facultySelect.appendChild(option);
-                });
-            } catch (error) {
-                showError('Lỗi tải dữ liệu: ' + error.message);
-            }
-        }
-
-        // Parse URL parameters (activity_id, session_id, etc.)
-        function parseURLParams() {
-            const params = new URLSearchParams(window.location.search);
-            const activityId = params.get('activity_id');
-            const sessionId = params.get('session_id');
-            const qrCodeId = params.get('qr_code_id');
-
-            if (activityId) {
-                document.getElementById('activity_id').value = activityId;
-            }
-            if (sessionId) {
-                document.getElementById('session_id').value = sessionId;
-            }
-
-            // 🆕 Validate QR Code on page load
-            if (qrCodeId) {
-                validateQRCodeOnLoad(qrCodeId);
-            }
-        }
-
-        // 🆕 Validate QR Code when page loads
-        async function validateQRCodeOnLoad(qrCodeId) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/attendances/validate-qr`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ qr_code_id: qrCodeId })
-                });
-
-                const result = await response.json();
-
-                if (!result.valid) {
-                    // QR is expired or invalid - redirect to 404
-                    showExpiredQRPage(result);
-                } else {
-                    // QR is valid - store session_id and predict points
-                    document.getElementById('session_id').value = qrCodeId;
-                    
-                    // 🆕 Predict and display points
-                    const activityId = document.getElementById('activity_id').value;
-                    if (activityId) {
-                        predictPoints(activityId);
-                    }
-                    
-                    console.log('✅ QR Code Valid:', result);
-                }
-            } catch (error) {
-                console.error('Error validating QR:', error);
-                // Don't block form if validation fails
-            }
-        }
-
-        // 🆕 DYNAMIC QR SCORING: Predict points for student based on activity
-        async function predictPoints(activityId) {
-            try {
-                // Get activity details to show prediction
-                const response = await fetch(`${API_BASE_URL}/activities/${activityId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${getToken()}`
-                    }
-                });
-
-                const result = await response.json();
-                if (result.success) {
-                    const activity = result.data;
-                    // 🆕 Get activity info from validateQRCode response
-                    const totalQR = result.total_qr_created || activity.total_qr_created || 1;
-                    const maxPointsFromActivity = result.max_points || activity.max_points || 10;
-                    
-                    // 🆕 For first-time visitor, assume scan_order = 1
-                    // Backend will recalculate based on actual student's scans
-                    const estimatedScanOrder = 1;
-                    const predictedPoints = Math.min(
-                        Math.floor((estimatedScanOrder / totalQR) * maxPointsFromActivity),
-                        maxPointsFromActivity
-                    );
-                    
-                    // Update form display with more details
-                    const infoHTML = `
-                        <div style="background: #e3f2fd; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; border-left: 4px solid #2196f3;">
-                            <strong>📊 Thông tin hoạt động:</strong><br>
-                            Hoạt động: <strong>${activity.title || 'Không tìm thấy'}</strong><br>
-                            Điểm tối đa: <strong>${maxPointsFromActivity} điểm</strong><br>
-                            Tổng QR: <strong>${totalQR} cái</strong><br>
-                            Dự tính (lần quét 1): <strong style="color: #1565c0;">${predictedPoints} điểm</strong>
-                            <div style="font-size: 11px; margin-top: 8px; color: #666;">
-                                💡 Điểm tối đa khi quét tất cả QR: ${maxPointsFromActivity} điểm
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Insert before form
-                    const formElement = document.getElementById('attendanceForm');
-                    formElement.insertAdjacentHTML('beforebegin', infoHTML);
-                }
-            } catch (error) {
-                console.error('Error predicting points:', error);
-            }
-        }
-
-        // 🆕 Redirect to 404 for expired/invalid QR
-        function showExpiredQRPage(result) {
-            window.location.href = '/404.html';
-        }
-
-        // 🆕 Disable/enable form inputs
-        function disableForm(disabled) {
-            const inputs = document.querySelectorAll('#attendanceForm input, #attendanceForm select, #attendanceForm textarea');
-            inputs.forEach(input => {
-                input.disabled = disabled;
+            // Populate faculty dropdown
+            const facultySelect = document.getElementById('faculty');
+            allFaculties.forEach(faculty => {
+                const option = document.createElement('option');
+                option.value = faculty._id;
+                option.textContent = faculty.name;
+                facultySelect.appendChild(option);
             });
+
+            console.log('✅ Mock data loaded:', { faculties: allFaculties.length, classes: allClasses.length });
         }
 
         // Setup event listeners
@@ -513,51 +435,44 @@
                 return;
             }
 
+            // Get selected values for display
+            const selectedFaculty = allFaculties.find(f => f._id === faculty)?.name || 'N/A';
+            const selectedClass = allClasses.find(c => c._id === classId)?.name || 'N/A';
+
             // Disable submit button and show loading
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
             document.getElementById('loading').style.display = 'block';
 
             try {
-                const payload = {
-                    activity_id: document.getElementById('activity_id').value,
-                    session_id: document.getElementById('session_id').value || null,
-                    student_info: {
-                        student_id_number: studentId,
-                        student_name: studentName,
-                        class: classId,
-                        faculty: faculty,
-                        phone: phone || null,
-                        notes: notes || null
-                    }
-                };
-
-                const response = await fetch(`${API_BASE_URL}/attendances/submit-attendance`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${getToken()}`
-                    },
-                    body: JSON.stringify(payload)
+                // Simulate form submission (log data)
+                console.log('📝 Form Data:');
+                console.log({
+                    student_name: studentName,
+                    student_id: studentId,
+                    faculty: selectedFaculty,
+                    class: selectedClass,
+                    phone: phone || 'N/A',
+                    notes: notes || 'N/A'
                 });
 
-                const result = await response.json();
+                // Simulate delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
 
-                if (response.ok) {
-                    showSuccess('✅ Điểm danh thành công! Chờ xác nhận từ quản lý.');
-                    
-                    // Reset form
-                    document.getElementById('attendanceForm').reset();
-                    document.getElementById('class').disabled = true;
-                    document.getElementById('charCount').textContent = '0';
+                showSuccess(`✅ Điểm danh thành công!
+                
+Sinh viên: ${studentName}
+MSSV: ${studentId}
+Khoa: ${selectedFaculty}
+Lớp: ${selectedClass}
 
-                    // Redirect after 2 seconds
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 2000);
-                } else {
-                    showError(result.message || 'Lỗi nộp điểm danh');
-                }
+Chờ xác nhận từ quản lý...`);
+
+                // Reset form
+                document.getElementById('attendanceForm').reset();
+                document.getElementById('class').disabled = true;
+                document.getElementById('charCount').textContent = '0';
+
             } catch (error) {
                 showError('Lỗi: ' + error.message);
             } finally {
@@ -567,12 +482,6 @@
         }
 
         // Helper functions
-        function getToken() {
-            return localStorage.getItem('token') || 
-                   new URLSearchParams(window.location.search).get('token') || 
-                   '';
-        }
-
         function showError(message) {
             const errorEl = document.getElementById('errorMsg');
             errorEl.textContent = message;
@@ -581,7 +490,7 @@
 
         function showSuccess(message) {
             const successEl = document.getElementById('successMsg');
-            successEl.textContent = message;
+            successEl.innerHTML = message.replace(/\n/g, '<br>');
             successEl.style.display = 'block';
         }
 

@@ -947,6 +947,47 @@ module.exports = {
         return res.status(404).json({ success: false, message: 'Activity not found' });
       }
 
+      // 🆕 Validate QR Code if provided (BACKEND CHECK)
+      const qrCodeId = session_id;  // session_id = qr_code_id in new system
+      if (qrCodeId) {
+        const qrRecord = await QRCodeModel.findById(qrCodeId);
+        
+        if (!qrRecord) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'QR code not found' 
+          });
+        }
+
+        if (!qrRecord.is_active) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'QR code has been deactivated' 
+          });
+        }
+
+        if (qrRecord.expires_at && new Date() > qrRecord.expires_at) {
+          return res.status(400).json({ 
+            success: false, 
+            message: `QR code has expired at ${new Date(qrRecord.expires_at).toLocaleString('vi-VN')}` 
+          });
+        }
+
+        // 🆕 Check for duplicate: Student can't scan same QR twice
+        const duplicateAttendance = await Attendance.findOne({
+          student_id: studentId,
+          activity_id: activity_id,
+          qr_code_id: qrCodeId
+        });
+
+        if (duplicateAttendance) {
+          return res.status(400).json({
+            success: false,
+            message: 'Bạn đã quét QR này rồi'
+          });
+        }
+      }
+
       // Validate class exists (from database)
       const classData = await Class.findById(student_info.class);
       if (!classData) {
@@ -973,27 +1014,60 @@ module.exports = {
         }
       }
 
-      // Create attendance with pending status
+      // 🆕 Calculate points using dynamic scoring
+      // Count how many times this student has scanned for this activity
+      const scanCountForActivity = await Attendance.countDocuments({
+        student_id: studentId,
+        activity_id: activity_id
+      });
+
+      const scan_order = scanCountForActivity + 1;  // 1st, 2nd, 3rd...
+      const total_qr_at_scan = activity.total_qr_created || 1;  // Total QR created at this moment
+      
+      // 🆕 Get max_points from activity (required field from database)
+      const max_points_from_activity = activity.max_points || 10;  // Default 10 if not set
+      
+      // Formula: (scan_order / total_qr) * max_points, capped at max_points
+      const calculated_points = Math.min(
+        Math.floor((scan_order / total_qr_at_scan) * max_points_from_activity),
+        max_points_from_activity
+      );
+      
+      console.log(`[Attendance] Points calculation: scan_order=${scan_order}, total_qr=${total_qr_at_scan}, max_points=${max_points_from_activity} → ${calculated_points} pts`);
+
+      // Create attendance with approved status (auto-approved via QR)
       const attendance = new Attendance({
         student_id: studentId,
         activity_id: activity_id,
-        session_id: session_id,
+        qr_code_id: qrCodeId,
+        
+        // 🆕 Dynamic scoring fields
+        scan_order: scan_order,
+        total_qr_at_scan: total_qr_at_scan,
+        points_earned: calculated_points,
+        points: calculated_points,  // For backward compatibility
+        
         student_info: {
           student_id_number: student_info.student_id_number,
-          class: student_info.class,  // Now ObjectId
-          faculty: student_info.faculty,  // Now ObjectId
+          student_name: student_info.student_name,  // 🆕 New field
+          class: student_info.class,  // ObjectId
+          faculty: student_info.faculty,  // ObjectId
           phone: student_info.phone || null,
           notes: student_info.notes || null,
           submitted_at: new Date()
         },
-        // 🆕 Track mismatches
+        
+        // Track mismatches
         student_info_flags: {
           class_mismatch: classMismatch,
           registered_class: registeredClass,
           student_in_system: !!studentProfile
         },
-        status: 'pending',
-        scanned_at: new Date()
+        
+        status: 'approved',  // Auto-approved (validated via QR + registration)
+        scanned_at: new Date(),
+        verified: true,
+        verified_by: userId  // Student who scanned
       });
 
       await attendance.save();
@@ -1024,10 +1098,16 @@ module.exports = {
 
       res.status(201).json({
         success: true,
-        message: classMismatch 
-          ? '⚠️ Attendance submitted (Class mismatch detected - Admin will review)' 
-          : '✅ Attendance submission received. Waiting for approval.',
-        data: attendance,
+        message: `✅ Điểm danh thành công! Lần ${scan_order}/${total_qr_at_scan} - ${calculated_points} điểm`,
+        data: {
+          attendance_id: attendance._id,
+          scan_order: scan_order,
+          total_qr_at_scan: total_qr_at_scan,
+          points_earned: calculated_points,
+          student_name: student_info.student_name,
+          activity_id: activity_id,
+          scanned_at: attendance.scanned_at
+        },
         warnings: classMismatch ? {
           class_mismatch: true,
           registered_class: registeredClass ? registeredClass.toString() : null,
@@ -1342,6 +1422,12 @@ module.exports = {
 
       await qrRecord.save();
 
+      // 🆕 DYNAMIC QR SCORING: Increment total_qr_created counter
+      activity.total_qr_created = (activity.total_qr_created || 0) + 1;
+      await activity.save();
+      
+      console.log(`✅ QR created. Activity "${activity.title}" now has ${activity.total_qr_created} QRs`);
+
       res.status(201).json({
         success: true,
         message: 'QR code generated successfully',
@@ -1351,7 +1437,9 @@ module.exports = {
           qr_code: qrRecord.qr_code,
           created_at: qrRecord.created_at,
           expires_at: qrRecord.expires_at,
-          scans_count: 0
+          scans_count: 0,
+          // 🆕 DYNAMIC QR SCORING: Return total QR count
+          total_qr_created: activity.total_qr_created
         }
       });
     } catch (err) {
@@ -1423,6 +1511,76 @@ module.exports = {
       });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  // 11. Validate QR Code (check if expired) - for frontend
+  async validateQRCode(req, res) {
+    try {
+      const { qr_code_id } = req.body;
+
+      if (!qr_code_id) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'QR code ID is required',
+          valid: false 
+        });
+      }
+
+      const qrRecord = await QRCodeModel.findById(qr_code_id);
+
+      if (!qrRecord) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'QR code not found',
+          valid: false 
+        });
+      }
+
+      // Check if QR is active
+      if (!qrRecord.is_active) {
+        return res.json({ 
+          success: false, 
+          message: 'QR code is deactivated',
+          valid: false,
+          reason: 'deactivated'
+        });
+      }
+
+      // Check if QR is expired
+      if (qrRecord.expires_at && new Date() > qrRecord.expires_at) {
+        return res.json({ 
+          success: false, 
+          message: `QR code expired at ${new Date(qrRecord.expires_at).toLocaleString('vi-VN')}`,
+          valid: false,
+          reason: 'expired',
+          expired_at: qrRecord.expires_at
+        });
+      }
+
+      // 🆕 DYNAMIC QR SCORING: Get activity details for point prediction
+      const activityData = await Activity.findById(qrRecord.activity_id);
+
+      // QR is valid
+      res.json({
+        success: true,
+        message: 'QR code is valid',
+        valid: true,
+        qr_name: qrRecord.qr_name,
+        created_at: qrRecord.created_at,
+        expires_at: qrRecord.expires_at,
+        scans_count: qrRecord.scans_count,
+        // 🆕 DYNAMIC QR SCORING: Include activity details for frontend prediction
+        activity_id: qrRecord.activity_id,
+        total_qr_created: activityData ? activityData.total_qr_created : 0,
+        max_points: activityData ? (activityData.max_points || 10) : 10
+      });
+    } catch (err) {
+      res.status(500).json({ 
+        success: false, 
+        message: err.message,
+        valid: false 
+      });
     }
   }
 };

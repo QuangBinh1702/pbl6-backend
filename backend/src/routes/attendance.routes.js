@@ -69,6 +69,11 @@ router.post('/scan-qr',
   attendanceController.scanQRCode
 );
 
+// 🆕 Validate QR Code (check if expired/active) - PUBLIC, no auth needed
+router.post('/validate-qr',
+  attendanceController.validateQRCode
+);
+
 // Lấy danh sách phản hồi chờ duyệt theo khoa - before /:id
 router.get('/faculty/:facultyId/pending-feedbacks',
   auth,

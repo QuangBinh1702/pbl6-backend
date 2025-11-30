@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📱 Quét Điểm Danh</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 25px;
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        #scanner-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 1;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 3px solid #10b981;
+            pointer-events: none;
+        }
+
+        .scanner-overlay::before {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 20%;
+            width: 60%;
+            height: 60%;
+            border: 3px solid #10b981;
+            box-shadow: inset 0 0 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.95em;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95em;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+            display: block;
+        }
+
+        .message.error {
+            background: #fee2e2;
+            color: #7f1d1d;
+            border: 1px solid #fca5a5;
+            display: block;
+        }
+
+        .message.info {
+            background: #dbeafe;
+            color: #0c4a6e;
+            border: 1px solid #bfdbfe;
+            display: block;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .button-group button {
+            flex: 1;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .status-text {
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .card {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 Quét Điểm Danh</h1>
+            <p>Quét mã QR để điểm danh</p>
+        </div>
+
+        <!-- Scanner Section -->
+        <div class="card" id="scannerSection">
+            <h2>📸 Quét Mã QR</h2>
+            
+            <div id="scanner-container">
+                <video id="video" playsinline></video>
+                <div class="scanner-overlay"></div>
+            </div>
+
+            <div class="status-text" id="scannerStatus">Đang khởi động camera...</div>
+            <button class="btn-secondary" style="margin-top: 15px;" onclick="stopScanner()">❌ Hủy Quét</button>
+            
+            <div id="scannerMessage" class="message" style="margin-top: 15px;"></div>
+        </div>
+
+        <!-- Form Section (hidden until QR scanned) -->
+        <div class="card" id="formSection" style="display: none;">
+            <h2>✅ Thông Tin Điểm Danh</h2>
+
+            <div style="background: #f9fafb; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                <p><strong>Hoạt động:</strong> <span id="activityName">-</span></p>
+                <p><strong>Mã QR:</strong> <span id="qrIdDisplay">-</span></p>
+                <p><strong>Thời gian:</strong> <span id="qrTime">-</span></p>
+            </div>
+
+            <div class="form-group">
+                <label>Họ và Tên *</label>
+                <input type="text" id="studentName" placeholder="Nguyễn Văn A" maxlength="100" required>
+            </div>
+
+            <div class="form-group">
+                <label>MSSV (5-6 chữ số) *</label>
+                <input type="text" id="mssv" placeholder="20001" maxlength="6" pattern="\d{5,6}">
+            </div>
+
+            <div class="form-group">
+                <label>Lớp *</label>
+                <select id="class" required>
+                    <option value="">-- Chọn Lớp --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Khoa *</label>
+                <select id="faculty" required>
+                    <option value="">-- Chọn Khoa --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Điện thoại (tùy chọn)</label>
+                <input type="tel" id="phone" placeholder="0912345678">
+            </div>
+
+            <div class="form-group">
+                <label>Ghi chú (tối đa 500 ký tự)</label>
+                <textarea id="notes" placeholder="Ghi chú..." maxlength="500" rows="3"></textarea>
+                <small style="color: #999;">Ký tự: <span id="charCount">0</span>/500</small>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-success" onclick="submitForm()">✅ Gửi Điểm Danh</button>
+                <button class="btn-secondary" onclick="resetForm()">🔄 Quét Tiếp</button>
+            </div>
+
+            <div id="formMessage" class="message" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <!-- QR Scanner Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js"></script>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        let currentQRData = null;
+        let currentActivityId = null;
+        let currentQRId = null;
+        let scannerActive = false;
+        let videoStream = null;
+
+        // ===== SCANNER =====
+        async function startScanner() {
+            try {
+                const video = document.getElementById('video');
+                
+                // Request camera access
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                });
+
+                video.srcObject = videoStream;
+                video.play();
+                
+                updateScannerStatus('✅ Camera sẵn sàng. Hướng QR vào camera...');
+                scanQRCode();
+            } catch (error) {
+                showMessage('scannerMessage', `❌ Lỗi camera: ${error.message}`, 'error');
+                updateScannerStatus('❌ Không thể truy cập camera');
+                console.error('Camera error:', error);
+            }
+        }
+
+        function stopScanner() {
+            scannerActive = false;
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
+            document.getElementById('scannerSection').style.display = 'none';
+            document.getElementById('formSection').style.display = 'none';
+            document.getElementById('scannerStatus').textContent = 'Camera dừng';
+        }
+
+        function updateScannerStatus(text) {
+            document.getElementById('scannerStatus').textContent = text;
+        }
+
+        // ===== QR DETECTION =====
+        function scanQRCode() {
+            const video = document.getElementById('video');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            scannerActive = true;
+
+            function scan() {
+                if (!scannerActive) return;
+
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.drawImage(video, 0, 0);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                    if (code) {
+                        // QR detected!
+                        console.log('QR detected:', code.data);
+                        processQRData(code.data);
+                        scannerActive = false;
+                        return;
+                    }
+                }
+
+                requestAnimationFrame(scan);
+            }
+
+            scan();
+        }
+
+        // ===== PROCESS QR DATA =====
+        async function processQRData(qrDataStr) {
+            try {
+                // Parse QR data (should be JSON)
+                let qrData = JSON.parse(qrDataStr);
+                
+                console.log('QR Data:', qrData);
+
+                currentQRData = qrData;
+                currentActivityId = qrData.activityId;
+                currentQRId = qrData.qrId;
+
+                // Stop scanner
+                if (videoStream) {
+                    videoStream.getTracks().forEach(track => track.stop());
+                }
+
+                // Show form
+                await showSubmissionForm(qrData);
+
+                // Hide scanner, show form
+                document.getElementById('scannerSection').style.display = 'none';
+                document.getElementById('formSection').style.display = 'block';
+
+                updateScannerStatus('✅ QR quét thành công!');
+            } catch (error) {
+                showMessage('scannerMessage', `❌ Lỗi: QR không hợp lệ - ${error.message}`, 'error');
+                // Continue scanning
+                scanQRCode();
+            }
+        }
+
+        // ===== LOAD FORM DATA =====
+        async function showSubmissionForm(qrData) {
+            try {
+                const token = localStorage.getItem('testToken') || '';
+
+                // Get activity details
+                const actRes = await fetch(
+                    `${API_BASE}/activities/${qrData.activityId}`,
+                    {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }
+                );
+
+                let activityTitle = 'Không xác định';
+                if (actRes.ok) {
+                    const actData = await actRes.json();
+                    activityTitle = actData.data?.title || activityTitle;
+                }
+
+                // Get master data (classes & faculties)
+                const masterRes = await fetch(`${API_BASE}/attendances/master-data`);
+                const masterData = await masterRes.json();
+                const classes = masterData.data?.classes || [];
+                const faculties = masterData.data?.faculties || [];
+
+                // Populate dropdowns
+                const classSelect = document.getElementById('class');
+                const facultySelect = document.getElementById('faculty');
+
+                classSelect.innerHTML = '<option value="">-- Chọn Lớp --</option>' +
+                    classes.map(c => `<option value="${c._id}">${c.name}</option>`).join('');
+
+                facultySelect.innerHTML = '<option value="">-- Chọn Khoa --</option>' +
+                    faculties.map(f => `<option value="${f._id}">${f.name}</option>`).join('');
+
+                // Display QR info
+                document.getElementById('activityName').textContent = activityTitle;
+                document.getElementById('qrIdDisplay').textContent = qrData.qrId || 'N/A';
+                document.getElementById('qrTime').textContent = new Date(qrData.createdAt).toLocaleString('vi-VN');
+
+            } catch (error) {
+                showMessage('formMessage', `❌ Lỗi tải form: ${error.message}`, 'error');
+            }
+        }
+
+        // ===== SUBMIT FORM =====
+        async function submitForm() {
+            try {
+                const studentName = document.getElementById('studentName').value;
+                const mssv = document.getElementById('mssv').value;
+                const classId = document.getElementById('class').value;
+                const facultyId = document.getElementById('faculty').value;
+                const phone = document.getElementById('phone').value;
+                const notes = document.getElementById('notes').value;
+
+                // Validation
+                if (!studentName || !mssv || !classId || !facultyId) {
+                    showMessage('formMessage', '❌ Vui lòng điền đủ thông tin bắt buộc (*)', 'error');
+                    return;
+                }
+
+                if (!/^\d{5,6}$/.test(mssv)) {
+                    showMessage('formMessage', '❌ MSSV phải là 5-6 chữ số', 'error');
+                    return;
+                }
+
+                if (phone && !/^(0|\+84)\d{9,10}$/.test(phone)) {
+                    showMessage('formMessage', '❌ Số điện thoại không hợp lệ', 'error');
+                    return;
+                }
+
+                const token = localStorage.getItem('testToken') || '';
+
+                // Submit attendance
+                const submitRes = await fetch(`${API_BASE}/attendances/submit-attendance`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        activity_id: currentActivityId,
+                        student_info: {
+                            student_id_number: mssv,
+                            student_name: studentName,
+                            class: classId,
+                            faculty: facultyId,
+                            phone: phone || null,
+                            notes: notes || null
+                        }
+                    })
+                });
+
+                if (!submitRes.ok) {
+                    const error = await submitRes.json();
+                    throw new Error(error.message || 'Gửi thất bại');
+                }
+
+                showMessage('formMessage', '✅ Gửi điểm danh thành công! Vui lòng chờ duyệt.', 'success');
+
+                // Reset after 3 seconds
+                setTimeout(() => {
+                    resetForm();
+                }, 3000);
+
+            } catch (error) {
+                showMessage('formMessage', `❌ Lỗi: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('studentName').value = '';
+            document.getElementById('mssv').value = '';
+            document.getElementById('class').value = '';
+            document.getElementById('faculty').value = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('notes').value = '';
+            document.getElementById('charCount').textContent = '0';
+            document.getElementById('formMessage').innerHTML = '';
+
+            document.getElementById('formSection').style.display = 'none';
+            document.getElementById('scannerSection').style.display = 'block';
+
+            startScanner();
+        }
+
+        function showMessage(elementId, msg, type) {
+            const el = document.getElementById(elementId);
+            el.className = `message ${type}`;
+            el.textContent = msg;
+            if (type === 'success') {
+                setTimeout(() => el.innerHTML = '', 3000);
+            }
+        }
+
+        // Character counter
+        document.addEventListener('DOMContentLoaded', () => {
+            const notesInput = document.getElementById('notes');
+            if (notesInput) {
+                notesInput.addEventListener('input', (e) => {
+                    document.getElementById('charCount').textContent = e.target.value.length;
+                });
+            }
+        });
+
+        // Parse QR data from URL if available
+        function parseQRFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            const dataParam = params.get('data');
+
+            if (dataParam) {
+                try {
+                    const qrData = JSON.parse(decodeURIComponent(dataParam));
+                    console.log('QR data from URL:', qrData);
+                    processQRData(JSON.stringify(qrData));
+                    return true;
+                } catch (error) {
+                    console.error('Error parsing QR data from URL:', error);
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        // Parse JSON if user paste/input QR data directly
+        function parseQRFromInput() {
+            const urlParam = new URLSearchParams(window.location.search).get('text');
+            if (!urlParam) return false;
+
+            try {
+                // If text contains http://...?data=, extract data part
+                if (urlParam.includes('?data=')) {
+                    const dataStr = urlParam.split('?data=')[1];
+                    const qrData = JSON.parse(decodeURIComponent(dataStr));
+                    console.log('QR from URL text:', qrData);
+                    processQRData(JSON.stringify(qrData));
+                    return true;
+                }
+                
+                // If direct JSON text
+                const qrData = JSON.parse(urlParam);
+                console.log('QR from JSON text:', qrData);
+                processQRData(JSON.stringify(qrData));
+                return true;
+            } catch (e) {
+                console.error('Error parsing input:', e);
+                return false;
+            }
+        }
+
+        // Start scanner on load
+        window.addEventListener('load', () => {
+            // Check if QR data in URL (from desktop QR code)
+            if (!parseQRFromURL() && !parseQRFromInput()) {
+                // Otherwise start camera scanner
+                startScanner();
+            }
+        });
+
+        // Add manual paste button for testing
+        document.addEventListener('DOMContentLoaded', () => {
+            const card = document.querySelector('.card');
+            if (card) {
+                const pasteBtn = document.createElement('button');
+                pasteBtn.className = 'btn-secondary';
+                pasteBtn.style.marginTop = '10px';
+                pasteBtn.textContent = '📋 Dán QR Data (Test)';
+                pasteBtn.onclick = () => {
+                    const data = prompt('Paste QR JSON data:');
+                    if (data) {
+                        try {
+                            const qrData = JSON.parse(data);
+                            processQRData(data);
+                        } catch (e) {
+                            alert('❌ JSON không hợp lệ: ' + e.message);
+                        }
+                    }
+                };
+                card.querySelector('.button-group')?.parentElement?.insertBefore(pasteBtn, card.querySelector('.button-group'));
+            }
+        });
+    </script>
+</body>
+</html>
