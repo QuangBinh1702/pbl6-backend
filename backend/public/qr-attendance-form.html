@@ -243,10 +243,10 @@
                     type="text" 
                     id="student_id" 
                     placeholder="Ví dụ: 102"
-                    maxlength="6"
+                    maxlength="9"
                     required
                 >
-                <div class="help-text"></div>
+                <div class="help-text">Nhập mã số sinh viên (9 chữ số)</div>
             </div>
 
             <!-- Khoa và Lớp -->
@@ -547,8 +547,8 @@
                 return;
             }
 
-            if (!/^\d{5,6}$/.test(studentId)) {
-                showError('MSSV phải là 5-6 chữ số');
+            if (!/^\d{9}$/.test(studentId)) {
+                showError('MSSV phải là 9 chữ số');
                 return;
             }
 

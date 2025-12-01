@@ -923,8 +923,8 @@ module.exports = {
       }
 
       // Validate MSSV format
-      if (!/^\d{5,6}$/.test(student_info.student_id_number)) {
-        return res.status(400).json({ success: false, message: 'MSSV must be 5-6 digits' });
+      if (!/^\d{9}$/.test(student_info.student_id_number)) {
+        return res.status(400).json({ success: false, message: 'MSSV must be 9 digits' });
       }
 
       // Validate phone format if provided
