@@ -116,9 +116,8 @@ router.get('/student/:studentId/activities',
 // ====== PHASE 2: POST ROUTES (before generic /:id) ======
 
 // PHASE 2: Submit attendance (Student submits for approval)
+// 🆕 PUBLIC ENDPOINT: No auth required - validates student by MSSV and registration status
 router.post('/submit-attendance',
-  auth,
-  checkPermission('attendance', 'SCAN'),
   attendanceController.submitAttendance
 );
 

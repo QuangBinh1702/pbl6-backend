@@ -911,7 +911,7 @@ module.exports = {
   async submitAttendance(req, res) {
     try {
       const { activity_id, session_id, student_info } = req.body;
-      const userId = req.user._id;
+      // 🆕 NO AUTH REQUIRED: Public endpoint - validate by MSSV and registration
 
       // Validate required fields
       if (!activity_id || !student_info) {
@@ -937,15 +937,42 @@ module.exports = {
         return res.status(400).json({ success: false, message: 'Notes cannot exceed 500 characters' });
       }
 
-      // Get student profile (optional - create minimal record if needed)
-      let studentProfile = await StudentProfile.findOne({ user_id: userId });
-      const studentId = studentProfile ? studentProfile._id : userId;
-
       // Check if activity exists
       const activity = await Activity.findById(activity_id);
       if (!activity) {
         return res.status(404).json({ success: false, message: 'Activity not found' });
       }
+
+      // 🆕 Find student profile by MSSV (student_number) - REQUIRED
+      const studentProfile = await StudentProfile.findOne({ 
+        student_number: student_info.student_id_number 
+      }).populate('user_id');
+      
+      if (!studentProfile) {
+        return res.status(404).json({
+          success: false,
+          message: `Sinh viên với MSSV ${student_info.student_id_number} không tồn tại trong hệ thống. Vui lòng liên hệ quản trị viên.`
+        });
+      }
+
+      const studentId = studentProfile._id;
+      const userId = studentProfile.user_id?._id || null;
+      console.log(`✅ Found student in system: ${student_info.student_id_number} → ${studentId}`);
+
+      // 🆕 Check if student is registered and approved for this activity - REQUIRED
+      const registration = await ActivityRegistration.findOne({
+        student_id: studentId,
+        activity_id: activity_id,
+        status: 'approved'
+      });
+
+      if (!registration) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn chưa được duyệt để tham gia hoạt động này. Vui lòng đăng ký và chờ duyệt trước.'
+        });
+      }
+      console.log(`✅ Student ${student_info.student_id_number} is registered and approved for activity`);
 
       // 🆕 Validate QR Code if provided (BACKEND CHECK)
       const qrCodeId = session_id;  // session_id = qr_code_id in new system
@@ -1020,7 +1047,6 @@ module.exports = {
         student_id: studentId,
         activity_id: activity_id
       });
-
       const scan_order = scanCountForActivity + 1;  // 1st, 2nd, 3rd...
       const total_qr_at_scan = activity.total_qr_created || 1;  // Total QR created at this moment
       

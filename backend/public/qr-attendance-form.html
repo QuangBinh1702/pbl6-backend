@@ -217,6 +217,12 @@
         <div id="errorMsg" class="alert error" style="display: none;"></div>
         <div id="successMsg" class="alert success" style="display: none;"></div>
 
+        <!-- Warning notice -->
+        <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 12px; margin-bottom: 20px; font-size: 13px; color: #856404;">
+            <strong>⚠️ Lưu ý quan trọng:</strong><br>
+            Vui lòng điền đầy đủ và chính xác thông tin. Nếu ghi sai hoặc thiếu thông tin (không có dấu <span class="required">*</span>), bạn sẽ <strong>không được tính điểm</strong> cho hoạt động này.
+        </div>
+
         <form id="attendanceForm">
             <input type="hidden" id="activity_id" value="">
             <input type="hidden" id="session_id" value="">
@@ -434,12 +440,8 @@
         // 🆕 DYNAMIC QR SCORING: Predict points for student based on activity
         async function predictPoints(activityId) {
             try {
-                // Get activity details to show prediction
-                const response = await fetch(`${API_BASE_URL}/activities/${activityId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${getToken()}`
-                    }
-                });
+                // Get activity details to show prediction (public endpoint - no token needed)
+                const response = await fetch(`${API_BASE_URL}/activities/${activityId}`);
 
                 const result = await response.json();
                 if (result.success) {
@@ -576,11 +578,11 @@
                     }
                 };
 
+                // 🆕 NO TOKEN REQUIRED: Public endpoint - validates by MSSV and registration
                 const response = await fetch(`${API_BASE_URL}/attendances/submit-attendance`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${getToken()}`
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(payload)
                 });

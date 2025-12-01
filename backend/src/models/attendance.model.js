@@ -4,7 +4,7 @@ const attendanceSchema = new mongoose.Schema({
   student_id: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'StudentProfile', 
-    required: true 
+    required: true  // ✅ Student must exist in system
   },
   activity_id: { 
     type: mongoose.Schema.Types.ObjectId, 
@@ -63,7 +63,7 @@ const attendanceSchema = new mongoose.Schema({
   student_info: {
     student_id_number: {
       type: String,
-      validate: /^\d{5,6}$/,  // 5-6 digits (MSSV)
+      validate: /^\d{9}$/,  // 🆕 9 digits (MSSV)
       sparse: true
     },
     student_name: {
