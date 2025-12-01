@@ -214,8 +214,8 @@
             <p>Vui lòng điền đầy đủ thông tin</p>
         </div>
 
-        <!-- <div id="errorMsg" class="alert error"></div>
-        <div id="successMsg" class="alert success"></div> -->
+        <div id="errorMsg" class="alert error" style="display: none;"></div>
+        <div id="successMsg" class="alert success" style="display: none;"></div>
 
         <form id="attendanceForm">
             <input type="hidden" id="activity_id" value="">
@@ -557,6 +557,13 @@
             submitBtn.disabled = true;
             document.getElementById('loading').style.display = 'block';
 
+            console.log('Submitting attendance...', {
+                activity_id: document.getElementById('activity_id').value,
+                session_id: document.getElementById('session_id').value,
+                student_name: studentName,
+                student_id: studentId
+            });
+
             try {
                 const payload = {
                     activity_id: document.getElementById('activity_id').value,
@@ -586,20 +593,25 @@
                     const totalQR = result.data?.total_qr_at_scan || '?';
                     const pointsEarned = result.data?.points_earned || '?';
                     
-                    showSuccess(`✅ ${result.message || 'Điểm danh thành công!'}\n📊 Lần quét: ${scanOrder}/${totalQR}\n💰 Điểm nhận: ${pointsEarned}`);
+                    const successMessage = `✅ ${result.message || 'Điểm danh thành công!'}\n📊 Lần quét: ${scanOrder}/${totalQR}\n💰 Điểm nhận: ${pointsEarned} điểm\n\n✅ Dữ liệu đã được lưu vào bảng Attendance!`;
+                    showSuccess(successMessage);
+                    
+                    // Disable form to prevent double submission
+                    disableForm(true);
                     
                     // Reset form
                     document.getElementById('attendanceForm').reset();
                     document.getElementById('class').disabled = true;
 
-                    // Redirect after 3 seconds
+                    // Redirect after 5 seconds (tăng thời gian để người dùng đọc message)
                     setTimeout(() => {
                         window.location.href = '/';
-                    }, 3000);
+                    }, 5000);
                 } else {
                     showError(result.message || 'Lỗi nộp điểm danh');
                 }
             } catch (error) {
+                console.error('Submit error:', error);
                 showError('Lỗi: ' + error.message);
             } finally {
                 submitBtn.disabled = false;
