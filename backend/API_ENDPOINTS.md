@@ -1066,12 +1066,19 @@ The response format is the same as Staff Profile responses.
   "org_unit_id": "org_unit_id_here",
   "field_id": "field_id_here",
   "activity_image": "https://example.com/image.jpg",
+  "max_points": 15,
   "requirements": [
     { "type": "falcuty", "id": "faculty_id_here" },
     { "type": "cohort", "id": "cohort_id_here" }
   ]
 }
 ```
+
+**Lưu ý về trường `max_points`:**
+- `max_points` (**required**): Điểm tối đa của hoạt động (số >= 0)
+- Bắt buộc phải nhập khi tạo hoạt động
+- Dùng để tính điểm động khi sinh viên quét QR code
+- Công thức tính điểm: `floor((scan_order / total_qr_at_scan) * max_points)`
 
 **Lưu ý về trường `requirements`:**
 
@@ -1097,6 +1104,8 @@ The response format is the same as Staff Profile responses.
   - Nếu `start_time <= now <= end_time`: status = `đang tổ chức`
   - Nếu `start_time > now`: status = `chưa tổ chức`
 - Hoạt động được tạo sẽ có status = `chưa tổ chức` (nếu start_time trong tương lai) hoặc `đang tổ chức`/`đã tổ chức` (nếu đang diễn ra hoặc đã kết thúc)
+- **`max_points`** (**required**): Điểm tối đa của hoạt động (số >= 0). Bắt buộc phải nhập
+- **`total_qr_created`**: Tự động = 0 khi tạo mới, tăng dần khi admin tạo QR code
 - Yêu cầu permission: `activity:CREATE`
 
 **Request Body - Update Activity:**
@@ -1115,6 +1124,7 @@ The response format is the same as Staff Profile responses.
   "org_unit_id": "org_unit_id_here",
   "field_id": "field_id_here",
   "activity_image": "https://example.com/image-updated.jpg",
+  "max_points": 20,
   "requirements": [
     { "type": "falcuty", "name": "cntt" },
     { "type": "cohort", "year": 2023 }
@@ -1125,6 +1135,7 @@ The response format is the same as Staff Profile responses.
 **Lưu ý - Update Activity:**
 
 - Tất cả các trường đều **optional** - chỉ gửi những trường cần cập nhật
+- **`max_points`** (optional khi update): Điểm tối đa của hoạt động (số >= 0). Có thể cập nhật riêng trường này. Không thể set = null
 - **`requirements`**: Nếu gửi trường này, tất cả requirements cũ sẽ bị xóa và thay thế bằng những requirements mới
 - Nếu gửi `requirements: []` (mảng rỗng), tất cả requirements sẽ bị xóa (hoạt động không còn giới hạn)
 - Nếu không gửi trường `requirements`, các requirements cũ sẽ giữ nguyên
@@ -1144,7 +1155,8 @@ The response format is the same as Staff Profile responses.
   "requires_approval": true,
   "org_unit_id": "org_unit_id_here",
   "field_id": "field_id_here",
-  "activity_image": "https://example.com/image.jpg"
+  "activity_image": "https://example.com/image.jpg",
+  "max_points": 15
 }
 ```
 
@@ -1154,6 +1166,8 @@ The response format is the same as Staff Profile responses.
 - Hoạt động cần được phê duyệt qua endpoint `/api/activities/:id/approve` trước khi có thể tổ chức
 - Không yêu cầu permission đặc biệt, chỉ cần authenticated
 - Sau khi được phê duyệt, status sẽ tự động chuyển thành `chưa tổ chức`/`đang tổ chức`/`đã tổ chức` dựa trên thời gian
+- **`max_points`** (**required**): Điểm tối đa của hoạt động (số >= 0). Bắt buộc phải nhập
+- **`total_qr_created`**: Tự động = 0 khi tạo mới
 
 **Request Body - Reject Activity:**
 
@@ -1344,6 +1358,8 @@ The response format is the same as Staff Profile responses.
       "status": "chưa tổ chức",
       "requires_approval": false,
       "approved_at": "2024-01-10T10:00:00.000Z",
+      "max_points": 15,
+      "total_qr_created": 3,
       "requirements": [
         {
           "type": "falcuty",
@@ -1448,25 +1464,27 @@ GET /api/activities/activity_id_123/student/user_id_or_student_id_456
 {
   "success": true,
   "data": {
-    "activity": {
-      "_id": "activity_id",
-      "title": "Hoạt động tình nguyện",
-      "description": "Mô tả hoạt động",
-      "location": "P101",
-      "start_time": "2024-01-15T08:00:00.000Z",
-      "end_time": "2024-01-15T12:00:00.000Z",
-      "capacity": 50,
-      "status": "chưa tổ chức",
-      "requires_approval": false,
-      "org_unit_id": {
-        "_id": "org_unit_id",
-        "name": "Phòng CTSV"
-      },
-      "field_id": {
-        "_id": "field_id",
-        "name": "Công nghệ thông tin"
-      },
-      "registrationCount": 25,
+      "activity": {
+        "_id": "activity_id",
+        "title": "Hoạt động tình nguyện",
+        "description": "Mô tả hoạt động",
+        "location": "P101",
+        "start_time": "2024-01-15T08:00:00.000Z",
+        "end_time": "2024-01-15T12:00:00.000Z",
+        "capacity": 50,
+        "status": "chưa tổ chức",
+        "requires_approval": false,
+        "max_points": 15,
+        "total_qr_created": 3,
+        "org_unit_id": {
+          "_id": "org_unit_id",
+          "name": "Phòng CTSV"
+        },
+        "field_id": {
+          "_id": "field_id",
+          "name": "Công nghệ thông tin"
+        },
+        "registrationCount": 25,
       "rejection": {
         "reason": "Không đủ điều kiện tham gia",
         "rejected_by": {
@@ -1768,6 +1786,8 @@ GET /api/activities/activity_id_123/student/user_id_or_student_id_456
     "description": "Mô tả hoạt động",
     "status": "từ chối",
     "registrationCount": 10,
+    "max_points": 15,
+    "total_qr_created": 3,
     "rejection": {
       "_id": "rejection_id",
       "activity_id": "activity_id",
@@ -1813,6 +1833,8 @@ GET /api/activities/activity_id_123/student/user_id_or_student_id_456
     "capacity": 50,
     "status": "chờ duyệt",
     "requires_approval": true,
+    "max_points": 15,
+    "total_qr_created": 0,
     "org_unit_id": {
       "_id": "org_unit_id",
       "name": "Phòng CTSV",
@@ -1843,6 +1865,8 @@ GET /api/activities/activity_id_123/student/user_id_or_student_id_456
     "status": "chưa tổ chức",
     "requires_approval": false,
     "approved_at": "2024-01-10T10:00:00.000Z",
+    "max_points": 15,
+    "total_qr_created": 0,
     "org_unit_id": {
       "_id": "org_unit_id",
       "name": "Phòng CTSV",

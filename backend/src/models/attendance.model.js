@@ -80,15 +80,6 @@ const attendanceSchema = new mongoose.Schema({
       ref: 'Falcuty',
       sparse: true
     },
-    phone: {
-      type: String,
-      validate: /^(0|\+84)\d{9,10}$/,  // Vietnamese phone format
-      sparse: true
-    },
-    notes: {
-      type: String,
-      maxlength: 500
-    },
     submitted_at: {
       type: Date,
       default: Date.now

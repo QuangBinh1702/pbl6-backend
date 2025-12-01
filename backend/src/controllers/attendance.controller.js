@@ -927,16 +927,6 @@ module.exports = {
         return res.status(400).json({ success: false, message: 'MSSV must be 9 digits' });
       }
 
-      // Validate phone format if provided
-      if (student_info.phone && !/^(0|\+84)\d{9,10}$/.test(student_info.phone)) {
-        return res.status(400).json({ success: false, message: 'Invalid Vietnamese phone number format' });
-      }
-
-      // Validate notes length
-      if (student_info.notes && student_info.notes.length > 500) {
-        return res.status(400).json({ success: false, message: 'Notes cannot exceed 500 characters' });
-      }
-
       // Check if activity exists
       const activity = await Activity.findById(activity_id);
       if (!activity) {
@@ -1078,8 +1068,6 @@ module.exports = {
           student_name: student_info.student_name,  // 🆕 New field
           class: student_info.class,  // ObjectId
           faculty: student_info.faculty,  // ObjectId
-          phone: student_info.phone || null,
-          notes: student_info.notes || null,
           submitted_at: new Date()
         },
         
