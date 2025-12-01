@@ -175,6 +175,23 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Hide test/debug input fields with colored backgrounds */
+        input[type="text"]:not([id]),
+        input[type="tel"]:not([id]) {
+            display: none !important;
+        }
+
+        /* Hide inputs with orange/red or green backgrounds */
+        input[style*="background"][style*="rgb(255"],
+        input[style*="background"][style*="rgb(254"],
+        input[style*="background"][style*="rgb(253"],
+        input[style*="background"][style*="rgb(0, 255"],
+        input[style*="background"][style*="rgb(0, 254"],
+        input[style*="background"][style*="rgb(144, 238"],
+        input[style*="background"][style*="rgb(152, 251"] {
+            display: none !important;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 20px;
@@ -197,8 +214,8 @@
             <p>Vui lòng điền đầy đủ thông tin</p>
         </div>
 
-        <div id="errorMsg" class="alert error"></div>
-        <div id="successMsg" class="alert success"></div>
+        <!-- <div id="errorMsg" class="alert error"></div>
+        <div id="successMsg" class="alert success"></div> -->
 
         <form id="attendanceForm">
             <input type="hidden" id="activity_id" value="">
@@ -225,11 +242,11 @@
                 <input 
                     type="text" 
                     id="student_id" 
-                    placeholder="Ví dụ: 20001"
+                    placeholder="Ví dụ: 102"
                     maxlength="6"
                     required
                 >
-                <div class="help-text">Nhập mã số sinh viên (5-6 chữ số)</div>
+                <div class="help-text"></div>
             </div>
 
             <!-- Khoa và Lớp -->
@@ -253,33 +270,7 @@
                 </div>
             </div>
 
-            <!-- SĐT -->
-            <div class="form-group">
-                <label for="phone">
-                    Số điện thoại (tùy chọn)
-                </label>
-                <input 
-                    type="tel" 
-                    id="phone" 
-                    placeholder="0123456789"
-                >
-                <div class="help-text">Định dạng: 0xxxxxxxxx</div>
-            </div>
 
-            <!-- Ghi chú -->
-            <div class="form-group">
-                <label for="notes">
-                    Ghi chú (tùy chọn)
-                </label>
-                <textarea 
-                    id="notes" 
-                    placeholder="Ghi chú thêm"
-                    maxlength="500"
-                ></textarea>
-                <div class="char-count">
-                    <span id="charCount">0</span>/500 ký tự
-                </div>
-            </div>
 
             <button type="submit" id="submitBtn">Nộp Điểm Danh</button>
 
@@ -297,10 +288,68 @@
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async () => {
+            // Remove any input fields with orange/green background (test/debug fields)
+            removeTestInputFields();
             await loadMasterData();
             parseURLParams();
             setupEventListeners();
         });
+
+        // Remove test/debug input fields with colored backgrounds
+        function removeTestInputFields() {
+            // Remove inputs without id or label that might be test fields
+            const allInputs = document.querySelectorAll('input[type="text"], input[type="tel"]');
+            allInputs.forEach(input => {
+                // Skip if input has an id (it's a real form field)
+                if (input.id) return;
+                
+                // Check if input has a label
+                const hasLabel = input.previousElementSibling && 
+                                input.previousElementSibling.tagName === 'LABEL';
+                
+                // Check background color
+                const style = window.getComputedStyle(input);
+                const bgColor = style.backgroundColor;
+                const isColored = bgColor && (
+                    bgColor.includes('rgb(255') || 
+                    bgColor.includes('rgb(254') ||
+                    bgColor.includes('rgb(253') ||
+                    bgColor.includes('rgb(0, 255') ||
+                    bgColor.includes('rgb(0, 254') ||
+                    bgColor.includes('rgb(144, 238') ||
+                    bgColor.includes('rgb(152, 251') ||
+                    bgColor.includes('orange') ||
+                    bgColor.includes('coral') ||
+                    bgColor.includes('salmon')
+                );
+                
+                // Remove if it's colored and has no label, or if it's in form but not in a form-group
+                const isInFormGroup = input.closest('.form-group');
+                if ((isColored || !hasLabel) && !isInFormGroup && input.type !== 'hidden') {
+                    input.remove();
+                }
+            });
+            
+            // Also use MutationObserver to catch dynamically added inputs
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === 1 && node.tagName === 'INPUT') {
+                            const input = node;
+                            if (!input.id && input.type !== 'hidden') {
+                                const style = window.getComputedStyle(input);
+                                const bgColor = style.backgroundColor;
+                                if (bgColor && (bgColor.includes('rgb(255') || bgColor.includes('rgb(0, 255'))) {
+                                    input.remove();
+                                }
+                            }
+                        }
+                    });
+                });
+            });
+            
+            observer.observe(document.body, { childList: true, subtree: true });
+        }
 
         // Load classes and faculties from API
         async function loadMasterData() {
@@ -450,10 +499,7 @@
                 updateClassDropdown(e.target.value);
             });
 
-            // Character counter for notes
-            document.getElementById('notes').addEventListener('input', (e) => {
-                document.getElementById('charCount').textContent = e.target.value.length;
-            });
+
 
             // Form submission
             document.getElementById('attendanceForm').addEventListener('submit', handleSubmit);
@@ -494,8 +540,6 @@
             const studentId = document.getElementById('student_id').value.trim();
             const faculty = document.getElementById('faculty').value;
             const classId = document.getElementById('class').value;
-            const phone = document.getElementById('phone').value.trim();
-            const notes = document.getElementById('notes').value.trim();
 
             // Validation
             if (!studentName || !studentId || !faculty || !classId) {
@@ -505,11 +549,6 @@
 
             if (!/^\d{5,6}$/.test(studentId)) {
                 showError('MSSV phải là 5-6 chữ số');
-                return;
-            }
-
-            if (phone && !/^(0|\+84)\d{9,10}$/.test(phone)) {
-                showError('Số điện thoại không hợp lệ (định dạng: 0xxxxxxxxx)');
                 return;
             }
 
@@ -526,9 +565,7 @@
                         student_id_number: studentId,
                         student_name: studentName,
                         class: classId,
-                        faculty: faculty,
-                        phone: phone || null,
-                        notes: notes || null
+                        faculty: faculty
                     }
                 };
 
@@ -544,17 +581,21 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    showSuccess('✅ Điểm danh thành công! Chờ xác nhận từ quản lý.');
+                    // Show detailed success message with points
+                    const scanOrder = result.data?.scan_order || '?';
+                    const totalQR = result.data?.total_qr_at_scan || '?';
+                    const pointsEarned = result.data?.points_earned || '?';
+                    
+                    showSuccess(`✅ ${result.message || 'Điểm danh thành công!'}\n📊 Lần quét: ${scanOrder}/${totalQR}\n💰 Điểm nhận: ${pointsEarned}`);
                     
                     // Reset form
                     document.getElementById('attendanceForm').reset();
                     document.getElementById('class').disabled = true;
-                    document.getElementById('charCount').textContent = '0';
 
-                    // Redirect after 2 seconds
+                    // Redirect after 3 seconds
                     setTimeout(() => {
                         window.location.href = '/';
-                    }, 2000);
+                    }, 3000);
                 } else {
                     showError(result.message || 'Lỗi nộp điểm danh');
                 }
@@ -581,7 +622,7 @@
 
         function showSuccess(message) {
             const successEl = document.getElementById('successMsg');
-            successEl.textContent = message;
+            successEl.innerHTML = message.replace(/\n/g, '<br>');
             successEl.style.display = 'block';
         }
 

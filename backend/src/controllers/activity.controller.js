@@ -281,6 +281,7 @@ module.exports = {
         org_unit_id,
         field_id,
         activity_image,
+        max_points, // 🆕 Điểm tối đa của hoạt động
         requirements // <-- thêm trường này
       } = req.body;
       
@@ -289,6 +290,21 @@ module.exports = {
         return res.status(400).json({ 
           success: false, 
           message: 'Title, start_time, and end_time are required' 
+        });
+      }
+      
+      // 🆕 Validate max_points (required)
+      if (max_points === undefined || max_points === null) {
+        return res.status(400).json({
+          success: false,
+          message: 'max_points is required'
+        });
+      }
+      
+      if (typeof max_points !== 'number' || max_points < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'max_points must be a number >= 0'
         });
       }
       
@@ -409,6 +425,7 @@ module.exports = {
         org_unit_id,
         field_id,
         activity_image,
+        max_points: max_points, // 🆕 Bắt buộc phải có
         status: activityStatus,
         approved_at: activityStatus === 'approved' || activityStatus === 'in_progress' ? new Date() : null
       });
@@ -486,6 +503,7 @@ module.exports = {
         requires_approval,
         org_unit_id,
         field_id,
+        max_points, // 🆕 Điểm tối đa của hoạt động
         activity_image
       } = req.body;
       
@@ -494,6 +512,21 @@ module.exports = {
         return res.status(400).json({ 
           success: false, 
           message: 'Title, start_time, and end_time are required' 
+        });
+      }
+      
+      // 🆕 Validate max_points (required)
+      if (max_points === undefined || max_points === null) {
+        return res.status(400).json({
+          success: false,
+          message: 'max_points is required'
+        });
+      }
+      
+      if (typeof max_points !== 'number' || max_points < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'max_points must be a number >= 0'
         });
       }
       
@@ -579,6 +612,7 @@ module.exports = {
         org_unit_id,
         field_id,
         activity_image,
+        max_points: max_points, // 🆕 Bắt buộc phải có
         status: 'pending' // Đề xuất hoạt động luôn có status = pending
       });
       
@@ -603,6 +637,22 @@ module.exports = {
       
       // Remove requirements from updates object (handle separately)
       delete updates.requirements;
+      
+      // 🆕 Validate max_points if provided (optional when updating)
+      if (updates.max_points !== undefined) {
+        if (updates.max_points === null) {
+          return res.status(400).json({
+            success: false,
+            message: 'max_points cannot be null'
+          });
+        }
+        if (typeof updates.max_points !== 'number' || updates.max_points < 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'max_points must be a number >= 0'
+          });
+        }
+      }
       
       // Update time_updated fields if start_time or end_time changed
       if (updates.start_time) {
