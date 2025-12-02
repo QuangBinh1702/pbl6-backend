@@ -611,8 +611,89 @@
 
         <!-- Staff Tab -->
         <div id="staff-tab" class="tab-content">
-            <div style="padding: 40px; text-align: center; color: #999;">
-                <p>Chức năng quản lý tài khoản cán bộ, giảng viên đang được phát triển...</p>
+            <div class="error" id="error-message-staff"></div>
+
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <div class="filter-header">
+                    <span class="filter-icon">🔍</span>
+                    <h3>Bộ lọc thống kê</h3>
+                </div>
+                <div class="filter-form">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label for="filter-staff-number">Mã cán bộ, giảng viên</label>
+                            <input type="text" id="filter-staff-number" class="filter-input" placeholder="Nhập mã cán bộ, giảng viên">
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-org-unit-staff">Đơn vị công tác</label>
+                            <select id="filter-org-unit-staff" class="filter-select">
+                                <option value="">-- Chọn đơn vị công tác --</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-sort">Sắp xếp</label>
+                            <select id="filter-sort" class="filter-select">
+                                <option value="">-- Chọn sắp xếp --</option>
+                                <option value="staff_number_asc">Mã tăng dần</option>
+                                <option value="staff_number_desc">Mã giảm dần</option>
+                                <option value="name_asc">Tên A-Z</option>
+                                <option value="name_desc">Tên Z-A</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="filter-actions">
+                        <button class="btn-apply" onclick="applyFilterStaff()">
+                            <span class="btn-icon">✓</span>
+                            Áp dụng bộ lọc
+                        </button>
+                        <button class="btn-reset-filter" onclick="resetFilterStaff()">
+                            <span class="btn-icon">↻</span>
+                            Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading" id="loading-staff">
+                <div class="spinner"></div>
+                <p>Đang tải dữ liệu...</p>
+            </div>
+
+            <!-- Table Section -->
+            <div class="table-section" id="table-section-staff" style="display: none;">
+                <div class="table-header">
+                    <h2 class="table-title">Danh sách cán bộ, giảng viên</h2>
+                    <div class="table-actions">
+                        <button class="btn-select-all" onclick="selectAllStaff()">Chọn tất cả</button>
+                        <button class="btn-delete" id="btn-delete-staff" onclick="deleteSelectedStaff()" disabled>
+                            <span>🗑️</span>
+                            Xóa
+                        </button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="staff-table">
+                        <thead>
+                            <tr>
+                                <th>Mã giảng viên</th>
+                                <th>Họ tên</th>
+                                <th>Đơn vị</th>
+                                <th>Chức vụ</th>
+                                <th class="checkbox-cell">Chọn</th>
+                                <th class="action-cell">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staff-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="empty-state-staff" style="display: none;">
+                <p>Không tìm thấy cán bộ, giảng viên nào</p>
             </div>
         </div>
     </div>
@@ -624,6 +705,8 @@
 
         let selectedStudents = new Set();
         let allStudents = [];
+        let selectedStaff = new Set();
+        let allStaff = [];
         let currentUser = null;
 
         // Check if user is logged in on page load
@@ -669,6 +752,7 @@
                     hideLoginModal();
                     loadFaculties();
                     loadClasses();
+                    loadOrgUnits();
                     fetchStudents();
                     updateUserInfo();
                 } else {
@@ -717,6 +801,7 @@
                     hideLoginModal();
                     loadFaculties();
                     loadClasses();
+                    loadOrgUnits();
                     fetchStudents();
                     updateUserInfo();
                     
@@ -740,6 +825,7 @@
                 localStorage.removeItem('user');
                 currentUser = null;
                 selectedStudents.clear();
+                selectedStaff.clear();
                 showLoginModal();
             }
         }
@@ -769,6 +855,10 @@
             } else {
                 document.getElementById('staff-tab').classList.add('active');
                 event.target.classList.add('active');
+                // Load staff data when switching to staff tab
+                if (allStaff.length === 0) {
+                    fetchStaff();
+                }
             }
         }
 
@@ -1013,6 +1103,178 @@
 
         function hideError() {
             document.getElementById('error-message').classList.remove('show');
+        }
+
+        function showErrorStaff(message) {
+            const errorEl = document.getElementById('error-message-staff');
+            errorEl.textContent = `❌ ${message}`;
+            errorEl.classList.add('show');
+        }
+
+        function hideErrorStaff() {
+            document.getElementById('error-message-staff').classList.remove('show');
+        }
+
+        // ========== STAFF FUNCTIONS ==========
+
+        async function loadOrgUnits() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/org-units`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                if (!response.ok) return;
+                const data = await response.json();
+                const select = document.getElementById('filter-org-unit-staff');
+                if (Array.isArray(data)) {
+                    data.forEach(unit => {
+                        const option = document.createElement('option');
+                        option.value = unit._id;
+                        option.textContent = unit.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading org units:', error);
+            }
+        }
+
+        function applyFilterStaff() {
+            fetchStaff();
+        }
+
+        function resetFilterStaff() {
+            document.getElementById('filter-staff-number').value = '';
+            document.getElementById('filter-org-unit-staff').value = '';
+            document.getElementById('filter-sort').value = '';
+            selectedStaff.clear();
+            updateDeleteButtonStaff();
+            fetchStaff();
+        }
+
+        async function fetchStaff() {
+            hideErrorStaff();
+            document.getElementById('table-section-staff').style.display = 'none';
+            document.getElementById('empty-state-staff').style.display = 'none';
+            document.getElementById('loading-staff').classList.add('show');
+
+            try {
+                const params = new URLSearchParams();
+                const staffNumber = document.getElementById('filter-staff-number').value;
+                const orgUnitId = document.getElementById('filter-org-unit-staff').value;
+                const sort = document.getElementById('filter-sort').value;
+
+                if (staffNumber) params.append('staff_number', staffNumber);
+                if (orgUnitId) params.append('org_unit_id', orgUnitId);
+                if (sort) params.append('sort', sort);
+
+                const url = `${API_BASE_URL}/staff-profiles?${params.toString()}`;
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                allStaff = result.data || [];
+                displayStaff(allStaff);
+            } catch (error) {
+                console.error('Error:', error);
+                showErrorStaff(error.message);
+                document.getElementById('empty-state-staff').style.display = 'block';
+            } finally {
+                document.getElementById('loading-staff').classList.remove('show');
+            }
+        }
+
+        function displayStaff(staffList) {
+            const tbody = document.getElementById('staff-tbody');
+            tbody.innerHTML = '';
+
+            if (staffList.length === 0) {
+                document.getElementById('empty-state-staff').style.display = 'block';
+                return;
+            }
+
+            staffList.forEach(staff => {
+                const row = document.createElement('tr');
+                const isSelected = selectedStaff.has(staff._id);
+                
+                row.innerHTML = `
+                    <td>${staff.staff_number || '-'}</td>
+                    <td>${staff.full_name || '-'}</td>
+                    <td>${staff.org_unit_name || '-'}</td>
+                    <td>${staff.position || '-'}</td>
+                    <td class="checkbox-cell">
+                        <input type="checkbox" 
+                               ${isSelected ? 'checked' : ''} 
+                               data-staff-id="${staff._id}"
+                               onchange="toggleStaff('${staff._id}')">
+                    </td>
+                    <td class="action-cell">
+                        <button class="btn-view-detail" onclick="viewDetailStaff('${staff._id}')">
+                            Xem chi tiết
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('table-section-staff').style.display = 'block';
+        }
+
+        function toggleStaff(staffId) {
+            if (selectedStaff.has(staffId)) {
+                selectedStaff.delete(staffId);
+            } else {
+                selectedStaff.add(staffId);
+            }
+            updateDeleteButtonStaff();
+        }
+
+        function selectAllStaff() {
+            const checkboxes = document.querySelectorAll('#staff-tbody input[type="checkbox"]');
+            const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+            
+            checkboxes.forEach(cb => {
+                cb.checked = !allSelected;
+                const staffId = cb.getAttribute('data-staff-id');
+                if (staffId) {
+                    if (!allSelected) {
+                        selectedStaff.add(staffId);
+                    } else {
+                        selectedStaff.delete(staffId);
+                    }
+                }
+            });
+            updateDeleteButtonStaff();
+        }
+
+        function updateDeleteButtonStaff() {
+            const btnDelete = document.getElementById('btn-delete-staff');
+            btnDelete.disabled = selectedStaff.size === 0;
+        }
+
+        function deleteSelectedStaff() {
+            if (selectedStaff.size === 0) return;
+            
+            if (!confirm(`Bạn có chắc chắn muốn xóa ${selectedStaff.size} cán bộ, giảng viên đã chọn?`)) {
+                return;
+            }
+
+            // TODO: Implement delete API call
+            alert('Chức năng xóa đang được phát triển...');
+        }
+
+        function viewDetailStaff(staffId) {
+            // TODO: Implement view detail modal or redirect
+            alert(`Xem chi tiết cán bộ, giảng viên: ${staffId}`);
         }
 
         function getToken() {

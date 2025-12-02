@@ -34,7 +34,7 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 | POST   | `/api/auth/login`                 | Đăng nhập                               | ❌            | Public            |
 | POST   | `/api/auth/register`              | Đăng ký tài khoản mới                   | ❌            | Public            |
 | POST   | `/api/auth/create-user`           | Admin tạo tài khoản user mới            | ✅            | admin             |
-| POST   | `/api/auth/create-bulk-users`     | Admin tạo nhiều tài khoản user cùng lúc | ✅            | admin             |
+| POST   | `/api/auth/create-bulk-users`     | Admin tạo nhiều tài khoản user cùng lúc (hỗ trợ upload Excel) | ✅            | admin             |
 | GET    | `/api/auth/profile`               | Lấy thông tin profile của user hiện tại | ✅            | All authenticated |
 | POST   | `/api/auth/forgot-password`       | Quên mật khẩu - gửi email reset         | ❌            | Public            |
 | POST   | `/api/auth/reset-password`        | Đặt lại mật khẩu bằng token             | ❌            | Public            |
@@ -132,6 +132,59 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 
 **Note:** For staff accounts in bulk creation, `staff_number` is optional. If not provided, the system will automatically use `username` as `staff_number`. Optionally include `full_name`, `org_unit_id`, and `position` to match the form UI.
 
+**Request - Create Bulk Users via Excel Upload (⭐ NEW):**
+
+**Content-Type:** `multipart/form-data`
+
+**Form Data:**
+- `file`: Excel file (.xlsx, .xls) - tối đa 5MB
+- `roleName`: "student" hoặc "staff"
+
+**Format Excel cho Sinh viên (roleName = "student"):**
+
+| Mã số sinh viên | Tên sinh viên | Lớp | Khoa |
+|----------------|---------------|-----|------|
+| 102220095 | Nguyễn Văn A | CNTT21.1 | Khoa Công Nghệ Thông Tin |
+| 102220096 | Trần Thị B | CNTT21.2 | Khoa Công Nghệ Thông Tin |
+
+**Format Excel cho Staff (roleName = "staff"):**
+
+| Mã cán bộ | Tên cán bộ | Đơn vị | Chức vụ |
+|-----------|------------|--------|---------|
+| GV001 | Phạm Văn C | Khoa Công Nghệ Thông Tin | Giảng viên |
+| CTSV001 | Lê Thị D | Phòng CTSV | Nhân viên |
+
+**Lưu ý về Excel Upload:**
+
+- **Tên cột hỗ trợ (case-insensitive):**
+  - **Sinh viên:**
+    - Mã số sinh viên / MSSV / Mã sinh viên / Student ID
+    - Tên sinh viên / Họ tên / Tên / Full Name / Name
+    - Lớp / Class / Tên lớp
+    - Khoa / Faculty / Tên khoa
+  - **Staff:**
+    - Mã cán bộ / Mã giảng viên / Mã nhân viên / Staff ID / Mã CB
+    - Tên cán bộ / Tên giảng viên / Tên nhân viên / Họ tên / Tên / Full Name / Name
+    - Đơn vị / Đơn vị công tác / Org Unit / Department
+    - Chức vụ / Position
+- **Dòng đầu tiên:** Phải là tiêu đề cột
+- **Password:** Tự động = username (mã số sinh viên/mã cán bộ)
+- **Tìm kiếm tự động:**
+  - Sinh viên: Tự động tìm `class_id` từ tên lớp + tên khoa (case-insensitive)
+  - Staff: Tự động tìm `org_unit_id` từ tên đơn vị (case-insensitive)
+- **Validation:** Bỏ qua dòng thiếu mã số/tên (không báo lỗi, chỉ skip)
+- **File size:** Tối đa 5MB
+- **File format:** Chỉ hỗ trợ .xlsx, .xls
+
+**Ví dụ Request (Excel Upload):**
+
+```bash
+curl -X POST "http://localhost:5000/api/auth/create-bulk-users" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -F "file=@students.xlsx" \
+  -F "roleName=student"
+```
+
 **Response - Create Bulk Users (Success):**
 
 ```json
@@ -173,7 +226,7 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
   ],
   "failed": [
     {
-      "index": 1,
+      "index": 2,
       "username": "102220112",
       "error": "Username already exists"
     }
@@ -185,6 +238,18 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
   }
 }
 ```
+
+**Lưu ý về Excel Upload:**
+
+- API hỗ trợ **2 cách sử dụng:**
+  1. **Upload Excel file** (mới): Gửi file Excel qua `multipart/form-data` với `file` và `roleName`
+  2. **JSON array** (cũ): Gửi JSON với `users` array (backward compatible)
+- **Index trong errors:** Số dòng trong Excel (1-based, bao gồm header) hoặc index trong array (0-based)
+- **Password mặc định:** = username (mã số sinh viên/mã cán bộ)
+- **Tự động map:**
+  - Sinh viên: Tìm `class_id` từ tên lớp + tên khoa
+  - Staff: Tìm `org_unit_id` từ tên đơn vị
+- **Bỏ qua dòng lỗi:** Nếu một số dòng có lỗi, các dòng khác vẫn được tạo
 
 <!-- **Request Body - Forgot Password:**
 ```json
@@ -2993,7 +3058,185 @@ Lấy danh sách sinh viên duy nhất tham gia hoạt động với thống kê
 - Đánh dấu đã đọc: `PUT /api/notifications/:id/read`
 - Đánh dấu tất cả đã đọc: `PUT /api/notifications/read-all`
 
+---
 
+## ⚙️ System & Permissions
+
+### Permission Management Routes (`/api/permissions`)
+
+#### Permission & Action Management
+
+| Method | Endpoint                                          | Description                     | Auth Required | Permission Required |
+| ------ | ------------------------------------------------- | ------------------------------- | ------------- | ------------------- |
+| GET    | `/api/permissions`                                | Lấy tất cả permissions          | ✅            | -                   |
+| POST   | `/api/permissions`                                | Tạo permission mới              | ✅            | `permission:CREATE` |
+| GET    | `/api/permissions/actions`                        | Lấy tất cả actions              | ✅            | -                   |
+| POST   | `/api/permissions/actions`                        | Tạo action mới                  | ✅            | `permission:CREATE` |
+| GET    | `/api/permissions/actions/:resource`              | Lấy actions theo resource       | ✅            | -                   |
+| GET    | `/api/permissions/roles`                          | Lấy tất cả roles                | ✅            | -                   |
+| GET    | `/api/permissions/roles/:roleId/actions`          | Lấy actions của role            | ✅            | -                   |
+| POST   | `/api/permissions/roles/:roleId/actions`          | Thêm action vào role            | ✅            | `role:UPDATE`        |
+| DELETE | `/api/permissions/roles/:roleId/actions/:actionId` | Xóa action khỏi role            | ✅            | `role:UPDATE`        |
+
+#### User Permission Management ⭐ NEW
+
+| Method | Endpoint                                          | Description                                    | Auth Required | Permission Required |
+| ------ | ------------------------------------------------- | ---------------------------------------------- | ------------- | ------------------- |
+| GET    | `/api/permissions/users/username/:username`      | Lấy thông tin user và permissions theo username | ✅            | `user:READ`         |
+| GET    | `/api/permissions/users/:userId/permissions`     | Lấy tất cả permissions của user               | ✅            | -                   |
+| GET    | `/api/permissions/users/:userId/actions/:resource` | Lấy actions của user cho một resource        | ✅            | -                   |
+| POST   | `/api/permissions/users/:userId/check-permission` | Kiểm tra user có permission cụ thể          | ✅            | -                   |
+| PUT    | `/api/permissions/users/:userId/permissions`     | Cập nhật permissions cho user (bulk update)   | ✅            | `user:UPDATE`       |
+| POST   | `/api/permissions/users/:userId/assign-org-role` | Gán role tổ chức cho sinh viên                | ✅            | `user:UPDATE`       |
+
+**Request - Get User by Username (`GET /api/permissions/users/username/:username`):**
+
+```bash
+GET /api/permissions/users/username/admin
+Headers: Authorization: Bearer <token>
+```
+
+**Response - Get User by Username:**
+
+```json
+{
+  "success": true,
+  "user": {
+    "id": "user_id",
+    "username": "admin",
+    "active": true,
+    "isLocked": false,
+    "userType": "staff"
+  },
+  "roles": [
+    {
+      "id": "user_role_id",
+      "role": "admin",
+      "roleId": "role_id",
+      "orgUnit": null
+    }
+  ],
+  "permissions": {
+    "activity": [
+      {
+        "action_code": "CREATE",
+        "action_name": "Tạo hoạt động"
+      },
+      {
+        "action_code": "READ",
+        "action_name": "Xem hoạt động"
+      }
+    ],
+    "user": [
+      {
+        "action_code": "READ",
+        "action_name": "Xem người dùng"
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "action_id": "action_id",
+      "resource": "activity",
+      "action_code": "DELETE",
+      "action_name": "Xóa hoạt động",
+      "is_granted": true
+    }
+  ]
+}
+```
+
+**Request - Update User Permissions (`PUT /api/permissions/users/:userId/permissions`):**
+
+```json
+{
+  "actions": [
+    {
+      "action_id": "action_id_1",
+      "is_granted": true
+    },
+    {
+      "action_id": "action_id_2",
+      "is_granted": false
+    }
+  ]
+}
+```
+
+**Response - Update User Permissions:**
+
+```json
+{
+  "success": true,
+  "message": "Permissions updated successfully",
+  "results": [
+    {
+      "action_id": "action_id_1",
+      "success": true,
+      "data": {
+        "_id": "override_id",
+        "user_id": "user_id",
+        "action_id": {
+          "_id": "action_id_1",
+          "resource": "activity",
+          "action_code": "CREATE"
+        },
+        "is_granted": true
+      }
+    }
+  ]
+}
+```
+
+**Request - Assign Org Role to Student (`POST /api/permissions/users/:userId/assign-org-role`):**
+
+```json
+{
+  "role_id": "staff_role_id",
+  "org_unit_id": "org_unit_id",
+  "position": "Nhân viên"
+}
+```
+
+**Response - Assign Org Role to Student:**
+
+```json
+{
+  "success": true,
+  "message": "Organization role assigned to student successfully",
+  "data": {
+    "_id": "user_role_id",
+    "user_id": "user_id",
+    "role_id": {
+      "_id": "staff_role_id",
+      "name": "staff"
+    },
+    "org_unit_id": {
+      "_id": "org_unit_id",
+      "name": "Khoa Công Nghệ Thông Tin"
+    }
+  }
+}
+```
+
+**Lưu ý - Assign Org Role to Student:**
+
+- Chỉ có thể gán cho user có `userType = "student"`
+- Nếu `position` được cung cấp, hệ thống sẽ tự động tạo hoặc cập nhật `StaffProfile` cho sinh viên
+- `org_unit_id` là bắt buộc
+- `position` là optional (có thể để trống)
+- Nếu user đã có role này trong org unit, sẽ trả về lỗi 400
+
+**Lưu ý - Update User Permissions:**
+
+- `actions` là một mảng các object với `action_id` và `is_granted`
+- `is_granted: true` = cấp quyền, `is_granted: false` = thu hồi quyền
+- Hệ thống sẽ tạo hoặc cập nhật `UserActionOverride` cho mỗi action
+- Override có priority cao hơn role-based permissions
+
+---
+
+## 📊 Statistics
 
 Lấy thống kê tổng quan hoạt động: tổng số, hoạt động năm nay, tỷ lệ tăng trưởng.
 

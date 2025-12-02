@@ -5,6 +5,8 @@ const RoleAction = require('../models/role_action.model');
 const UserRole = require('../models/user_role.model');
 const UserActionOverride = require('../models/user_action_override.model');
 const User = require('../models/user.model');
+const StudentProfile = require('../models/student_profile.model');
+const StaffProfile = require('../models/staff_profile.model');
 const { hasPermission, getUserActions, getAllUserPermissions } = require('../utils/permission.util');
 
 /**
@@ -443,6 +445,245 @@ exports.removeActionFromRole = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error removing action from role',
+      error: err.message
+    });
+  }
+};
+
+/**
+ * Lấy thông tin user và permissions theo username
+ */
+exports.getUserByUsername = async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    // Find user by username
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Get user roles
+    const userRoles = await UserRole.find({ user_id: user._id })
+      .populate('role_id')
+      .populate('org_unit_id');
+    
+    // Get all permissions grouped by resource
+    const permissions = await getAllUserPermissions(user._id);
+    
+    // Get user overrides
+    const overrides = await UserActionOverride.find({ user_id: user._id })
+      .populate('action_id');
+    
+    // Check if user is student or staff
+    const studentProfile = await StudentProfile.findOne({ user_id: user._id });
+    const staffProfile = await StaffProfile.findOne({ user_id: user._id });
+    
+    const userType = studentProfile ? 'student' : staffProfile ? 'staff' : 'unknown';
+    
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        username: user.username,
+        active: user.active,
+        isLocked: user.isLocked,
+        userType
+      },
+      roles: userRoles.map(ur => ({
+        id: ur._id,
+        role: ur.role_id?.name,
+        roleId: ur.role_id?._id,
+        orgUnit: ur.org_unit_id ? {
+          id: ur.org_unit_id._id,
+          name: ur.org_unit_id.name
+        } : null
+      })),
+      permissions,
+      overrides: overrides.map(o => ({
+        action_id: o.action_id?._id,
+        resource: o.action_id?.resource,
+        action_code: o.action_id?.action_code,
+        action_name: o.action_id?.action_name || o.action_id?.action_code,
+        is_granted: o.is_granted
+      }))
+    });
+  } catch (err) {
+    console.error('Get user by username error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving user information',
+      error: err.message
+    });
+  }
+};
+
+/**
+ * Cập nhật permissions cho user (bulk update actions)
+ */
+exports.updateUserPermissions = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { actions } = req.body; // Array of { action_id, is_granted }
+    
+    if (!Array.isArray(actions)) {
+      return res.status(400).json({
+        success: false,
+        message: 'actions must be an array'
+      });
+    }
+    
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    const results = [];
+    
+    // Process each action
+    for (const actionData of actions) {
+      const { action_id, is_granted } = actionData;
+      
+      if (!action_id) continue;
+      
+      // Check if action exists
+      const action = await Action.findById(action_id);
+      if (!action) {
+        results.push({ action_id, success: false, message: 'Action not found' });
+        continue;
+      }
+      
+      // Create or update override
+      const override = await UserActionOverride.findOneAndUpdate(
+        { user_id: userId, action_id },
+        { is_granted: is_granted !== false },
+        { upsert: true, new: true }
+      ).populate('action_id');
+      
+      results.push({
+        action_id,
+        success: true,
+        data: override
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Permissions updated successfully',
+      results
+    });
+  } catch (err) {
+    console.error('Update user permissions error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating user permissions',
+      error: err.message
+    });
+  }
+};
+
+/**
+ * Gán role tổ chức cho sinh viên
+ */
+exports.assignOrgRoleToStudent = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role_id, org_unit_id, position } = req.body;
+    
+    if (!role_id || !org_unit_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'role_id and org_unit_id are required'
+      });
+    }
+    
+    // Check if user exists and is a student
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    const studentProfile = await StudentProfile.findOne({ user_id: userId });
+    if (!studentProfile) {
+      return res.status(400).json({
+        success: false,
+        message: 'User is not a student'
+      });
+    }
+    
+    // Check if role exists
+    const role = await Role.findById(role_id);
+    if (!role) {
+      return res.status(404).json({
+        success: false,
+        message: 'Role not found'
+      });
+    }
+    
+    // Check if user-role assignment already exists
+    const existing = await UserRole.findOne({
+      user_id: userId,
+      role_id,
+      org_unit_id
+    });
+    
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: 'User already has this role in this organization unit'
+      });
+    }
+    
+    // Create user role assignment
+    const userRole = await UserRole.create({
+      user_id: userId,
+      role_id,
+      org_unit_id
+    });
+    
+    // If position is provided, create or update staff profile
+    if (position) {
+      const existingStaffProfile = await StaffProfile.findOne({ user_id: userId });
+      if (existingStaffProfile) {
+        // Update existing staff profile
+        existingStaffProfile.org_unit_id = org_unit_id;
+        existingStaffProfile.position = position;
+        await existingStaffProfile.save();
+      } else {
+        // Create new staff profile for student with org role
+        await StaffProfile.create({
+          user_id: userId,
+          staff_number: `ORG_${studentProfile.student_number || userId}`,
+          org_unit_id,
+          position,
+          full_name: studentProfile.full_name || user.username
+        });
+      }
+    }
+    
+    await userRole.populate('role_id');
+    await userRole.populate('org_unit_id');
+    
+    res.status(201).json({
+      success: true,
+      message: 'Organization role assigned to student successfully',
+      data: userRole
+    });
+  } catch (err) {
+    console.error('Assign org role to student error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Error assigning organization role to student',
       error: err.message
     });
   }

@@ -5,16 +5,63 @@ const User = require('../models/user.model');
 module.exports = {
   async getAllStaffProfiles(req, res) {
     try {
-      const staffProfiles = await StaffProfile.find()
-        .populate('user_id')
-        .populate('org_unit_id')
+      const { staff_number, org_unit_id, sort } = req.query;
+      const filter = {};
+      
+      // Filter by staff_number (partial match)
+      if (staff_number) {
+        filter.staff_number = { $regex: staff_number, $options: 'i' };
+      }
+      
+      // Filter by org_unit_id
+      if (org_unit_id) {
+        filter.org_unit_id = org_unit_id;
+      }
+      
+      // Build sort object
+      let sortOption = {};
+      if (sort) {
+        switch (sort) {
+          case 'name_asc':
+            sortOption = { full_name: 1 };
+            break;
+          case 'name_desc':
+            sortOption = { full_name: -1 };
+            break;
+          case 'staff_number_asc':
+            sortOption = { staff_number: 1 };
+            break;
+          case 'staff_number_desc':
+            sortOption = { staff_number: -1 };
+            break;
+          default:
+            sortOption = { staff_number: 1 }; // Default sort
+        }
+      } else {
+        sortOption = { staff_number: 1 }; // Default sort
+      }
+      
+      const staffProfiles = await StaffProfile.find(filter)
+        .populate('user_id', 'username email')
+        .populate('org_unit_id', '_id name')
         .populate({
           path: 'faculty_id',
           select: '_id name'
-        });
-      res.json(staffProfiles);
+        })
+        .sort(sortOption)
+        .lean();
+
+      const data = staffProfiles.map(sp => ({
+        ...sp,
+        org_unit_name: sp.org_unit_id?.name || '-',
+        faculty_name: sp.faculty_id?.name || '-',
+        position: sp.position || '-'
+      }));
+      
+      res.json({ success: true, data, count: data.length });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      console.error('Get all staff profiles error:', err);
+      res.status(500).json({ success: false, message: err.message });
     }
   },
 

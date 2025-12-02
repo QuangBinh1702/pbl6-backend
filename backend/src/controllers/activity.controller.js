@@ -1620,7 +1620,6 @@ module.exports = {
       console.log('Student filter params:', { student_id, status, field_id, org_unit_id, title });
 
       if (status) {
-        const beforeCount = filtered.length;
         filtered = filtered.filter(act => {
           // Filter by registration status if registration exists
           if (act.registration) {
@@ -1632,45 +1631,27 @@ module.exports = {
           }
           return false;
         });
-        console.log(`Status filter (${status}): ${beforeCount} -> ${filtered.length}`);
       }
 
       if (field_id) {
-        const beforeCount = filtered.length;
-        filtered = filtered.filter(act => {
-          if (!act.field_id) return false;
-          // Handle both populated and non-populated field_id
-          const fieldObjId = act.field_id._id ? act.field_id._id.toString() : act.field_id.toString();
-          const fieldName = act.field_id.name ? act.field_id.name.toLowerCase() : '';
-          const matches = fieldObjId === field_id || fieldName === field_id.toLowerCase();
-          return matches;
-        });
-        console.log(`Field filter (${field_id}): ${beforeCount} -> ${filtered.length}`);
+        filtered = filtered.filter(act => act.field_id && (
+          act.field_id._id.toString() === field_id || 
+          act.field_id.name.toLowerCase() === field_id.toLowerCase()
+        ));
       }
 
       if (org_unit_id) {
-        const beforeCount = filtered.length;
-        filtered = filtered.filter(act => {
-          if (!act.org_unit_id) return false;
-          // Handle both populated and non-populated org_unit_id
-          const orgObjId = act.org_unit_id._id ? act.org_unit_id._id.toString() : act.org_unit_id.toString();
-          const orgName = act.org_unit_id.name ? act.org_unit_id.name.toLowerCase() : '';
-          const matches = orgObjId === org_unit_id || orgName === org_unit_id.toLowerCase();
-          return matches;
-        });
-        console.log(`Org unit filter (${org_unit_id}): ${beforeCount} -> ${filtered.length}`);
+        filtered = filtered.filter(act => act.org_unit_id && (
+          act.org_unit_id._id.toString() === org_unit_id || 
+          act.org_unit_id.name.toLowerCase() === org_unit_id.toLowerCase()
+        ));
       }
 
       if (title) {
-        const beforeCount = filtered.length;
-        filtered = filtered.filter(act => {
-          const matches = act.title && act.title.toLowerCase().includes(title.toLowerCase());
-          return matches;
-        });
-        console.log(`Title filter (${title}): ${beforeCount} -> ${filtered.length}`);
+        filtered = filtered.filter(act => 
+          act.title && act.title.toLowerCase().includes(title.toLowerCase())
+        );
       }
-
-      console.log(`Final filtered count: ${filtered.length} out of ${activities.length}`);
 
       // Sort by start_time (most recent first)
       filtered.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
@@ -1735,55 +1716,34 @@ module.exports = {
       // Apply filters
       let filtered = processedActivities;
 
-      // Debug: Log filter parameters
-      console.log('Filter params:', { status, field_id, org_unit_id, title });
-
       if (status) {
         const statusEn = getStatusEn(status);
-        const beforeCount = filtered.length;
-        filtered = filtered.filter(act => {
-          const matches = act.status === status || act.status === statusEn;
-          return matches;
-        });
-        console.log(`Status filter (${status}/${statusEn}): ${beforeCount} -> ${filtered.length}`);
+        filtered = filtered.filter(act => act.status === status || act.status === statusEn);
       }
 
       if (field_id) {
-        const beforeCount = filtered.length;
         filtered = filtered.filter(act => {
           if (!act.field_id) return false;
-          // Handle both populated and non-populated field_id
           const fieldObjId = act.field_id._id ? act.field_id._id.toString() : act.field_id.toString();
           const fieldName = act.field_id.name ? act.field_id.name.toLowerCase() : '';
-          const matches = fieldObjId === field_id || fieldName === field_id.toLowerCase();
-          return matches;
+          return fieldObjId === field_id || fieldName === field_id.toLowerCase();
         });
-        console.log(`Field filter (${field_id}): ${beforeCount} -> ${filtered.length}`);
       }
 
       if (org_unit_id) {
-        const beforeCount = filtered.length;
         filtered = filtered.filter(act => {
           if (!act.org_unit_id) return false;
-          // Handle both populated and non-populated org_unit_id
           const orgObjId = act.org_unit_id._id ? act.org_unit_id._id.toString() : act.org_unit_id.toString();
           const orgName = act.org_unit_id.name ? act.org_unit_id.name.toLowerCase() : '';
-          const matches = orgObjId === org_unit_id || orgName === org_unit_id.toLowerCase();
-          return matches;
+          return orgObjId === org_unit_id || orgName === org_unit_id.toLowerCase();
         });
-        console.log(`Org unit filter (${org_unit_id}): ${beforeCount} -> ${filtered.length}`);
       }
 
       if (title) {
-        const beforeCount = filtered.length;
-        filtered = filtered.filter(act => {
-          const matches = act.title && act.title.toLowerCase().includes(title.toLowerCase());
-          return matches;
-        });
-        console.log(`Title filter (${title}): ${beforeCount} -> ${filtered.length}`);
+        filtered = filtered.filter(act => 
+          act.title && act.title.toLowerCase().includes(title.toLowerCase())
+        );
       }
-
-      console.log(`Final filtered count: ${filtered.length} out of ${processedActivities.length}`);
 
       // Sort by start_time (most recent first)
       filtered.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));

@@ -4,9 +4,15 @@ const UserRole = require('../models/user_role.model');
 const Role = require('../models/role.model');
 const StudentProfile = require('../models/student_profile.model');
 const StaffProfile = require('../models/staff_profile.model');
+const Class = require('../models/class.model');
+const Falcuty = require('../models/falcuty.model');
+const OrgUnit = require('../models/org_unit.model');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const XLSX = require('xlsx');
+const fs = require('fs');
+const path = require('path');
 const { jwtSecret } = require('../config/app.config');
 const { sendEmail } = require('../utils/email.util');
 
@@ -461,16 +467,73 @@ module.exports = {
 
   async createBulkUsers(req, res) {
     try {
-      const { users } = req.body;
+      let users = [];
+      let roleName = req.body.roleName; // Lấy roleName từ body hoặc form data
       
-      // Validate input
-      if (!users || !Array.isArray(users) || users.length === 0) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Users array is required and must not be empty' 
-        });
+      // Nếu có file Excel upload
+      if (req.file) {
+        try {
+          // Parse Excel file
+          const workbook = XLSX.readFile(req.file.path);
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const excelData = XLSX.utils.sheet_to_json(worksheet, { defval: null });
+          
+          // Xóa file sau khi đọc
+          fs.unlinkSync(req.file.path);
+          
+          if (excelData.length === 0) {
+            return res.status(400).json({
+              success: false,
+              message: 'File Excel không có dữ liệu'
+            });
+          }
+          
+          // Validate roleName
+          if (!roleName || (roleName !== 'student' && roleName !== 'staff')) {
+            return res.status(400).json({
+              success: false,
+              message: 'roleName phải là "student" hoặc "staff"'
+            });
+          }
+          
+          // Convert Excel data to users array
+          if (roleName === 'student') {
+            // Format cho sinh viên: Mã số sinh viên, Tên sinh viên, Lớp, Khoa
+            users = await this.parseExcelToStudents(excelData);
+          } else if (roleName === 'staff') {
+            // Format cho staff: Mã cán bộ, Tên cán bộ, Đơn vị, Chức vụ
+            users = await this.parseExcelToStaff(excelData);
+          }
+          
+          if (users.length === 0) {
+            return res.status(400).json({
+              success: false,
+              message: 'Không thể parse dữ liệu từ file Excel. Vui lòng kiểm tra format file.'
+            });
+          }
+        } catch (excelError) {
+          // Xóa file nếu có lỗi
+          if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+          }
+          return res.status(400).json({
+            success: false,
+            message: `Lỗi đọc file Excel: ${excelError.message}`
+          });
+        }
+      } else {
+        // Cách cũ: nhận JSON array từ body
+        users = req.body.users;
+        if (!users || !Array.isArray(users) || users.length === 0) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Users array is required and must not be empty, or upload Excel file' 
+          });
+        }
       }
       
+      // Validate input
       if (users.length > 100) {
         return res.status(400).json({ 
           success: false, 
@@ -488,7 +551,7 @@ module.exports = {
         let { 
           username, 
           password, 
-          roleName,
+          roleName: userRoleName,
           // Staff profile fields - các trường từ form UI
           staff_number,
           full_name,
@@ -506,10 +569,15 @@ module.exports = {
         } = users[i];
         
         try {
+          // Sử dụng roleName từ Excel (nếu có) hoặc từ user object
+          // Nếu upload Excel, roleName đã được set trong users array
+          // Nếu dùng JSON, mỗi user có thể có roleName riêng
+          const finalRoleName = userRoleName || roleName;
+          
           // Validate required fields
-          if (!username || !password || !roleName) {
+          if (!username || !password || !finalRoleName) {
             errors.push({
-              index: i,
+              index: i + 1, // Excel row number (1-based)
               username: username || 'N/A',
               error: 'Username, password and role are required'
             });
@@ -518,13 +586,13 @@ module.exports = {
           
           // Nếu role là staff và không có staff_number, tự động dùng username làm staff_number
           // Vì theo form UI, username chính là mã cán bộ
-          if (roleName === 'staff' && !staff_number) {
+          if (finalRoleName === 'staff' && !staff_number) {
             staff_number = username;
           }
           
           // Nếu role là student và không có student_number, tự động dùng username làm student_number
           // Vì theo form UI, username chính là mã sinh viên
-          if (roleName === 'student' && !student_number) {
+          if (finalRoleName === 'student' && !student_number) {
             student_number = username;
           }
           
@@ -560,18 +628,18 @@ module.exports = {
           }
           
           // Check if role exists
-          const role = await Role.findOne({ name: roleName });
+          const role = await Role.findOne({ name: finalRoleName });
           if (!role) {
             errors.push({
-              index: i,
+              index: i + 1,
               username,
-              error: `Invalid role: ${roleName}. Available roles: admin, teacher, student, staff`
+              error: `Invalid role: ${finalRoleName}. Available roles: admin, teacher, student, staff`
             });
             continue;
           }
           
           // Check if staff_number already exists (if creating staff)
-          if (roleName === 'staff') {
+          if (finalRoleName === 'staff') {
             const finalStaffNumber = staff_number || username;
             const existingStaff = await StaffProfile.findOne({ staff_number: finalStaffNumber });
             if (existingStaff) {
@@ -585,7 +653,7 @@ module.exports = {
           }
           
           // Check if student_number already exists (if creating student)
-          if (roleName === 'student') {
+          if (finalRoleName === 'student') {
             const finalStudentNumber = student_number || username;
             const existingStudent = await StudentProfile.findOne({ student_number: finalStudentNumber });
             if (existingStudent) {
@@ -618,7 +686,7 @@ module.exports = {
           // If role is staff, create staff profile với các trường từ form
           // Tự động dùng username làm staff_number nếu không có
           let staffProfile = null;
-          if (roleName === 'staff') {
+          if (finalRoleName === 'staff') {
             try {
               staffProfile = await StaffProfile.create({
                 user_id: user._id,
@@ -638,7 +706,7 @@ module.exports = {
           // If role is student, create student profile với các trường từ form
           // Tự động dùng username làm student_number nếu không có
           let studentProfile = null;
-          if (roleName === 'student') {
+          if (finalRoleName === 'student') {
             try {
               studentProfile = await StudentProfile.create({
                 user_id: user._id,
@@ -669,7 +737,7 @@ module.exports = {
           
           const resultItem = {
             username: user.username,
-            role: roleName,
+            role: finalRoleName,
             id: user._id
           };
           
@@ -699,7 +767,7 @@ module.exports = {
         } catch (err) {
           console.error(`Error creating user ${username}:`, err);
           errors.push({
-            index: i,
+            index: i + 1,
             username: username || 'N/A',
             error: err.message
           });
@@ -721,6 +789,110 @@ module.exports = {
       console.error('Create bulk users error:', err);
       res.status(500).json({ success: false, message: err.message });
     }
+  },
+
+  // Helper function: Parse Excel data to students array
+  async parseExcelToStudents(excelData) {
+    const users = [];
+    
+    for (let i = 0; i < excelData.length; i++) {
+      const row = excelData[i];
+      
+      // Map các tên cột có thể khác nhau
+      const studentNumber = row['Mã số sinh viên'] || row['MSSV'] || row['Mã sinh viên'] || row['Student ID'] || '';
+      const fullName = row['Tên sinh viên'] || row['Họ tên'] || row['Tên'] || row['Full Name'] || row['Name'] || '';
+      const className = row['Lớp'] || row['Class'] || row['Tên lớp'] || '';
+      const facultyName = row['Khoa'] || row['Faculty'] || row['Tên khoa'] || '';
+      
+      if (!studentNumber || !fullName) {
+        continue; // Skip row nếu thiếu thông tin bắt buộc
+      }
+      
+      // Tìm class_id từ tên lớp và tên khoa
+      let class_id = null;
+      if (className && facultyName) {
+        try {
+          // Tìm khoa trước
+          const faculty = await Falcuty.findOne({ 
+            name: { $regex: new RegExp(facultyName.trim(), 'i') } 
+          });
+          
+          if (faculty) {
+            // Tìm lớp trong khoa đó
+            const classObj = await Class.findOne({ 
+              name: className.trim(),
+              falcuty_id: faculty._id
+            });
+            
+            if (classObj) {
+              class_id = classObj._id;
+            }
+          }
+        } catch (err) {
+          console.error(`Error finding class for ${className} in ${facultyName}:`, err);
+        }
+      }
+      
+      // Password mặc định = username (mã số sinh viên)
+      users.push({
+        username: studentNumber.toString().trim(),
+        password: studentNumber.toString().trim(),
+        roleName: 'student',
+        student_number: studentNumber.toString().trim(),
+        full_name: fullName.trim(),
+        class_id: class_id
+      });
+    }
+    
+    return users;
+  },
+
+  // Helper function: Parse Excel data to staff array
+  async parseExcelToStaff(excelData) {
+    const users = [];
+    
+    for (let i = 0; i < excelData.length; i++) {
+      const row = excelData[i];
+      
+      // Map các tên cột có thể khác nhau
+      const staffNumber = row['Mã cán bộ'] || row['Mã giảng viên'] || row['Mã nhân viên'] || row['Staff ID'] || row['Mã CB'] || '';
+      const fullName = row['Tên cán bộ'] || row['Tên giảng viên'] || row['Tên nhân viên'] || row['Họ tên'] || row['Tên'] || row['Full Name'] || row['Name'] || '';
+      const orgUnitName = row['Đơn vị'] || row['Đơn vị công tác'] || row['Org Unit'] || row['Department'] || '';
+      const position = row['Chức vụ'] || row['Position'] || '';
+      
+      if (!staffNumber || !fullName) {
+        continue; // Skip row nếu thiếu thông tin bắt buộc
+      }
+      
+      // Tìm org_unit_id từ tên đơn vị
+      let org_unit_id = null;
+      if (orgUnitName) {
+        try {
+          const orgUnit = await OrgUnit.findOne({ 
+            name: { $regex: new RegExp(orgUnitName.trim(), 'i') } 
+          });
+          
+          if (orgUnit) {
+            org_unit_id = orgUnit._id;
+          }
+        } catch (err) {
+          console.error(`Error finding org unit for ${orgUnitName}:`, err);
+        }
+      }
+      
+      // Password mặc định = username (mã cán bộ)
+      users.push({
+        username: staffNumber.toString().trim(),
+        password: staffNumber.toString().trim(),
+        roleName: 'staff',
+        staff_number: staffNumber.toString().trim(),
+        full_name: fullName.trim(),
+        org_unit_id: org_unit_id,
+        position: position ? position.trim() : null
+      });
+    }
+    
+    return users;
   },
 
   async getAvailableRoles(req, res) {

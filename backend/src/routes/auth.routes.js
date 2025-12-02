@@ -3,6 +3,7 @@ const router = express.Router();
 const authController = require('../controllers/auth.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const { checkPermission } = require('../middlewares/check_permission.middleware');
+const uploadExcel = require('../middlewares/upload-excel.middleware');
 
 router.post('/login', authController.login);
 router.post('/register', 
@@ -17,7 +18,8 @@ router.post('/create-user',
 );
 router.post('/create-bulk-users', 
   authMiddleware, 
-  checkPermission('user', 'CREATE'), 
+  checkPermission('user', 'CREATE'),
+  uploadExcel.single('file'), // Hỗ trợ upload Excel file (optional)
   authController.createBulkUsers
 );
 router.get('/profile', authMiddleware, authController.getProfile);

@@ -143,5 +143,44 @@ router.delete('/roles/:roleId/actions/:actionId',
   permissionController.removeActionFromRole
 );
 
+// ============================================
+// USER PERMISSION MANAGEMENT ROUTES
+// ============================================
+
+/**
+ * @route   GET /api/permissions/users/username/:username
+ * @desc    Get user info and permissions by username
+ * @access  Private (Admin only)
+ */
+router.get('/users/username/:username',
+  authMiddleware,
+  checkPermission('user', 'READ'),
+  permissionController.getUserByUsername
+);
+
+/**
+ * @route   PUT /api/permissions/users/:userId/permissions
+ * @desc    Update user permissions (bulk update actions)
+ * @body    { actions: [{ action_id, is_granted }] }
+ * @access  Private (Admin only)
+ */
+router.put('/users/:userId/permissions',
+  authMiddleware,
+  checkPermission('user', 'UPDATE'),
+  permissionController.updateUserPermissions
+);
+
+/**
+ * @route   POST /api/permissions/users/:userId/assign-org-role
+ * @desc    Assign organization role to student
+ * @body    { role_id, org_unit_id, position }
+ * @access  Private (Admin only)
+ */
+router.post('/users/:userId/assign-org-role',
+  authMiddleware,
+  checkPermission('user', 'UPDATE'),
+  permissionController.assignOrgRoleToStudent
+);
+
 module.exports = router;
 
