@@ -204,6 +204,121 @@
             margin-bottom: 10px;
         }
 
+        /* Filter Section Styles */
+        .filter-section {
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .filter-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: #667eea;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .filter-icon {
+            font-size: 1.3em;
+        }
+
+        .filter-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .filter-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-size: 0.9em;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .filter-select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.95em;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .filter-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-apply {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .btn-apply:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-reset-filter {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .btn-reset-filter:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-icon {
+            font-size: 1.1em;
+        }
+
         @media (max-width: 768px) {
             .stats-grid {
                 grid-template-columns: 1fr;
@@ -215,6 +330,10 @@
 
             .header h1 {
                 font-size: 1.5em;
+            }
+
+            .filter-row {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -229,7 +348,59 @@
         <div class="content">
             <div class="error" id="error-message"></div>
 
-            <div class="button-group">
+            <!-- Bộ lọc thống kê -->
+            <div class="filter-section">
+                <div class="filter-header">
+                    <span class="filter-icon">🔍</span>
+                    <h3>Bộ lọc thống kê</h3>
+                </div>
+                <div class="filter-form">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label for="filter-year">Năm học</label>
+                            <select id="filter-year" class="filter-select">
+                                <option value="">-- Chọn năm học --</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-field">Lĩnh vực</label>
+                            <select id="filter-field" class="filter-select">
+                                <option value="">-- Chọn lĩnh vực --</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-org-unit">Chọn đơn vị tổ chức</label>
+                            <select id="filter-org-unit" class="filter-select">
+                                <option value="">-- Chọn đơn vị tổ chức --</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-status">Trạng thái</label>
+                            <select id="filter-status" class="filter-select">
+                                <option value="">-- Chọn trạng thái --</option>
+                                <option value="chờ duyệt">Chờ duyệt</option>
+                                <option value="chưa tổ chức">Chưa tổ chức</option>
+                                <option value="đang tổ chức">Đang tổ chức</option>
+                                <option value="đã tổ chức">Đã tổ chức</option>
+                                <option value="từ chối">Từ chối</option>
+                                <option value="hủy hoạt động">Hủy hoạt động</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="filter-actions">
+                        <button class="btn-apply" onclick="applyFilter()">
+                            <span class="btn-icon">✓</span>
+                            Áp dụng bộ lọc
+                        </button>
+                        <button class="btn-reset-filter" onclick="resetFilter()">
+                            <span class="btn-icon">↻</span>
+                            Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group" style="display: none;">
                 <button class="btn btn-fetch" onclick="fetchDashboard()">📈 Lấy thống kê</button>
                 <button class="btn btn-reset" onclick="resetDashboard()">🔄 Reset</button>
             </div>
@@ -289,6 +460,80 @@
             document.getElementById('error-message').classList.remove('show');
         }
 
+        // Load filter data on page load
+        window.addEventListener('load', () => {
+            loadYears();
+            loadFields();
+            loadOrgUnits();
+            // Auto load dashboard on page load
+            fetchDashboard();
+        });
+
+        function loadYears() {
+            const select = document.getElementById('filter-year');
+            const currentYear = new Date().getFullYear();
+            // Generate years from 2020 to current year
+            for (let year = 2020; year <= currentYear; year++) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year; // Chỉ hiển thị năm đơn giản
+                if (year === currentYear) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            }
+        }
+
+        async function loadFields() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/fields`);
+                if (!response.ok) return;
+                const data = await response.json();
+                const select = document.getElementById('filter-field');
+                if (Array.isArray(data)) {
+                    data.forEach(field => {
+                        const option = document.createElement('option');
+                        option.value = field._id;
+                        option.textContent = field.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading fields:', error);
+            }
+        }
+
+        async function loadOrgUnits() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/org-units`);
+                if (!response.ok) return;
+                const data = await response.json();
+                const select = document.getElementById('filter-org-unit');
+                if (Array.isArray(data)) {
+                    data.forEach(unit => {
+                        const option = document.createElement('option');
+                        option.value = unit._id;
+                        option.textContent = unit.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading org units:', error);
+            }
+        }
+
+        function applyFilter() {
+            fetchDashboard();
+        }
+
+        function resetFilter() {
+            document.getElementById('filter-year').value = new Date().getFullYear();
+            document.getElementById('filter-field').value = '';
+            document.getElementById('filter-org-unit').value = '';
+            document.getElementById('filter-status').value = '';
+            fetchDashboard();
+        }
+
         async function fetchDashboard() {
             hideError();
             document.getElementById('stats-grid').classList.remove('show');
@@ -297,7 +542,21 @@
             document.getElementById('loading').classList.add('show');
 
             try {
-                const response = await fetch(`${API_BASE_URL}/statistics/activity-dashboard`);
+                // Build query string from filters
+                const params = new URLSearchParams();
+                const year = document.getElementById('filter-year').value;
+                const field_id = document.getElementById('filter-field').value;
+                const org_unit_id = document.getElementById('filter-org-unit').value;
+                const status = document.getElementById('filter-status').value;
+
+                if (year) params.append('year', year);
+                if (field_id) params.append('field_id', field_id);
+                if (org_unit_id) params.append('org_unit_id', org_unit_id);
+                if (status) params.append('status', status);
+
+                const url = `${API_BASE_URL}/statistics/activity-dashboard${params.toString() ? '?' + params.toString() : ''}`;
+                
+                const response = await fetch(url);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -316,6 +575,8 @@
 
         function displayDashboard(data) {
             const stats = data.data;
+            const selectedYear = stats.selectedYear || new Date().getFullYear();
+            const previousYear = selectedYear - 1;
 
             // Update stat cards
             document.getElementById('total-activities').textContent = stats.totalActivities.toLocaleString('vi-VN');
@@ -323,9 +584,7 @@
             document.getElementById('growth-percentage').textContent = `${stats.growthPercentage > 0 ? '+' : ''}${stats.growthPercentage}%`;
 
             // Update labels
-            const currentYear = new Date().getFullYear();
-            const previousYear = currentYear - 1;
-            document.getElementById('year-label').textContent = `Năm ${currentYear}`;
+            document.getElementById('year-label').textContent = `Năm ${selectedYear}`;
             document.getElementById('growth-label').textContent = `So với năm ${previousYear}`;
 
             // Change color based on growth

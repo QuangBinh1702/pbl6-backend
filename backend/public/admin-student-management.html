@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Tài Khoản</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        /* Tab Navigation */
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px 20px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            color: #495057;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-btn:hover {
+            background: #e9ecef;
+        }
+
+        .tab-btn.active {
+            background: #0066cc;
+            color: white;
+            border-bottom-color: #0066cc;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Filter Section */
+        .filter-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid #dee2e6;
+        }
+
+        .filter-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: #0066cc;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .filter-icon {
+            font-size: 1.3em;
+        }
+
+        .filter-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .filter-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-size: 0.9em;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .filter-input,
+        .filter-select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.95em;
+            background: white;
+            transition: border-color 0.3s;
+        }
+
+        .filter-input:focus,
+        .filter-select:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+
+        .filter-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-apply {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .btn-apply:hover {
+            background: #0052a3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 102, 204, 0.4);
+        }
+
+        .btn-reset-filter {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .btn-reset-filter:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-icon {
+            font-size: 1.1em;
+        }
+
+        /* Table Section */
+        .table-section {
+            margin-top: 30px;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .table-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #0066cc;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-select-all {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 0.95em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-select-all:hover {
+            background: #0052a3;
+        }
+
+        .btn-delete {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 0.95em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-delete:hover:not(:disabled) {
+            background: #5a6268;
+        }
+
+        .btn-delete:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        thead {
+            background: #f8f9fa;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .checkbox-cell {
+            text-align: center;
+            width: 50px;
+        }
+
+        .action-cell {
+            text-align: center;
+        }
+
+        .btn-view-detail {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-view-detail:hover {
+            background: #218838;
+        }
+
+        .class-monitor-badge {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0066cc;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        /* Login Modal */
+        .login-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .login-modal.hidden {
+            display: none;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-box h2 {
+            color: #0066cc;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .login-form-group {
+            margin-bottom: 20px;
+        }
+
+        .login-form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .login-form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .login-form-group input:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .login-btn:hover {
+            background: #0052a3;
+        }
+
+        .login-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .login-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .login-error.show {
+            display: block;
+        }
+
+        .user-info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info-text {
+            color: #0066cc;
+            font-weight: 500;
+        }
+
+        .btn-logout {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-logout:hover {
+            background: #c82333;
+        }
+
+        @media (max-width: 768px) {
+            .filter-row {
+                grid-template-columns: 1fr;
+            }
+
+            .table-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Modal -->
+    <div class="login-modal" id="login-modal">
+        <div class="login-box">
+            <h2>🔐 Đăng Nhập</h2>
+            <div class="login-error" id="login-error"></div>
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="login-form-group">
+                    <label for="login-username">Tên đăng nhập</label>
+                    <input type="text" id="login-username" required placeholder="Nhập username">
+                </div>
+                <div class="login-form-group">
+                    <label for="login-password">Mật khẩu</label>
+                    <input type="password" id="login-password" required placeholder="Nhập mật khẩu">
+                </div>
+                <button type="submit" class="login-btn" id="login-btn">Đăng Nhập</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container" id="main-container" style="display: none;">
+        <!-- User Info -->
+        <div class="user-info">
+            <div class="user-info-text" id="user-info-text">Đang tải...</div>
+            <button class="btn-logout" onclick="logout()">Đăng xuất</button>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('student')">
+                Tài khoản sinh viên
+            </button>
+            <button class="tab-btn" onclick="switchTab('staff')">
+                Tài khoản cán bộ, giảng viên
+            </button>
+        </div>
+
+        <!-- Student Tab -->
+        <div id="student-tab" class="tab-content active">
+            <div class="error" id="error-message"></div>
+
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <div class="filter-header">
+                    <span class="filter-icon">🔍</span>
+                    <h3>Bộ lọc thống kê</h3>
+                </div>
+                <div class="filter-form">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label for="filter-student-number">Mã sinh viên</label>
+                            <input type="text" id="filter-student-number" class="filter-input" placeholder="Nhập mã sinh viên">
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-faculty">Khoa</label>
+                            <select id="filter-faculty" class="filter-select">
+                                <option value="">-- Chọn khoa --</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filter-class">Lớp</label>
+                            <select id="filter-class" class="filter-select">
+                                <option value="">-- Chọn lớp --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="filter-actions">
+                        <button class="btn-apply" onclick="applyFilter()">
+                            <span class="btn-icon">✓</span>
+                            Áp dụng bộ lọc
+                        </button>
+                        <button class="btn-reset-filter" onclick="resetFilter()">
+                            <span class="btn-icon">↻</span>
+                            Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Đang tải dữ liệu...</p>
+            </div>
+
+            <!-- Table Section -->
+            <div class="table-section" id="table-section" style="display: none;">
+                <div class="table-header">
+                    <h2 class="table-title">Danh sách sinh viên</h2>
+                    <div class="table-actions">
+                        <button class="btn-select-all" onclick="selectAll()">Chọn tất cả</button>
+                        <button class="btn-delete" id="btn-delete" onclick="deleteSelected()" disabled>
+                            <span>🗑️</span>
+                            Xóa
+                        </button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="student-table">
+                        <thead>
+                            <tr>
+                                <th>Mã sinh viên</th>
+                                <th>Họ tên</th>
+                                <th>Lớp</th>
+                                <th>Khoa</th>
+                                <th class="checkbox-cell">Chọn</th>
+                                <th class="action-cell">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="empty-state" style="display: none;">
+                <p>Không tìm thấy sinh viên nào</p>
+            </div>
+        </div>
+
+        <!-- Staff Tab -->
+        <div id="staff-tab" class="tab-content">
+            <div style="padding: 40px; text-align: center; color: #999;">
+                <p>Chức năng quản lý tài khoản cán bộ, giảng viên đang được phát triển...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5000/api' 
+            : 'https://pbl6-backend-iy5q.onrender.com/api';
+
+        let selectedStudents = new Set();
+        let allStudents = [];
+        let currentUser = null;
+
+        // Check if user is logged in on page load
+        window.addEventListener('load', () => {
+            const token = getToken();
+            const savedUser = localStorage.getItem('user');
+            
+            if (token && savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    // Verify token by trying to fetch student profiles
+                    verifyToken(token);
+                } catch (error) {
+                    console.error('Error parsing saved user:', error);
+                    showLoginModal();
+                }
+            } else {
+                showLoginModal();
+            }
+        });
+
+        function showLoginModal() {
+            document.getElementById('login-modal').classList.remove('hidden');
+            document.getElementById('main-container').style.display = 'none';
+        }
+
+        function hideLoginModal() {
+            document.getElementById('login-modal').classList.add('hidden');
+            document.getElementById('main-container').style.display = 'block';
+        }
+
+        async function verifyToken(token) {
+            try {
+                // Try to fetch student profiles to verify token
+                const response = await fetch(`${API_BASE_URL}/student-profiles`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    // Token is valid
+                    hideLoginModal();
+                    loadFaculties();
+                    loadClasses();
+                    fetchStudents();
+                    updateUserInfo();
+                } else {
+                    // Token is invalid
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    showLoginModal();
+                }
+            } catch (error) {
+                console.error('Token verification error:', error);
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                showLoginModal();
+            }
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const loginBtn = document.getElementById('login-btn');
+            const loginError = document.getElementById('login-error');
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
+            loginError.classList.remove('show');
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Đang đăng nhập...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.token) {
+                    // Save token and user info
+                    localStorage.setItem('token', data.token);
+                    currentUser = data.user;
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    // Hide login modal and show main content
+                    hideLoginModal();
+                    loadFaculties();
+                    loadClasses();
+                    fetchStudents();
+                    updateUserInfo();
+                    
+                    // Clear form
+                    document.getElementById('login-form').reset();
+                } else {
+                    throw new Error(data.message || 'Đăng nhập thất bại');
+                }
+            } catch (error) {
+                loginError.textContent = `❌ ${error.message}`;
+                loginError.classList.add('show');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Đăng Nhập';
+            }
+        }
+
+        function logout() {
+            if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                currentUser = null;
+                selectedStudents.clear();
+                showLoginModal();
+            }
+        }
+
+        function updateUserInfo() {
+            const userInfoText = document.getElementById('user-info-text');
+            if (currentUser) {
+                userInfoText.textContent = `👤 ${currentUser.username}${currentUser.roles && currentUser.roles.length > 0 ? ' - ' + currentUser.roles.map(r => r.role).join(', ') : ''}`;
+            } else {
+                userInfoText.textContent = 'Đang tải...';
+            }
+        }
+
+        function switchTab(tab) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            if (tab === 'student') {
+                document.getElementById('student-tab').classList.add('active');
+                event.target.classList.add('active');
+            } else {
+                document.getElementById('staff-tab').classList.add('active');
+                event.target.classList.add('active');
+            }
+        }
+
+        async function loadFaculties() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/faculties`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                if (!response.ok) return;
+                const data = await response.json();
+                const select = document.getElementById('filter-faculty');
+                if (Array.isArray(data)) {
+                    data.forEach(faculty => {
+                        const option = document.createElement('option');
+                        option.value = faculty._id;
+                        option.textContent = faculty.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading faculties:', error);
+            }
+        }
+
+        async function loadClasses() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/classes`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                if (!response.ok) return;
+                const data = await response.json();
+                const select = document.getElementById('filter-class');
+                if (Array.isArray(data)) {
+                    data.forEach(cls => {
+                        const option = document.createElement('option');
+                        option.value = cls._id;
+                        option.textContent = cls.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading classes:', error);
+            }
+        }
+
+        // Load classes when faculty changes
+        document.getElementById('filter-faculty').addEventListener('change', async function() {
+            const facultyId = this.value;
+            const classSelect = document.getElementById('filter-class');
+            const currentClassId = classSelect.value;
+            
+            // Clear existing classes
+            classSelect.innerHTML = '<option value="">-- Chọn lớp --</option>';
+            
+            if (facultyId) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/classes/faculty/${facultyId}/classes`, {
+                        headers: {
+                            'Authorization': `Bearer ${getToken()}`
+                        }
+                    });
+                    if (response.ok) {
+                        const classes = await response.json();
+                        if (Array.isArray(classes)) {
+                            const classIds = [];
+                            classes.forEach(cls => {
+                                const option = document.createElement('option');
+                                option.value = cls._id;
+                                option.textContent = cls.name;
+                                classSelect.appendChild(option);
+                                classIds.push(cls._id.toString());
+                            });
+                            
+                            // If a class was previously selected, check if it belongs to the new faculty
+                            if (currentClassId && !classIds.includes(currentClassId.toString())) {
+                                // Clear the selected class if it doesn't belong to the new faculty
+                                classSelect.value = '';
+                            } else if (currentClassId && classIds.includes(currentClassId.toString())) {
+                                // Keep the selected class if it belongs to the new faculty
+                                classSelect.value = currentClassId;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error loading classes by faculty:', error);
+                }
+            } else {
+                // Load all classes if no faculty selected
+                loadClasses();
+            }
+        });
+
+        function applyFilter() {
+            fetchStudents();
+        }
+
+        function resetFilter() {
+            document.getElementById('filter-student-number').value = '';
+            document.getElementById('filter-faculty').value = '';
+            document.getElementById('filter-class').value = '';
+            selectedStudents.clear();
+            updateDeleteButton();
+            fetchStudents();
+        }
+
+        async function fetchStudents() {
+            hideError();
+            document.getElementById('table-section').style.display = 'none';
+            document.getElementById('empty-state').style.display = 'none';
+            document.getElementById('loading').classList.add('show');
+
+            try {
+                const params = new URLSearchParams();
+                const studentNumber = document.getElementById('filter-student-number').value;
+                const facultyId = document.getElementById('filter-faculty').value;
+                const classId = document.getElementById('filter-class').value;
+
+                if (studentNumber) params.append('student_number', studentNumber);
+                if (facultyId) params.append('faculty_id', facultyId);
+                if (classId) params.append('class_id', classId);
+
+                const url = `${API_BASE_URL}/student-profiles?${params.toString()}`;
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                allStudents = result.data || [];
+                displayStudents(allStudents);
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message);
+                document.getElementById('empty-state').style.display = 'block';
+            } finally {
+                document.getElementById('loading').classList.remove('show');
+            }
+        }
+
+        function displayStudents(students) {
+            const tbody = document.getElementById('student-tbody');
+            tbody.innerHTML = '';
+
+            if (students.length === 0) {
+                document.getElementById('empty-state').style.display = 'block';
+                return;
+            }
+
+            students.forEach(student => {
+                const row = document.createElement('tr');
+                const isSelected = selectedStudents.has(student._id);
+                
+                row.innerHTML = `
+                    <td>${student.student_number || '-'}</td>
+                    <td>
+                        ${student.full_name || '-'}
+                        ${student.isClassMonitor ? '<span class="class-monitor-badge"> (Lớp trưởng)</span>' : ''}
+                    </td>
+                    <td>${student.class_name || '-'}</td>
+                    <td>${student.falcuty_name || '-'}</td>
+                    <td class="checkbox-cell">
+                        <input type="checkbox" 
+                               ${isSelected ? 'checked' : ''} 
+                               data-student-id="${student._id}"
+                               onchange="toggleStudent('${student._id}')">
+                    </td>
+                    <td class="action-cell">
+                        <button class="btn-view-detail" onclick="viewDetail('${student._id}')">
+                            Xem chi tiết
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('table-section').style.display = 'block';
+        }
+
+        function toggleStudent(studentId) {
+            if (selectedStudents.has(studentId)) {
+                selectedStudents.delete(studentId);
+            } else {
+                selectedStudents.add(studentId);
+            }
+            updateDeleteButton();
+        }
+
+        function selectAll() {
+            const checkboxes = document.querySelectorAll('#student-tbody input[type="checkbox"]');
+            const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+            
+            checkboxes.forEach(cb => {
+                cb.checked = !allSelected;
+                const studentId = cb.getAttribute('data-student-id');
+                if (studentId) {
+                    if (!allSelected) {
+                        selectedStudents.add(studentId);
+                    } else {
+                        selectedStudents.delete(studentId);
+                    }
+                }
+            });
+            updateDeleteButton();
+        }
+
+        function updateDeleteButton() {
+            const btnDelete = document.getElementById('btn-delete');
+            btnDelete.disabled = selectedStudents.size === 0;
+        }
+
+        function deleteSelected() {
+            if (selectedStudents.size === 0) return;
+            
+            if (!confirm(`Bạn có chắc chắn muốn xóa ${selectedStudents.size} sinh viên đã chọn?`)) {
+                return;
+            }
+
+            // TODO: Implement delete API call
+            alert('Chức năng xóa đang được phát triển...');
+        }
+
+        function viewDetail(studentId) {
+            // TODO: Implement view detail modal or redirect
+            alert(`Xem chi tiết sinh viên: ${studentId}`);
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('error-message');
+            errorEl.textContent = `❌ ${message}`;
+            errorEl.classList.add('show');
+        }
+
+        function hideError() {
+            document.getElementById('error-message').classList.remove('show');
+        }
+
+        function getToken() {
+            return localStorage.getItem('token') || '';
+        }
+    </script>
+</body>
+</html>
+

@@ -2163,7 +2163,8 @@ _Từ chối:_
 | DELETE | `/api/attendances/:id`                           | Xóa điểm danh                                      | ✅            | admin, ctsv, staff, union |
 | PUT    | `/api/attendances/:id/verify`                    | Xác minh điểm danh                                 | ✅            | admin, ctsv, staff, union |
 | PUT    | `/api/attendances/:id/feedback`                  | Thêm phản hồi cho điểm danh                        | ✅            | -                         |
-| POST   | `/api/attendances/scan-qr`                       | Quét mã QR để điểm danh                            | ✅            | -                         |
+| POST   | `/api/attendances/submit-attendance`              | 🆕 Nộp điểm danh qua QR (PUBLIC, không cần auth)   | ❌            | -                         |
+| ~~POST   | `/api/attendances/scan-qr`~~                     | ~~⚠️ DEPRECATED: Hệ thống cũ (sessions-based)~~   | ~~✅~~        | ~~-~~                     |
 
 **Request Body - Create Attendance:**
 
@@ -2206,15 +2207,18 @@ _Từ chối:_
 
 **GET /api/attendances/activity/:activityId/students-stats** - Response Example:
 
-Lấy danh sách sinh viên duy nhất tham gia hoạt động với thống kê (số lần điểm danh, tổng điểm dựa trên tỷ lệ).
+Lấy danh sách sinh viên duy nhất tham gia hoạt động với thống kê (số lần điểm danh, tổng điểm dựa trên dynamic QR scoring).
 
-**Công thức tính điểm:**
-- `total_points = (attendance_count / total_sessions_required) * 10`
-- `attendance_rate = attendance_count / total_sessions_required`
+**Công thức tính điểm (🆕 Dynamic QR Scoring):**
+- `total_points = MAX(points_earned)` từ tất cả các lần quét QR của sinh viên
+- `attendance_rate = total_qr_scanned / total_qr_available` (tỷ lệ quét QR)
+- `points_earned` được tính theo công thức: `floor((scan_order / total_qr_at_scan) * max_points)`
 
 **Ví dụ:**
-- Hoạt động yêu cầu 2 lần, SV điểm danh 1 lần: `total_points = (1/2) * 10 = 5` điểm
-- Hoạt động yêu cầu 3 lần, SV điểm danh 3 lần: `total_points = (3/3) * 10 = 10` điểm
+- Hoạt động có `max_points = 10`, `total_qr_created = 2`:
+  - SV quét QR lần 1: `scan_order = 1`, `points_earned = floor((1/2) * 10) = 5` điểm
+  - SV quét QR lần 2: `scan_order = 2`, `points_earned = floor((2/2) * 10) = 10` điểm
+  - **Điểm cuối cùng = MAX(5, 10) = 10 điểm** (không phải tổng)
 
 ```json
 {
@@ -2234,7 +2238,9 @@ Lấy danh sách sinh viên duy nhất tham gia hoạt động với thống kê
       },
       "attendance_count": 2,
       "total_points": 10,
-      "attendance_rate": 1,
+      "attendance_rate": 1.0,
+      "total_qr_scanned": 2,
+      "total_qr_available": 2,
       "last_attended": "2024-12-15T10:30:00.000Z",
       "status": "present"
     },
@@ -2253,6 +2259,8 @@ Lấy danh sách sinh viên duy nhất tham gia hoạt động với thống kê
       "attendance_count": 1,
       "total_points": 5,
       "attendance_rate": 0.5,
+      "total_qr_scanned": 1,
+      "total_qr_available": 2,
       "last_attended": "2024-12-14T09:00:00.000Z",
       "status": "present"
     }
@@ -2261,7 +2269,70 @@ Lấy danh sách sinh viên duy nhất tham gia hoạt động với thống kê
 }
 ```
 
-**Request Body - Scan QR:**
+**Request Body - Submit Attendance (🆕 Dynamic QR System):**
+
+```json
+{
+  "activity_id": "activity_uuid_here",
+  "session_id": "qr_code_id_here",
+  "student_info": {
+    "student_id_number": "102220095",
+    "student_name": "Nguyễn Văn A",
+    "class": "class_id_here",
+    "faculty": "faculty_id_here"
+  }
+}
+```
+
+**Lưu ý:**
+- **PUBLIC endpoint** - Không cần authentication token
+- `session_id` = `qr_code_id` (ID của QR code được quét)
+- `student_id_number` phải là **9 chữ số** (MSSV)
+- Sinh viên phải **tồn tại trong hệ thống** và **đã được duyệt đăng ký** hoạt động
+- Điểm được tính tự động theo công thức: `floor((scan_order / total_qr_at_scan) * max_points)`
+- Mỗi lần quét QR tạo một attendance record riêng
+- Điểm cuối cùng = **MAX(points_earned)** từ tất cả các lần quét
+
+**Response - Submit Attendance (Success):**
+
+```json
+{
+  "success": true,
+  "message": "Điểm danh thành công",
+  "data": {
+    "_id": "attendance_id",
+    "student_id": "student_profile_id",
+    "activity_id": "activity_id",
+    "qr_code_id": "qr_code_id",
+    "scan_order": 2,
+    "total_qr_at_scan": 2,
+    "points_earned": 10,
+    "points": 10,
+    "status": "approved",
+    "scanned_at": "2024-12-15T10:30:00.000Z"
+  }
+}
+```
+
+**Response - Submit Attendance (Student Not Found):**
+
+```json
+{
+  "success": false,
+  "message": "Sinh viên với MSSV 102220095 không tồn tại trong hệ thống"
+}
+```
+
+**Response - Submit Attendance (Not Registered):**
+
+```json
+{
+  "success": false,
+  "message": "Bạn chưa được duyệt để tham gia hoạt động này. Vui lòng đăng ký trước."
+}
+```
+
+**⚠️ DEPRECATED - Request Body - Scan QR (Hệ thống cũ):**
 
 ```json
 {
@@ -2269,6 +2340,8 @@ Lấy danh sách sinh viên duy nhất tham gia hoạt động với thống kê
   "activityId": "activity_uuid_here"
 }
 ```
+
+**Lưu ý:** Endpoint `/api/attendances/scan-qr` đã được thay thế bằng `/api/attendances/submit-attendance` (hệ thống QR mới với dynamic scoring).
 
 ---
 

@@ -46,27 +46,63 @@ module.exports = {
   },
   async getActivityDashboard(req, res) {
     try {
-      const currentYear = new Date().getFullYear();
-      const previousYear = currentYear - 1;
+      // Get filter parameters from query
+      const { year, field_id, org_unit_id, status } = req.query;
       
-      // Tổng hoạt động
-      const totalActivities = await Activity.countDocuments();
+      // Build base filter
+      const baseFilter = {};
       
-      // Hoạt động năm nay (dựa trên start_time)
-      const startOfYear = new Date(currentYear, 0, 1);
-      const endOfYear = new Date(currentYear + 1, 0, 1);
+      // Filter by field_id
+      if (field_id) {
+        baseFilter.field_id = field_id;
+      }
       
-      const activitiesThisYear = await Activity.countDocuments({
+      // Filter by org_unit_id
+      if (org_unit_id) {
+        baseFilter.org_unit_id = org_unit_id;
+      }
+      
+      // Filter by status (convert Vietnamese to English if needed)
+      if (status) {
+        const statusMapping = {
+          'chờ duyệt': 'pending',
+          'chưa tổ chức': 'approved',
+          'đang tổ chức': 'in_progress',
+          'đã tổ chức': 'completed',
+          'từ chối': 'rejected',
+          'hủy hoạt động': 'cancelled'
+        };
+        baseFilter.status = statusMapping[status] || status;
+      }
+      
+      // Determine year range
+      let selectedYear = year ? parseInt(year) : new Date().getFullYear();
+      const previousYear = selectedYear - 1;
+      
+      // Tổng hoạt động (với filter nếu có)
+      const totalActivities = await Activity.countDocuments(baseFilter);
+      
+      // Hoạt động năm được chọn (dựa trên start_time)
+      const startOfYear = new Date(selectedYear, 0, 1);
+      const endOfYear = new Date(selectedYear + 1, 0, 1);
+      
+      const yearFilter = {
+        ...baseFilter,
         start_time: { $gte: startOfYear, $lt: endOfYear }
-      });
+      };
+      
+      const activitiesThisYear = await Activity.countDocuments(yearFilter);
       
       // Hoạt động năm trước
       const startOfPreviousYear = new Date(previousYear, 0, 1);
-      const endOfPreviousYear = new Date(currentYear, 0, 1);
+      const endOfPreviousYear = new Date(selectedYear, 0, 1);
       
-      const activitiesPreviousYear = await Activity.countDocuments({
+      const previousYearFilter = {
+        ...baseFilter,
         start_time: { $gte: startOfPreviousYear, $lt: endOfPreviousYear }
-      });
+      };
+      
+      const activitiesPreviousYear = await Activity.countDocuments(previousYearFilter);
       
       // Tính phần trăm tăng/giảm
       let growth = 0;
@@ -81,11 +117,13 @@ module.exports = {
           totalActivities: totalActivities,
           activitiesThisYear: activitiesThisYear,
           activitiesPreviousYear: activitiesPreviousYear,
-          growthPercentage: growth
+          growthPercentage: growth,
+          selectedYear: selectedYear
         },
         message: 'Dashboard statistics retrieved successfully'
       });
     } catch (err) {
+      console.error('Error in getActivityDashboard:', err);
       res.status(500).json({ message: err.message });
     }
   },

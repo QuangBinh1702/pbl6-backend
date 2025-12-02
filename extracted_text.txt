@@ -1,0 +1,10 @@
+1, Chức năng xem thống kê 1 hoạt động :
++load lần đầu sẽ có tổng hoạt động của hệ thống
++khi lọc sẽ hiện thông tin của hoạt động theo bộ lọc
+2,Chức năng lọc cho sinh viên
+3,Chức năng lọc cho staff
+4,Chức năng phân quyền ( chỗ position dưới username ko hợp lý nên ko dùng ( sẽ xóa trên giao diện sau )
+-Luồng hoạt độg :
++Nhập username -> sẽ hiển thị các quyền đang có của username đó
++Admin tick thay đổi các action rồi lưu
++Hoặc nếu là sinh viên thì admin có thể tick qua role tổ chức ( sẽ hiện box yêu cầu chọn đơn vị tổ chức , chức vụ ) , sau đó chọn quyền rồi lưu -> admin sẽ được thêm role và các permission

@@ -772,7 +772,23 @@ module.exports = {
   async registerActivity(req, res) {
     try {
       const { student_id } = req.body;
-      const studentIdToUse = student_id || req.user.id;
+      let studentIdToUse = student_id;
+      
+      // If student_id is not provided, find it from the logged-in user
+      if (!studentIdToUse) {
+        const studentProfile = await StudentProfile.findOne({ 
+          user_id: req.user.id 
+        });
+        
+        if (!studentProfile) {
+          return res.status(404).json({ 
+            success: false, 
+            message: 'Student profile not found for this user' 
+          });
+        }
+        
+        studentIdToUse = studentProfile._id;
+      }
       
       // Check if already registered
       const exist = await ActivityRegistration.findOne({ 
@@ -1600,7 +1616,11 @@ module.exports = {
       // Apply filters
       let filtered = activities;
 
+      // Debug: Log filter parameters
+      console.log('Student filter params:', { student_id, status, field_id, org_unit_id, title });
+
       if (status) {
+        const beforeCount = filtered.length;
         filtered = filtered.filter(act => {
           // Filter by registration status if registration exists
           if (act.registration) {
@@ -1612,27 +1632,45 @@ module.exports = {
           }
           return false;
         });
+        console.log(`Status filter (${status}): ${beforeCount} -> ${filtered.length}`);
       }
 
       if (field_id) {
-        filtered = filtered.filter(act => act.field_id && (
-          act.field_id._id.toString() === field_id || 
-          act.field_id.name.toLowerCase() === field_id.toLowerCase()
-        ));
+        const beforeCount = filtered.length;
+        filtered = filtered.filter(act => {
+          if (!act.field_id) return false;
+          // Handle both populated and non-populated field_id
+          const fieldObjId = act.field_id._id ? act.field_id._id.toString() : act.field_id.toString();
+          const fieldName = act.field_id.name ? act.field_id.name.toLowerCase() : '';
+          const matches = fieldObjId === field_id || fieldName === field_id.toLowerCase();
+          return matches;
+        });
+        console.log(`Field filter (${field_id}): ${beforeCount} -> ${filtered.length}`);
       }
 
       if (org_unit_id) {
-        filtered = filtered.filter(act => act.org_unit_id && (
-          act.org_unit_id._id.toString() === org_unit_id || 
-          act.org_unit_id.name.toLowerCase() === org_unit_id.toLowerCase()
-        ));
+        const beforeCount = filtered.length;
+        filtered = filtered.filter(act => {
+          if (!act.org_unit_id) return false;
+          // Handle both populated and non-populated org_unit_id
+          const orgObjId = act.org_unit_id._id ? act.org_unit_id._id.toString() : act.org_unit_id.toString();
+          const orgName = act.org_unit_id.name ? act.org_unit_id.name.toLowerCase() : '';
+          const matches = orgObjId === org_unit_id || orgName === org_unit_id.toLowerCase();
+          return matches;
+        });
+        console.log(`Org unit filter (${org_unit_id}): ${beforeCount} -> ${filtered.length}`);
       }
 
       if (title) {
-        filtered = filtered.filter(act => 
-          act.title && act.title.toLowerCase().includes(title.toLowerCase())
-        );
+        const beforeCount = filtered.length;
+        filtered = filtered.filter(act => {
+          const matches = act.title && act.title.toLowerCase().includes(title.toLowerCase());
+          return matches;
+        });
+        console.log(`Title filter (${title}): ${beforeCount} -> ${filtered.length}`);
       }
+
+      console.log(`Final filtered count: ${filtered.length} out of ${activities.length}`);
 
       // Sort by start_time (most recent first)
       filtered.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
@@ -1697,34 +1735,55 @@ module.exports = {
       // Apply filters
       let filtered = processedActivities;
 
+      // Debug: Log filter parameters
+      console.log('Filter params:', { status, field_id, org_unit_id, title });
+
       if (status) {
         const statusEn = getStatusEn(status);
-        filtered = filtered.filter(act => act.status === status || act.status === statusEn);
+        const beforeCount = filtered.length;
+        filtered = filtered.filter(act => {
+          const matches = act.status === status || act.status === statusEn;
+          return matches;
+        });
+        console.log(`Status filter (${status}/${statusEn}): ${beforeCount} -> ${filtered.length}`);
       }
 
       if (field_id) {
+        const beforeCount = filtered.length;
         filtered = filtered.filter(act => {
           if (!act.field_id) return false;
+          // Handle both populated and non-populated field_id
           const fieldObjId = act.field_id._id ? act.field_id._id.toString() : act.field_id.toString();
           const fieldName = act.field_id.name ? act.field_id.name.toLowerCase() : '';
-          return fieldObjId === field_id || fieldName === field_id.toLowerCase();
+          const matches = fieldObjId === field_id || fieldName === field_id.toLowerCase();
+          return matches;
         });
+        console.log(`Field filter (${field_id}): ${beforeCount} -> ${filtered.length}`);
       }
 
       if (org_unit_id) {
+        const beforeCount = filtered.length;
         filtered = filtered.filter(act => {
           if (!act.org_unit_id) return false;
+          // Handle both populated and non-populated org_unit_id
           const orgObjId = act.org_unit_id._id ? act.org_unit_id._id.toString() : act.org_unit_id.toString();
           const orgName = act.org_unit_id.name ? act.org_unit_id.name.toLowerCase() : '';
-          return orgObjId === org_unit_id || orgName === org_unit_id.toLowerCase();
+          const matches = orgObjId === org_unit_id || orgName === org_unit_id.toLowerCase();
+          return matches;
         });
+        console.log(`Org unit filter (${org_unit_id}): ${beforeCount} -> ${filtered.length}`);
       }
 
       if (title) {
-        filtered = filtered.filter(act => 
-          act.title && act.title.toLowerCase().includes(title.toLowerCase())
-        );
+        const beforeCount = filtered.length;
+        filtered = filtered.filter(act => {
+          const matches = act.title && act.title.toLowerCase().includes(title.toLowerCase());
+          return matches;
+        });
+        console.log(`Title filter (${title}): ${beforeCount} -> ${filtered.length}`);
       }
+
+      console.log(`Final filtered count: ${filtered.length} out of ${processedActivities.length}`);
 
       // Sort by start_time (most recent first)
       filtered.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));

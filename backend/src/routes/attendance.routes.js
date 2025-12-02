@@ -62,12 +62,13 @@ router.delete('/activity/:activity_id/qr-codes',
   attendanceController.deleteOldQRCodes
 );
 
+// ⚠️ DEPRECATED: Hệ thống cũ (sessions-based) - Đã thay thế bằng submitAttendance (QR mới)
 // Quét mã QR điểm danh (students scan QR) - before /:id
-router.post('/scan-qr', 
-  auth, 
-  checkPermission('attendance', 'SCAN'),
-  attendanceController.scanQRCode
-);
+// router.post('/scan-qr', 
+//   auth, 
+//   checkPermission('attendance', 'SCAN'),
+//   attendanceController.scanQRCode
+// );
 
 // 🆕 Validate QR Code (check if expired/active) - PUBLIC, no auth needed
 router.post('/validate-qr',

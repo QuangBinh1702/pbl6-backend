@@ -386,7 +386,8 @@ module.exports = {
     try {
       const { studentId, activityId } = req.params;
       
-      const attendance = await Attendance.findOne({
+      // 🆕 Get ALL attendance records for this student + activity (multiple QR scans)
+      const attendances = await Attendance.find({
         student_id: studentId.trim(),
         activity_id: activityId.trim()
       })
@@ -397,13 +398,36 @@ module.exports = {
             select: '-password_hash'
           }
         })
-        .populate('activity_id');
+        .populate('activity_id')
+        .sort({ scanned_at: 1 }); // Sort by scan time (oldest first)
       
-      if (!attendance) {
+      if (!attendances || attendances.length === 0) {
         return res.status(404).json({ success: false, message: 'Attendance not found' });
       }
       
-      res.json({ success: true, data: attendance });
+      // 🆕 Calculate final points: MAX points_earned (highest score from all scans)
+      const maxPoints = Math.max(...attendances.map(att => att.points_earned || att.points || 0));
+      const totalScans = attendances.length;
+      
+      // Get the latest attendance record (most recent scan)
+      const latestAttendance = attendances[attendances.length - 1];
+      
+      res.json({ 
+        success: true, 
+        data: {
+          // Latest attendance record (most recent)
+          ...latestAttendance.toObject(),
+          // 🆕 Summary stats
+          total_scans: totalScans,
+          final_points: maxPoints,  // Highest points earned (correct final score)
+          all_scans: attendances.map(att => ({
+            scan_order: att.scan_order,
+            points_earned: att.points_earned || att.points || 0,
+            scanned_at: att.scanned_at,
+            qr_code_id: att.qr_code_id
+          }))
+        }
+      });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
     }
@@ -422,17 +446,30 @@ module.exports = {
         })
         .sort({ scanned_at: -1 });
 
-      // Deduplicate by activity_id and include points
+      // 🆕 Deduplicate by activity_id and get MAX points (highest score from all scans)
       const activitiesMap = new Map();
       attendances.forEach(att => {
         if (att.activity_id) {
           const key = att.activity_id._id.toString();
+          const points = att.points_earned || att.points || 0;
+          
           if (!activitiesMap.has(key)) {
             const act = att.activity_id.toObject();
-            // Add attendance points and id to activity object
-            act.points = att.points || 0;
+            // Add MAX points (highest score from all scans for this activity)
+            act.points = points;
+            act.final_points = points;  // 🆕 Final points (highest)
             act.attendance_id = att._id;
+            act.total_scans = 1;  // 🆕 Count of scans
             activitiesMap.set(key, act);
+          } else {
+            // Update if this scan has higher points
+            const existing = activitiesMap.get(key);
+            if (points > existing.points) {
+              existing.points = points;
+              existing.final_points = points;
+              existing.attendance_id = att._id;
+            }
+            existing.total_scans += 1;  // Increment scan count
           }
         }
       });
@@ -453,13 +490,14 @@ module.exports = {
     try {
       const { activityId } = req.params;
       
-      // Get activity to get total_sessions_required
+      // Get activity to get total_qr_created (for dynamic QR scoring)
       const activity = await Activity.findById(activityId);
       if (!activity) {
         return res.status(404).json({ success: false, message: 'Activity not found' });
       }
 
-      const totalSessionsRequired = activity.total_sessions_required || 1;
+      // 🆕 Use total_qr_created for QR system, fallback to total_sessions_required for old system
+      const totalQRCreated = activity.total_qr_created || activity.total_sessions_required || 1;
       
       // Get all attendance records for the activity
       const attendances = await Attendance.find({ activity_id: activityId })
@@ -513,14 +551,28 @@ module.exports = {
         }
       });
 
-      // Calculate total_points based on attendance rate
+      // 🆕 Calculate total_points: MAX points_earned from all scans (dynamic QR scoring)
       const result = Array.from(studentStatsMap.values()).map(stats => {
-        const attendanceRate = stats.attendance_count / totalSessionsRequired;
-        const total_points = Math.round(attendanceRate * 10 * 100) / 100; // Làm tròn 2 số thập phân
+        // Get all attendances for this student
+        const studentAttendances = attendances.filter(
+          att => att.student_id?._id?.toString() === stats.student_id._id.toString()
+        );
+        
+        // Calculate max points (highest score from all scans)
+        const maxPoints = Math.max(
+          ...studentAttendances.map(att => att.points_earned || att.points || 0),
+          0
+        );
+        
+        // Calculate attendance rate based on QR scans
+        const attendanceRate = totalQRCreated > 0 ? stats.attendance_count / totalQRCreated : 0;
+        
         return {
           ...stats,
-          total_points: total_points,
-          attendance_rate: attendanceRate
+          total_points: maxPoints,  // 🆕 Final points = max points from all scans
+          attendance_rate: Math.min(attendanceRate, 1.0),  // Cap at 1.0
+          total_qr_scanned: stats.attendance_count,  // 🆕 Number of QR scans
+          total_qr_available: totalQRCreated  // 🆕 Total QR codes available
         };
       });
 
@@ -534,6 +586,8 @@ module.exports = {
     }
   },
 
+  // ⚠️ DEPRECATED: Hệ thống cũ (sessions-based) - Đã thay thế bằng submitAttendance (QR mới)
+  // Giữ lại để rollback nếu cần, nhưng không sử dụng trong hệ thống QR mới
   async scanQRCode(req, res) {
     try {
       const { qrData } = req.body;

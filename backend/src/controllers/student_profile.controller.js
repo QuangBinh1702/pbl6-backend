@@ -1,4 +1,5 @@
 // Quản lý hồ sơ sinh viên
+const mongoose = require('mongoose');
 const StudentProfile = require('../models/student_profile.model');
 const User = require('../models/user.model');
 const Class = require('../models/class.model');
@@ -6,24 +7,67 @@ const Class = require('../models/class.model');
 module.exports = {
   async getAllStudentProfiles(req, res) {
     try {
-      const { class_id, isClassMonitor } = req.query;
+      const { class_id, student_number, faculty_id } = req.query;
       const filter = {};
       
-      if (class_id) filter.class_id = class_id;
-      if (isClassMonitor !== undefined) filter.isClassMonitor = isClassMonitor === 'true';
+      // Filter by student_number (partial match)
+      if (student_number) {
+        filter.student_number = { $regex: student_number, $options: 'i' };
+      }
+      
+      // Filter by faculty_id and/or class_id
+      // Process faculty_id first to get list of classes
+      if (faculty_id) {
+        try {
+          // First get all classes from this faculty
+          const classesInFaculty = await Class.find({ falcuty_id: faculty_id }).select('_id');
+          const classIds = classesInFaculty.map(c => c._id.toString());
+          
+          if (classIds.length > 0) {
+            // If class_id is also specified, verify it belongs to this faculty
+            if (class_id) {
+              // Convert class_id to string for comparison
+              const classIdStr = class_id.toString();
+              // Check if the selected class belongs to the selected faculty
+              if (classIds.includes(classIdStr)) {
+                // Both filters match: use the specific class_id
+                filter.class_id = class_id;
+              } else {
+                // Class doesn't belong to this faculty - no results
+                return res.json({ success: true, data: [], count: 0 });
+              }
+            } else {
+              // Only faculty filter: class must be in faculty
+              // Convert ObjectIds to strings for $in query
+              filter.class_id = { $in: classIds.map(id => new mongoose.Types.ObjectId(id)) };
+            }
+          } else {
+            // No classes in this faculty
+            return res.json({ success: true, data: [], count: 0 });
+          }
+        } catch (err) {
+          console.error('Error getting classes by faculty:', err);
+          return res.json({ success: true, data: [], count: 0 });
+        }
+      } else if (class_id) {
+        // Only class_id filter (no faculty_id)
+        filter.class_id = class_id;
+      }
       
       const studentProfiles = await StudentProfile.find(filter)
-        .populate('user_id')
+        .populate('user_id', 'username email')
         .populate({ path: 'class_id', populate: [ { path: 'falcuty_id' }, { path: 'cohort_id' } ] })
+        .sort({ student_number: 1 })
         .lean();
 
       const data = studentProfiles.map(sp => ({
         ...sp,
-        falcuty_name: sp.class_id?.falcuty_id?.name,
+        falcuty_name: sp.class_id?.falcuty_id?.name || '-',
+        class_name: sp.class_id?.name || '-',
         cohort_year: sp.class_id?.cohort_id?.year
       }));
       
-      res.json({ success: true, data });
+      res.json({ success: true, data, count: data.length });
     } catch (err) {
       console.error('Get all student profiles error:', err);
       res.status(500).json({ success: false, message: err.message });
