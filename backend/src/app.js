@@ -48,9 +48,36 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Ensure database connection for all API routes (important for Vercel serverless)
 app.use('/api', ensureDBConnection);
 
-// Import routes
+// Health check endpoint (for UptimeRobot keep-alive)
 app.get('/', (req, res) => {
-  res.send('Hello, this is the homepage!');
+  // res.send('Hello, this is the homepage!');
+  res.json({ 
+    status: 'ok', 
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/health', async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+    
+    res.json({
+      status: 'ok',
+      message: 'Server and database are healthy',
+      database: dbStatus,
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Health check failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Authentication & Users
