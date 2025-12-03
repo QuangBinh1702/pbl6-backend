@@ -2584,23 +2584,64 @@ Lấy danh sách sinh viên duy nhất tham gia hoạt động với thống kê
 
 ### Post Routes (`/api/posts`)
 
-| Method | Endpoint                          | Description                   | Auth Required | Roles                     |
-| ------ | --------------------------------- | ----------------------------- | ------------- | ------------------------- |
-| GET    | `/api/posts`                      | Lấy tất cả bài đăng           | ✅            | -                         |
-| GET    | `/api/posts/:id`                  | Lấy chi tiết bài đăng theo ID | ✅            | -                         |
-| GET    | `/api/posts/activity/:activityId` | Lấy bài đăng theo hoạt động   | ✅            | -                         |
-| POST   | `/api/posts`                      | Tạo bài đăng mới              | ✅            | admin, ctsv, staff, union |
-| PUT    | `/api/posts/:id`                  | Cập nhật bài đăng             | ✅            | admin, ctsv, staff, union |
-| DELETE | `/api/posts/:id`                  | Xóa bài đăng                  | ✅            | admin, ctsv, staff, union |
+| Method | Endpoint                          | Description                   | Auth Required | Permission Required |
+| ------ | --------------------------------- | ----------------------------- | ------------- | -------------------- |
+| GET    | `/api/posts`                      | Lấy tất cả bài đăng (mặc định chỉ hiển thị post đã đăng) | ✅            | `post:READ`          |
+| GET    | `/api/posts/:id`                  | Lấy chi tiết bài đăng theo ID | ✅            | `post:READ`          |
+| GET    | `/api/posts/activity/:activityId` | Lấy bài đăng theo hoạt động (mặc định chỉ hiển thị post đã đăng) | ✅            | `post:READ`          |
+| POST   | `/api/posts`                      | Tạo bài đăng mới và cập nhật Activity | ✅            | `post:CREATE`        |
+| PUT    | `/api/posts/:id`                  | Cập nhật bài đăng (status)    | ✅            | `post:UPDATE`        |
+| DELETE | `/api/posts/:id`                  | Xóa bài đăng                  | ✅            | `post:DELETE`        |
 
-**Request Body - Create Post:**
+**Request Body - Create Post (multipart/form-data):**
 
+- **activity_id** (required): ID của Activity cần cập nhật và tạo Post
+- **registration_open** (required): Thời gian bắt đầu đăng ký (ISO date string)
+- **registration_close** (required): Thời gian kết thúc đăng ký (ISO date string)
+- **activity_image** (optional): File ảnh hoạt động (upload từ máy)
+
+**Lưu ý:**
+- Khi tạo Post, hệ thống sẽ:
+  1. Cập nhật Activity với `registration_open`, `registration_close`, và `activity_image` (nếu có)
+  2. Tạo Post mới với `status = true` (đã đăng)
+- Nếu không upload ảnh mới, Activity sẽ giữ nguyên ảnh cũ
+
+**Ví dụ Request (FormData):**
+```
+POST /api/posts
+Content-Type: multipart/form-data
+
+activity_id: "507f1f77bcf86cd799439011"
+registration_open: "2025-12-2"
+registration_close: "2025-12-3"
+activity_image: [file từ máy]
+```
+
+**Response - Create Post:**
 ```json
 {
-  "activityId": "activity_uuid_here",
-  "title": "Tiêu đề bài đăng",
-  "content": "Nội dung bài đăng chi tiết",
-  "images": ["image1.jpg", "image2.jpg"]
+  "success": true,
+  "data": {
+    "post": {
+      "_id": "post_id",
+      "activity_id": {
+        "_id": "activity_id",
+        "title": "WEB3 - AI",
+        "registration_open": "2025-12-2T00:00:00.000Z",
+        "registration_close": "2025-12-3T00:00:00.000Z",
+        "activity_image": "http://your-domain/uploads/activity_image-1234567890.jpg"
+      },
+      "status": true,
+      "created_at": "2024-01-01T00:00:00.000Z"
+    },
+    "activity": {
+      "_id": "activity_id",
+      "title": "WEB3 - AI",
+      "registration_open": "2025-12-2T00:00:00.000Z",
+      "registration_close": "2025-12-3T00:00:00.000Z",
+      "activity_image": "http://your-domain/uploads/activity_image-1234567890.jpg"
+    }
+  }
 }
 ```
 
@@ -2608,11 +2649,27 @@ Lấy danh sách sinh viên duy nhất tham gia hoạt động với thống kê
 
 ```json
 {
-  "title": "Tiêu đề bài đăng (đã cập nhật)",
-  "content": "Nội dung bài đăng đã cập nhật",
-  "images": ["image1.jpg", "image2.jpg", "image3.jpg"]
+  "status": true  // true = đã đăng, false = chưa đăng/hủy đăng
 }
 ```
+
+**Query Parameters - Get All Posts:**
+- **Mặc định**: Chỉ trả về post đã đăng (`status = true`)
+- `status` (optional): Filter theo status cụ thể
+  - `GET /api/posts?status=true` - Chỉ lấy post đã đăng
+  - `GET /api/posts?status=false` - Chỉ lấy post chưa đăng/hủy đăng
+- `all` (optional): Xem tất cả post (kể cả chưa đăng) - Dành cho admin/staff
+  - `GET /api/posts?all=true` - Lấy tất cả post (cả `status = true` và `false`)
+  - `GET /api/posts?all=true&status=false` - Lấy tất cả post chưa đăng
+
+**Query Parameters - Get Posts By Activity:**
+- **Mặc định**: Chỉ trả về post đã đăng (`status = true`)
+- `all` (optional): Xem tất cả post của activity (kể cả chưa đăng)
+  - `GET /api/posts/activity/:activityId?all=true` - Lấy tất cả post của activity
+
+**Ý nghĩa Status:**
+- `status = true`: Đã đăng (hiển thị công khai cho user)
+- `status = false`: Chưa đăng/Hủy đăng (ẩn khỏi danh sách công khai, chỉ admin/staff thấy khi dùng `?all=true`)
 
 ---
 

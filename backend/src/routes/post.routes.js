@@ -3,6 +3,7 @@ const router = express.Router();
 const postController = require('../controllers/post.controller');
 const auth = require('../middlewares/auth.middleware');
 const { checkPermission } = require('../middlewares/check_permission.middleware');
+const upload = require('../middlewares/upload.middleware');
 
 // Lấy tất cả bài đăng (all users can view)
 router.get('/', 
@@ -25,10 +26,11 @@ router.get('/activity/:activityId',
   postController.getPostsByActivity
 );
 
-// Tạo bài đăng mới (admin/staff/teacher)
+// Tạo bài đăng mới (admin/staff) - với file upload
 router.post('/', 
   auth, 
   checkPermission('post', 'CREATE'),
+  upload.single('activity_image'), // Middleware để upload file ảnh
   postController.createPost
 );
 

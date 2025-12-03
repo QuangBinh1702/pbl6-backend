@@ -5,7 +5,10 @@ const postSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Activity' 
   },
-  description: String,
+  status: {
+    type: Boolean,
+    default: false // false = chưa đăng, true = đã đăng
+  },
   created_at: { 
     type: Date, 
     default: Date.now 

@@ -145,26 +145,70 @@ async function getActivityRequirementsData(activityId) {
   
   const detailedRequirements = await Promise.all(
     requirements.map(async (req) => {
-      if (req.type === 'faculty') {
-        const falcuty = await Falcuty.findById(req.reference_id);
-        if (falcuty) {
+      try {
+        // Validate reference_id exists
+        if (!req.reference_id) {
+          // Return placeholder for requirement with missing reference_id
           return {
-            type: 'faculty',
-            id: falcuty._id.toString(),
-            name: falcuty.name
+            type: req.type || 'unknown',
+            id: null,
+            name: req.type === 'faculty' ? 'Unknown' : undefined,
+            year: req.type === 'cohort' ? 'Unknown' : undefined
           };
         }
-      } else if (req.type === 'cohort') {
-        const cohort = await Cohort.findById(req.reference_id);
-        if (cohort) {
+
+        if (req.type === 'faculty') {
+          const falcuty = await Falcuty.findById(req.reference_id);
+          if (falcuty) {
+            return {
+              type: 'faculty',
+              id: falcuty._id.toString(),
+              name: falcuty.name
+            };
+          } else {
+            // Return placeholder when faculty is not found (e.g., deleted)
+            return {
+              type: 'faculty',
+              id: req.reference_id.toString(),
+              name: 'Unknown'
+            };
+          }
+        } else if (req.type === 'cohort') {
+          const cohort = await Cohort.findById(req.reference_id);
+          if (cohort) {
+            return {
+              type: 'cohort',
+              id: cohort._id.toString(),
+              year: cohort.year
+            };
+          } else {
+            // Return placeholder when cohort is not found (e.g., deleted)
+            return {
+              type: 'cohort',
+              id: req.reference_id.toString(),
+              year: 'Unknown'
+            };
+          }
+        } else {
+          // Handle unknown type - return placeholder to maintain requirement count
+          console.warn(`Unknown requirement type: ${req.type} for activity ${activityId}`);
           return {
-            type: 'cohort',
-            id: cohort._id.toString(),
-            year: cohort.year
+            type: req.type || 'unknown',
+            id: req.reference_id ? req.reference_id.toString() : null,
+            name: 'Unknown'
           };
         }
+      } catch (error) {
+        // Handle errors (e.g., invalid ObjectId format, database errors)
+        console.error(`Error processing requirement for activity ${activityId}:`, error.message);
+        // Return placeholder to maintain requirement count even on error
+        return {
+          type: req.type || 'unknown',
+          id: req.reference_id ? req.reference_id.toString() : null,
+          name: req.type === 'faculty' ? 'Unknown' : undefined,
+          year: req.type === 'cohort' ? 'Unknown' : undefined
+        };
       }
-      return null;
     })
   );
   
