@@ -4,13 +4,13 @@ const Activity = require('../models/activity.model');
 const StudentProfile = require('../models/student_profile.model');
 const Notification = require('../models/notification.model');
 const ActivityRegistration = require('../models/activity_registration.model');
-const AttendanceSession = require('../models/attendance_session.model');
+// ⚠️ REMOVED: AttendanceSession không còn dùng (hệ thống sessions đã bị xóa)
 const QRCodeModel = require('../models/qr_code.model');  // ← PHASE 2.5: QR Manager
 const Class = require('../models/class.model');
 const Falcuty = require('../models/falcuty.model');
 const registrationController = require('./registration.controller');
 const QRCode = require('qrcode');
-const attendanceCalculator = require('../utils/attendance_calculator');
+// ⚠️ REMOVED: attendanceCalculator không còn dùng (hệ thống sessions đã bị xóa)
 const XLSX = require('xlsx');  // ← For Excel export
 
 module.exports = {
@@ -622,241 +622,8 @@ module.exports = {
     }
   },
 
-  // ⚠️ DEPRECATED: Hệ thống cũ (sessions-based) - Đã thay thế bằng submitAttendance (QR mới)
-  // Giữ lại để rollback nếu cần, nhưng không sử dụng trong hệ thống QR mới
-  async scanQRCode(req, res) {
-    try {
-      const { qrData } = req.body;
-      const userId = req.user._id;
-      
-      if (!qrData) {
-        return res.status(400).json({ success: false, message: 'QR code data is required' });
-      }
-
-      // Parse QR code data
-      let data;
-      try {
-        data = JSON.parse(qrData);
-      } catch (parseErr) {
-        return res.status(400).json({ success: false, message: 'Invalid QR code format' });
-      }
-
-      const { activityId, sessionId } = data;
-      
-      if (!activityId) {
-        return res.status(400).json({ success: false, message: 'Invalid QR code: missing activityId' });
-      }
-
-      // 1. Find student profile
-      const studentProfile = await StudentProfile.findOne({ user_id: userId });
-      if (!studentProfile) {
-        return res.status(404).json({ success: false, message: 'Student profile not found' });
-      }
-
-      // 2. Check if activity exists
-      const activity = await Activity.findById(activityId);
-      if (!activity) {
-        return res.status(404).json({ success: false, message: 'Activity not found' });
-      }
-
-      // 3. Check registration
-      const registration = await ActivityRegistration.findOne({
-        student_id: studentProfile._id,
-        activity_id: activityId,
-        status: 'approved'
-      });
-
-      if (!registration) {
-        return res.status(403).json({ 
-          success: false, 
-          message: 'Bạn chưa được duyệt để tham gia hoạt động này' 
-        });
-      }
-
-      // ===== Handle Multiple Sessions =====
-      let attendanceSession = null;
-      let sessionName = 'Activity';
-
-      if (sessionId && activity.attendance_sessions && activity.attendance_sessions.length > 0) {
-        // Find the session
-        attendanceSession = await AttendanceSession.findById(sessionId);
-        
-        if (!attendanceSession) {
-          return res.status(404).json({ 
-            success: false, 
-            message: 'Attendance session not found' 
-          });
-        }
-
-        sessionName = attendanceSession.name;
-
-        // Validate session timing
-        const timingValidation = attendanceCalculator.validateSessionTiming(
-          attendanceSession.start_time,
-          attendanceSession.end_time,
-          30
-        );
-
-        if (!timingValidation.isValid) {
-          return res.status(400).json({ 
-            success: false, 
-            message: timingValidation.message 
-          });
-        }
-
-        // Check if already scanned this session
-        let attendance = await Attendance.findOne({
-          student_id: studentProfile._id,
-          activity_id: activityId
-        });
-
-        if (!attendance) {
-          // Create new attendance record
-          attendance = new Attendance({
-            student_id: studentProfile._id,
-            activity_id: activityId,
-            total_sessions_required: activity.attendance_sessions.length,
-            attendance_sessions: [],
-            scanned_at: new Date()
-          });
-        }
-
-        // Check if already attended this session
-        const alreadyAttendedThisSession = attendance.attendance_sessions.some(
-          s => s.session_id.toString() === sessionId
-        );
-
-        if (alreadyAttendedThisSession) {
-          return res.status(400).json({
-            success: false,
-            message: `Bạn đã điểm danh session "${sessionName}" rồi`
-          });
-        }
-
-        // Add session to attendance
-        attendance.attendance_sessions.push({
-          session_id: sessionId,
-          session_number: attendanceSession.session_number,
-          session_name: sessionName,
-          scanned_at: new Date(),
-          session_status: 'present'
-        });
-
-        // Calculate attendance status and points
-        const calculation = attendanceCalculator.calculateAttendanceStatus(
-          activity,
-          attendance.attendance_sessions.length
-        );
-
-        attendance.status = calculation.status;
-        attendance.attendance_rate = calculation.attendanceRate;
-        attendance.total_sessions_attended = attendance.attendance_sessions.length;
-        attendance.points_earned = calculation.earnedPoints;
-        attendance.points = calculation.earnedPoints; // For backward compatibility
-        attendance.scanned_at = new Date();
-
-        await attendance.save();
-
-        // ===== Auto-update Registration Status =====
-        if (calculation.status === 'present') {
-          await ActivityRegistration.findByIdAndUpdate(
-            registration._id,
-            {
-              status: 'attended',
-              attendance_record_id: attendance._id
-            }
-          );
-        }
-
-        // Populate for response
-        await attendance.populate({
-          path: 'student_id',
-          populate: { path: 'user_id', select: '-password_hash' }
-        });
-        await attendance.populate('activity_id');
-
-        res.status(201).json({
-          success: true,
-          message: `Điểm danh ${sessionName} thành công`,
-          data: {
-            attendance,
-            summary: attendanceCalculator.formatAttendanceSummary(attendance, calculation)
-          }
-        });
-      } else {
-        // ===== Single Session Mode (Backward Compatible) =====
-        const now = new Date();
-        const startTime = new Date(activity.start_time);
-        const endTime = new Date(activity.end_time);
-        const scanStartWindow = new Date(startTime.getTime() - 30 * 60000);
-        
-        if (now < scanStartWindow) {
-          return res.status(400).json({ 
-            success: false, 
-            message: 'Hoạt động chưa bắt đầu. Vui lòng quay lại gần giờ bắt đầu' 
-          });
-        }
-
-        if (now > endTime) {
-          return res.status(400).json({ 
-            success: false, 
-            message: 'Hoạt động đã kết thúc. Không thể điểm danh' 
-          });
-        }
-
-        // Check if already attended
-        const existingAttendance = await Attendance.findOne({
-          student_id: studentProfile._id,
-          activity_id: activityId
-        });
-
-        if (existingAttendance) {
-          return res.status(400).json({ 
-            success: false, 
-            message: 'Bạn đã điểm danh rồi' 
-          });
-        }
-
-        // Create attendance
-        const attendance = new Attendance({
-          student_id: studentProfile._id,
-          activity_id: activityId,
-          status: 'present',
-          scanned_at: new Date(),
-          total_sessions_required: 1,
-          total_sessions_attended: 1,
-          attendance_rate: 1.0,
-          verified: false
-        });
-
-        await attendance.save();
-
-        // Auto-update registration
-        await ActivityRegistration.findByIdAndUpdate(
-          registration._id,
-          { 
-            status: 'attended',
-            attendance_record_id: attendance._id
-          }
-        );
-
-        await attendance.populate({
-          path: 'student_id',
-          populate: { path: 'user_id', select: '-password_hash' }
-        });
-        await attendance.populate('activity_id');
-
-        res.status(201).json({ 
-          success: true, 
-          message: 'Điểm danh thành công',
-          data: attendance 
-        });
-      }
-    } catch (err) {
-      console.error('Scan QR code error:', err);
-      res.status(500).json({ success: false, message: err.message });
-    }
-  },
+  // ⚠️ REMOVED: Hệ thống cũ (sessions-based) đã bị xóa
+  // Hệ thống QR mới sử dụng submitAttendance thay thế
 
   // ===== PHASE 2.5: scanQRCodeV2 - New on-demand QR scanning (replaces old scanQRCode) =====
   async scanQRCodeV2(req, res) {
@@ -953,7 +720,7 @@ module.exports = {
         student_id: studentProfile._id,
         activity_id: activityId,
         qr_code_id: qrId,  // Track which QR
-        status: 'pending',  // Waiting for approval
+        status: 'present',  // Mark as present when QR is scanned
         scanned_at: new Date()
       });
 
@@ -1141,7 +908,7 @@ module.exports = {
       
       console.log(`[Attendance] Points calculation: scan_order=${scan_order}, total_qr=${total_qr_at_scan}, max_points=${max_points_from_activity} → ${calculated_points} pts`);
 
-      // Create attendance with approved status (auto-approved via QR)
+      // Create attendance with present status (validated via QR + registration)
       const attendance = new Attendance({
         student_id: studentId,
         activity_id: activity_id,
@@ -1168,7 +935,7 @@ module.exports = {
           student_in_system: !!studentProfile
         },
         
-        status: 'approved',  // Auto-approved (validated via QR + registration)
+        status: 'present',  // Mark as present (validated via QR + registration)
         scanned_at: new Date(),
         verified: true,
         verified_by: userId  // Student who scanned
@@ -1223,12 +990,19 @@ module.exports = {
     }
   },
 
-  // 2. Get Pending Attendances (Admin view)
+  // 2. Get Attendances Needing Review (Admin view)
+  // Returns attendances with points_earned = 0 or not verified (need staff review)
   async getPendingAttendances(req, res) {
     try {
       const { activity_id } = req.query;
 
-      const query = { status: 'pending' };
+      const query = { 
+        $or: [
+          { points_earned: 0 },
+          { points_earned: { $exists: false } },
+          { verified: false }
+        ]
+      };
       if (activity_id) query.activity_id = activity_id;
 
       const attendances = await Attendance.find(query)
@@ -1249,7 +1023,7 @@ module.exports = {
     }
   },
 
-  // 3. Approve Attendance (Admin approval)
+  // 3. Update Attendance Points (Staff update points and mark as present)
   async approveAttendance(req, res) {
     try {
       const { id } = req.params;
@@ -1259,10 +1033,6 @@ module.exports = {
       const attendance = await Attendance.findById(id);
       if (!attendance) {
         return res.status(404).json({ success: false, message: 'Attendance not found' });
-      }
-
-      if (attendance.status !== 'pending') {
-        return res.status(400).json({ success: false, message: 'This attendance is not pending' });
       }
 
       // Get activity to calculate points
@@ -1285,8 +1055,8 @@ module.exports = {
         pointsEarned = 0;
       }
 
-      // Update attendance
-      attendance.status = 'approved';
+      // Update attendance - mark as present and update points
+      attendance.status = 'present';
       attendance.verified_by = admin_id;
       attendance.verified_at = new Date();
       attendance.verified_comment = verified_comment || '';
@@ -1304,7 +1074,7 @@ module.exports = {
 
       res.json({
         success: true,
-        message: 'Attendance approved',
+        message: 'Attendance updated successfully',
         data: attendance
       });
     } catch (err) {
@@ -1312,7 +1082,7 @@ module.exports = {
     }
   },
 
-  // 4. Reject Attendance (Admin rejection)
+  // 4. Mark Attendance as Absent (Staff mark as absent and set points to 0)
   async rejectAttendance(req, res) {
     try {
       const { id } = req.params;
@@ -1328,12 +1098,8 @@ module.exports = {
         return res.status(404).json({ success: false, message: 'Attendance not found' });
       }
 
-      if (attendance.status !== 'pending') {
-        return res.status(400).json({ success: false, message: 'This attendance is not pending' });
-      }
-
-      // Update attendance
-      attendance.status = 'rejected';
+      // Update attendance - mark as absent and set points to 0
+      attendance.status = 'absent';
       attendance.rejection_reason = rejection_reason;
       attendance.verified_by = admin_id;
       attendance.verified_at = new Date();
@@ -1351,7 +1117,7 @@ module.exports = {
 
       res.json({
         success: true,
-        message: 'Attendance rejected',
+        message: 'Attendance marked as absent',
         data: attendance
       });
     } catch (err) {
@@ -1359,12 +1125,18 @@ module.exports = {
     }
   },
 
-  // 5. Export Pending Attendances to Excel
+  // 5. Export Attendances Needing Review to Excel
   async exportPendingAttendances(req, res) {
     try {
       const { activity_id } = req.query;
 
-      const query = { status: 'pending' };
+      const query = { 
+        $or: [
+          { points_earned: 0 },
+          { points_earned: { $exists: false } },
+          { verified: false }
+        ]
+      };
       if (activity_id) query.activity_id = activity_id;
 
       const attendances = await Attendance.find(query)

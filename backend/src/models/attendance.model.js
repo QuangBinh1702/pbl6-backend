@@ -29,36 +29,6 @@ const attendanceSchema = new mongoose.Schema({
     description: "Total QR codes that existed when this was scanned"
   },
   
-  // ← OLD: Track multiple sessions (keep for backward compatibility)
-  attendance_sessions: [{
-    session_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'AttendanceSession'
-    },
-    session_number: Number,
-    session_name: String,
-    scanned_at: Date,
-    session_status: {
-      type: String,
-      enum: ['present', 'absent'],
-      default: 'present'
-    }
-  }],
-  
-  // ← NEW: Summary fields
-  total_sessions_required: {
-    type: Number,
-    default: 1
-  },
-  total_sessions_attended: {
-    type: Number,
-    default: 0
-  },
-  attendance_rate: {
-    type: Number,  // 0.0 - 1.0 (0% - 100%)
-    default: 0
-  },
-  
   // ← PHASE 2: Student submitted info for approval
   student_info: {
     student_id_number: {
@@ -104,12 +74,12 @@ const attendanceSchema = new mongoose.Schema({
     }
   },
 
-  // ← UPDATED: Calculated status based on attendance config
+  // ← UPDATED: Attendance status (only present/absent/partial)
   status: { 
     type: String,
-    enum: ['present', 'absent', 'partial', 'pending', 'approved', 'rejected'],
-    default: 'pending',
-    index: true  // Fast queries for pending/approved
+    enum: ['present', 'absent', 'partial'],
+    default: 'absent',  // Default to absent (not present) - more realistic
+    index: true  // Fast queries for attendance status
   },
   
   scanned_at: { 
@@ -209,7 +179,6 @@ attendanceSchema.post('save', async function(doc) {
 attendanceSchema.index({ student_id: 1 });
 attendanceSchema.index({ activity_id: 1 });
 attendanceSchema.index({ activity_id: 1, status: 1 });  // ← Query pending by activity
-attendanceSchema.index({ activity_id: 1, 'attendance_sessions.session_id': 1 });  // ← By session
 attendanceSchema.index({ verified_at: -1 });  // ← Sort by verification date
 attendanceSchema.index({ 'student_info.class': 1 });  // ← Filter by class
 attendanceSchema.index({ 'student_info.faculty': 1 });  // ← Filter by faculty

@@ -2229,7 +2229,12 @@ _Từ chối:_
 | PUT    | `/api/attendances/:id/verify`                    | Xác minh điểm danh                                 | ✅            | admin, ctsv, staff, union |
 | PUT    | `/api/attendances/:id/feedback`                  | Thêm phản hồi cho điểm danh                        | ✅            | -                         |
 | POST   | `/api/attendances/submit-attendance`              | 🆕 Nộp điểm danh qua QR (PUBLIC, không cần auth)   | ❌            | -                         |
-| ~~POST   | `/api/attendances/scan-qr`~~                     | ~~⚠️ DEPRECATED: Hệ thống cũ (sessions-based)~~   | ~~✅~~        | ~~-~~                     |
+
+**Lưu ý về Attendance Status:**
+- **Status enum**: Chỉ có `'present'` (có mặt) và `'absent'` (vắng mặt)
+- **Status `'partial'` đã bị xóa**: Hệ thống sessions cũ đã bị loại bỏ, không còn status `'partial'`
+- **Mặc định**: Khi tạo attendance mới, status mặc định là `'absent'` (phù hợp với thực tế - nếu không có thông tin thì coi như vắng mặt)
+- ⚠️ **Hệ thống sessions cũ đã bị xóa**: Endpoint `/api/attendances/scan-qr` và các field liên quan (`attendance_sessions`, `total_sessions_required`, `total_sessions_attended`, `attendance_rate`) đã bị loại bỏ hoàn toàn
 
 **Request Body - Create Attendance:**
 
@@ -2373,11 +2378,16 @@ Lấy danh sách sinh viên duy nhất tham gia hoạt động với thống kê
     "total_qr_at_scan": 2,
     "points_earned": 10,
     "points": 10,
-    "status": "approved",
+    "status": "present",
     "scanned_at": "2024-12-15T10:30:00.000Z"
   }
 }
 ```
+
+**Lưu ý về Attendance Status:**
+- **Status enum**: Chỉ có `'present'` (có mặt) và `'absent'` (vắng mặt)
+- **Status `'partial'` đã bị xóa**: Hệ thống sessions cũ đã bị loại bỏ, không còn status `'partial'`
+- **Mặc định**: Khi tạo attendance mới, status mặc định là `'absent'` (phù hợp với thực tế - nếu không có thông tin thì coi như vắng mặt)
 
 **Response - Submit Attendance (Student Not Found):**
 
@@ -2397,16 +2407,9 @@ Lấy danh sách sinh viên duy nhất tham gia hoạt động với thống kê
 }
 ```
 
-**⚠️ DEPRECATED - Request Body - Scan QR (Hệ thống cũ):**
-
-```json
-{
-  "qrCode": "QR_CODE_DATA",
-  "activityId": "activity_uuid_here"
-}
-```
-
-**Lưu ý:** Endpoint `/api/attendances/scan-qr` đã được thay thế bằng `/api/attendances/submit-attendance` (hệ thống QR mới với dynamic scoring).
+**Lưu ý về hệ thống cũ:**
+- ⚠️ **Hệ thống sessions cũ đã bị xóa hoàn toàn**: Endpoint `/api/attendances/scan-qr` và các field liên quan đến sessions (`attendance_sessions`, `total_sessions_required`, `total_sessions_attended`, `attendance_rate`) đã bị loại bỏ
+- ✅ **Hệ thống QR mới**: Sử dụng `/api/attendances/submit-attendance` với dynamic scoring dựa trên `scan_order` và `total_qr_at_scan`
 
 ---
 
