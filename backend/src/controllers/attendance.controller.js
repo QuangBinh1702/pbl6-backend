@@ -496,17 +496,32 @@ module.exports = {
         return res.status(404).json({ success: false, message: 'Activity not found' });
       }
 
-      // 🆕 Use total_qr_created for QR system, fallback to total_sessions_required for old system
-      const totalQRCreated = activity.total_qr_created || activity.total_sessions_required || 1;
+      // 🆕 Use total_qr_created for QR system, default to 1 if not set
+      const totalQRCreated = activity.total_qr_created || 1;
       
       // Get all attendance records for the activity
       const attendances = await Attendance.find({ activity_id: activityId })
         .populate({
           path: 'student_id',
-          populate: {
-            path: 'user_id',
-            select: '-password_hash'
-          }
+          populate: [
+            {
+              path: 'user_id',
+              select: '-password_hash'
+            },
+            {
+              path: 'class_id',
+              populate: [
+                {
+                  path: 'falcuty_id',
+                  select: '_id name'
+                },
+                {
+                  path: 'cohort_id',
+                  select: '_id year'
+                }
+              ]
+            }
+          ]
         })
         .lean();
 
@@ -525,7 +540,18 @@ module.exports = {
                 email: att.student_id.email,
                 gender: att.student_id.gender,
                 phone: att.student_id.phone,
-                class_id: att.student_id.class_id,
+                class_id: att.student_id.class_id ? {
+                  _id: att.student_id.class_id._id,
+                  name: att.student_id.class_id.name,
+                  falcuty_id: att.student_id.class_id.falcuty_id ? {
+                    _id: att.student_id.class_id.falcuty_id._id,
+                    name: att.student_id.class_id.falcuty_id.name
+                  } : null,
+                  cohort_id: att.student_id.class_id.cohort_id ? {
+                    _id: att.student_id.class_id.cohort_id._id,
+                    year: att.student_id.class_id.cohort_id.year
+                  } : null
+                } : null,
                 contact_address: att.student_id.contact_address,
                 date_of_birth: att.student_id.date_of_birth,
                 student_image: att.student_id.student_image,
@@ -537,6 +563,7 @@ module.exports = {
               },
               attendance_count: 0,
               last_attended: null,
+              last_attendance_id: null,  // 🆕 Track latest attendance_id
               status: att.status
             });
           }
@@ -544,9 +571,10 @@ module.exports = {
           const stats = studentStatsMap.get(key);
           stats.attendance_count += 1;
           
-          // Update last_attended to most recent
+          // Update last_attended and last_attendance_id to most recent
           if (!stats.last_attended || new Date(att.scanned_at) > new Date(stats.last_attended)) {
             stats.last_attended = att.scanned_at;
+            stats.last_attendance_id = att._id;  // 🆕 Store latest attendance_id
           }
         }
       });
@@ -567,13 +595,21 @@ module.exports = {
         // Calculate attendance rate based on QR scans
         const attendanceRate = totalQRCreated > 0 ? stats.attendance_count / totalQRCreated : 0;
         
-        return {
+        // Base response object
+        const responseData = {
           ...stats,
+          attendance_id: stats.last_attendance_id,  // 🆕 Add attendance_id (latest)
           total_points: maxPoints,  // 🆕 Final points = max points from all scans
-          attendance_rate: Math.min(attendanceRate, 1.0),  // Cap at 1.0
-          total_qr_scanned: stats.attendance_count,  // 🆕 Number of QR scans
-          total_qr_available: totalQRCreated  // 🆕 Total QR codes available
+          attendance_rate: Math.min(attendanceRate, 1.0)  // Cap at 1.0
         };
+        
+        // Only add QR-related fields if using new QR system (total_qr_created exists)
+        if (activity.total_qr_created) {
+          responseData.total_qr_scanned = stats.attendance_count;  // Number of QR scans
+          responseData.total_qr_available = totalQRCreated;  // Total QR codes available
+        }
+        
+        return responseData;
       });
 
       res.json({ 
@@ -1231,7 +1267,23 @@ module.exports = {
 
       // Get activity to calculate points
       const activity = await Activity.findById(attendance.activity_id);
-      const pointsEarned = activity?.points_per_attendance || 10;
+      
+      // Calculate points using dynamic scoring logic
+      let pointsEarned;
+      if (attendance.points_earned) {
+        // Keep existing points if already calculated
+        pointsEarned = attendance.points_earned;
+      } else if (attendance.scan_order && attendance.total_qr_at_scan) {
+        // Calculate using dynamic scoring formula: (scan_order / total_qr_at_scan) * max_points
+        const max_points = activity?.max_points || 10;
+        pointsEarned = Math.min(
+          Math.floor((attendance.scan_order / attendance.total_qr_at_scan) * max_points),
+          max_points
+        );
+      } else {
+        // Fallback: default to 0 points (not 10) - staff should manually set points if needed
+        pointsEarned = 0;
+      }
 
       // Update attendance
       attendance.status = 'approved';
