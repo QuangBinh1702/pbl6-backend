@@ -21,7 +21,35 @@ module.exports = {
       if (!orgUnit) {
         return res.status(404).json({ message: 'Organization unit not found' });
       }
-      res.json(orgUnit);
+
+      // Lấy danh sách staff trong tổ chức
+      const staff = await StaffProfile.find({ org_unit_id: req.params.id })
+        .populate('user_id', 'username email')
+        .populate('org_unit_id', '_id name type')
+        .populate({
+          path: 'faculty_id',
+          select: '_id name'
+        })
+        .lean();
+
+      // Format staff data tương tự như getOrgUnitStaff
+      const staffList = staff.map(s => {
+        const staffData = {
+          ...s,
+          org_unit_name: s.org_unit_id?.name || null,
+          faculty_name: s.faculty_id?.name || null
+        };
+        return staffData;
+      });
+
+      // Thêm danh sách staff vào response
+      const response = {
+        ...orgUnit.toObject(),
+        staff: staffList,
+        staff_count: staffList.length
+      };
+
+      res.json(response);
     } catch (err) {
       res.status(500).json({ message: err.message });
     }

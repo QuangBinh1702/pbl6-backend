@@ -147,17 +147,24 @@ async function getActivityRequirementsData(activityId) {
     requirements.map(async (req) => {
       if (req.type === 'faculty') {
         const falcuty = await Falcuty.findById(req.reference_id);
-        return {
-          type: 'faculty',
-          name: falcuty ? falcuty.name : 'Unknown'
-        };
+        if (falcuty) {
+          return {
+            type: 'faculty',
+            id: falcuty._id.toString(),
+            name: falcuty.name
+          };
+        }
       } else if (req.type === 'cohort') {
         const cohort = await Cohort.findById(req.reference_id);
-        return {
-          type: 'cohort',
-          year: cohort ? cohort.year : 'Unknown'
-        };
+        if (cohort) {
+          return {
+            type: 'cohort',
+            id: cohort._id.toString(),
+            year: cohort.year
+          };
+        }
       }
+      return null;
     })
   );
   
@@ -440,32 +447,56 @@ module.exports = {
         // Don't fail the entire request if QR generation fails
       }
       // Xử lý requirements nếu có
-       if (Array.isArray(requirements) && requirements.length > 0) {
-         for (const reqItem of requirements) {
-           if (reqItem.type === 'faculty' && reqItem.name) {
-             const falcuty = await Falcuty.findOne({ name: reqItem.name });
-             if (falcuty) {
-               await ActivityEligibility.create({
-                 activity_id: activity._id,
-                 type: 'faculty',
-                 reference_id: falcuty._id
-               });
-             }
-          } else if (reqItem.type === 'cohort' && reqItem.year) {
-            const cohort = await Cohort.findOne({ year: reqItem.year });
+      const requirementsWarnings = [];
+      if (Array.isArray(requirements) && requirements.length > 0) {
+        for (const reqItem of requirements) {
+          if (!reqItem.type) {
+            requirementsWarnings.push(`Requirement thiếu trường 'type'`);
+            continue;
+          }
+
+          if (reqItem.type === 'faculty') {
+            if (!reqItem.id) {
+              requirementsWarnings.push(`Requirement type 'faculty' thiếu trường 'id'`);
+              continue;
+            }
+            const falcuty = await Falcuty.findById(reqItem.id);
+            if (falcuty) {
+              await ActivityEligibility.create({
+                activity_id: activity._id,
+                type: 'faculty',
+                reference_id: falcuty._id
+              });
+            } else {
+              requirementsWarnings.push(`Không tìm thấy khoa với id: "${reqItem.id}"`);
+            }
+          } else if (reqItem.type === 'cohort') {
+            if (!reqItem.id) {
+              requirementsWarnings.push(`Requirement type 'cohort' thiếu trường 'id'`);
+              continue;
+            }
+            const cohort = await Cohort.findById(reqItem.id);
             if (cohort) {
               await ActivityEligibility.create({
                 activity_id: activity._id,
                 type: 'cohort',
                 reference_id: cohort._id
               });
+            } else {
+              requirementsWarnings.push(`Không tìm thấy khóa với id: "${reqItem.id}"`);
             }
+          } else {
+            requirementsWarnings.push(`Requirement type không hợp lệ: "${reqItem.type}". Chỉ chấp nhận 'faculty' hoặc 'cohort'`);
           }
         }
       }
       // Transform activity to return Vietnamese status
       const transformedActivity = transformActivity(activity);
-      res.status(201).json({ success: true, data: transformedActivity });
+      const response = { success: true, data: transformedActivity };
+      if (requirementsWarnings.length > 0) {
+        response.warnings = requirementsWarnings;
+      }
+      res.status(201).json(response);
     } catch (err) {
       console.error('Create activity error:', err);
       res.status(400).json({ success: false, message: err.message });
@@ -628,6 +659,7 @@ module.exports = {
       }
       
       // Handle requirements update
+      const requirementsWarnings = [];
       if (Array.isArray(requirements)) {
         // Delete all existing requirements for this activity
         await ActivityEligibility.deleteMany({ activity_id: activity._id });
@@ -635,24 +667,43 @@ module.exports = {
         // Create new requirements if provided
         if (requirements.length > 0) {
           for (const reqItem of requirements) {
-            if (reqItem.type === 'faculty' && reqItem.name) {
-              const falcuty = await Falcuty.findOne({ name: reqItem.name });
+            if (!reqItem.type) {
+              requirementsWarnings.push(`Requirement thiếu trường 'type'`);
+              continue;
+            }
+
+            if (reqItem.type === 'faculty') {
+              if (!reqItem.id) {
+                requirementsWarnings.push(`Requirement type 'faculty' thiếu trường 'id'`);
+                continue;
+              }
+              const falcuty = await Falcuty.findById(reqItem.id);
               if (falcuty) {
                 await ActivityEligibility.create({
                   activity_id: activity._id,
                   type: 'faculty',
                   reference_id: falcuty._id
                 });
+              } else {
+                requirementsWarnings.push(`Không tìm thấy khoa với id: "${reqItem.id}"`);
               }
-            } else if (reqItem.type === 'cohort' && reqItem.year) {
-              const cohort = await Cohort.findOne({ year: reqItem.year });
+            } else if (reqItem.type === 'cohort') {
+              if (!reqItem.id) {
+                requirementsWarnings.push(`Requirement type 'cohort' thiếu trường 'id'`);
+                continue;
+              }
+              const cohort = await Cohort.findById(reqItem.id);
               if (cohort) {
                 await ActivityEligibility.create({
                   activity_id: activity._id,
                   type: 'cohort',
                   reference_id: cohort._id
                 });
+              } else {
+                requirementsWarnings.push(`Không tìm thấy khóa với id: "${reqItem.id}"`);
               }
+            } else {
+              requirementsWarnings.push(`Requirement type không hợp lệ: "${reqItem.type}". Chỉ chấp nhận 'faculty' hoặc 'cohort'`);
             }
           }
         }
@@ -665,8 +716,11 @@ module.exports = {
       
       // Transform activity to return Vietnamese status
       const transformedActivity = transformActivity(activity);
-      
-      res.json({ success: true, data: transformedActivity });
+      const response = { success: true, data: transformedActivity };
+      if (requirementsWarnings.length > 0) {
+        response.warnings = requirementsWarnings;
+      }
+      res.json(response);
     } catch (err) {
       console.error('Update activity error:', err);
       res.status(400).json({ success: false, message: err.message });

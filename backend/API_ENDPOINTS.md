@@ -1071,6 +1071,164 @@ curl -X POST "http://localhost:5000/api/auth/create-bulk-users" \
 }
 ```
 
+**Response - Get All Org Units (`GET /api/org-units`):**
+
+```json
+[
+  {
+    "_id": "691d6303db9ec83878f1b66c",
+    "name": "Khoa Công Nghệ Thông Tin",
+    "type": "faculty",
+    "leader_id": {
+      "_id": "staff_leader_id",
+      "full_name": "Nguyễn Văn A",
+      "position": "Trưởng khoa"
+    },
+    "founded_date": "2000-01-01T00:00:00.000Z",
+    "achievements": [
+      "Top 3 Quốc Gia Về Tré 2020",
+      "Tổ chức 50+ workshop trong 3 năm gần nhất"
+    ],
+    "description": "Khoa Công Nghệ Thông Tin - Trung tâm đào tạo lập trình viên chất lượng cao..."
+  },
+  {
+    "_id": "org_unit_id_2",
+    "name": "Phòng CTSV",
+    "type": "ctsv",
+    "leader_id": {
+      "_id": "staff_id_2",
+      "full_name": "Trần Thị B",
+      "position": "Trưởng phòng"
+    },
+    "founded_date": null,
+    "achievements": [],
+    "description": null
+  },
+  {
+    "_id": "org_unit_id_3",
+    "name": "Đoàn trường",
+    "type": "doan",
+    "leader_id": null,
+    "founded_date": null,
+    "achievements": [],
+    "description": null
+  }
+]
+```
+
+**Response - Get Org Unit By ID (`GET /api/org-units/:id`):**
+
+```json
+{
+  "_id": "691d6303db9ec83878f1b66c",
+  "name": "Khoa Công Nghệ Thông Tin",
+  "type": "faculty",
+  "leader_id": {
+    "_id": "staff_leader_id",
+    "full_name": "Nguyễn Văn A",
+    "position": "Trưởng khoa"
+  },
+  "founded_date": "2000-01-01T00:00:00.000Z",
+  "achievements": [
+    "Top 3 Quốc Gia Về Tré 2020",
+    "Tổ chức 50+ workshop trong 3 năm gần nhất"
+  ],
+  "description": "Khoa Công Nghệ Thông Tin - Trung tâm đào tạo lập trình viên chất lượng cao...",
+  "staff": [
+    {
+      "_id": "staff_profile_id_1",
+      "user_id": {
+        "_id": "user_id_1",
+        "username": "staff001",
+        "email": "staff001@example.com"
+      },
+      "staff_number": "GV001",
+      "full_name": "Phạm Thị Giáo viên A",
+      "date_of_birth": "1986-03-25T00:00:00.000Z",
+      "gender": "female",
+      "email": "teachera@ptit.edu.vn",
+      "phone": "0912345004",
+      "org_unit_id": {
+        "_id": "691d6303db9ec83878f1b66c",
+        "name": "Khoa Công Nghệ Thông Tin",
+        "type": "faculty"
+      },
+      "position": "Giảng viên",
+      "staff_image": "",
+      "contact_address": "Hanoi, Vietnam",
+      "org_unit_name": "Khoa Công Nghệ Thông Tin",
+      "faculty_name": null
+    },
+    {
+      "_id": "staff_profile_id_2",
+      "user_id": {
+        "_id": "user_id_2",
+        "username": "staff002",
+        "email": "staff002@example.com"
+      },
+      "staff_number": "GV002",
+      "full_name": "Trần Văn B",
+      "date_of_birth": "1985-05-20T00:00:00.000Z",
+      "gender": "male",
+      "email": "teacherb@ptit.edu.vn",
+      "phone": "0912345005",
+      "org_unit_id": {
+        "_id": "691d6303db9ec83878f1b66c",
+        "name": "Khoa Công Nghệ Thông Tin",
+        "type": "faculty"
+      },
+      "position": "Phó trưởng khoa",
+      "staff_image": null,
+      "contact_address": null,
+      "org_unit_name": "Khoa Công Nghệ Thông Tin",
+      "faculty_name": null
+    }
+  ],
+  "staff_count": 2
+}
+```
+
+**Lưu ý:**
+- Response bao gồm thông tin tổ chức và **danh sách tất cả thành viên (staff)** trong tổ chức đó
+- `staff` là mảng chứa các StaffProfile với đầy đủ thông tin (user_id, org_unit_id được populate)
+- `staff_count` là số lượng thành viên trong tổ chức
+- Nếu tổ chức không có thành viên nào, `staff` sẽ là mảng rỗng `[]` và `staff_count` sẽ là `0`
+
+**Response - Get Org Units By Type (`GET /api/org-units/type/:type`):**
+
+```json
+[
+  {
+    "_id": "691d6303db9ec83878f1b66c",
+    "name": "Khoa Công Nghệ Thông Tin",
+    "type": "faculty",
+    "leader_id": {
+      "_id": "staff_leader_id",
+      "full_name": "Nguyễn Văn A",
+      "position": "Trưởng khoa"
+    },
+    "founded_date": "2000-01-01T00:00:00.000Z",
+    "achievements": [],
+    "description": "Khoa Công Nghệ Thông Tin..."
+  },
+  {
+    "_id": "faculty_id_2",
+    "name": "Khoa Kỹ thuật Phần mềm",
+    "type": "faculty",
+    "leader_id": null,
+    "founded_date": null,
+    "achievements": [],
+    "description": null
+  }
+]
+```
+
+**Lưu ý:**
+- Tất cả các endpoint GET đều **không yêu cầu authentication** (Public)
+- Response được sắp xếp theo `name` tăng dần (A-Z)
+- `leader_id` sẽ được populate với thông tin StaffProfile nếu có
+- Các trường `founded_date`, `achievements`, `description` có thể là `null` hoặc mảng rỗng
+
 **Response - Get Org Unit Staff (`GET /api/org-units/:id/staff`):**
 The response format is the same as Staff Profile responses.
 
@@ -1133,7 +1291,7 @@ The response format is the same as Staff Profile responses.
   "activity_image": "https://example.com/image.jpg",
   "max_points": 15,
   "requirements": [
-    { "type": "falcuty", "id": "faculty_id_here" },
+    { "type": "faculty", "id": "faculty_id_here" },
     { "type": "cohort", "id": "cohort_id_here" }
   ]
 }
@@ -1149,18 +1307,27 @@ The response format is the same as Staff Profile responses.
 
 - Trường `requirements` là **optional** khi tạo hoạt động.
 - Nếu gửi lên, phải là một mảng các đối tượng, mỗi đối tượng có:
-  - `type`: Loại yêu cầu (`falcuty` hoặc `cohort`)
-  - Nếu `type = "falcuty"`: cần `name` (tên khoa)
-  - Nếu `type = "cohort"`: cần `year` (năm khóa)
+  - `type`: Loại yêu cầu (`faculty` hoặc `cohort`)
+  - `id`: ID của khoa hoặc khóa (bắt buộc)
+    - Nếu `type = "faculty"`: `id` là ID của khoa từ bảng `falcuty`
+    - Nếu `type = "cohort"`: `id` là ID của khóa từ bảng `cohort`
 - Ví dụ: Chỉ sinh viên thuộc khoa CNTT và khóa 2022 mới được tham gia:
   ```json
   "requirements": [
-    { "type": "falcuty", "name": "Khoa Công nghệ Thông tin" },
-    { "type": "cohort", "year": 2022 }
+    { "type": "faculty", "id": "faculty_id_here" },
+    { "type": "cohort", "id": "cohort_id_here" }
   ]
   ```
+- **Lưu ý**: 
+  - Nếu `id` không tồn tại trong database, requirement đó sẽ bị bỏ qua và API sẽ trả về cảnh báo trong trường `warnings` của response
+  - Nếu `type` không hợp lệ (không phải `"faculty"` hoặc `"cohort"`), sẽ có cảnh báo trong response
+  - Nếu thiếu trường `id`, sẽ có cảnh báo trong response
+  - Response có thể chứa trường `warnings` (mảng các thông báo cảnh báo) nếu có requirements không hợp lệ
+- **Response format**: Khi trả về activity, trường `requirements` sẽ chứa:
+  - Với `type = "faculty"`: `{ "type": "faculty", "id": "...", "name": "Tên khoa" }`
+  - Với `type = "cohort"`: `{ "type": "cohort", "id": "...", "year": 2022 }`
 - Nếu không gửi trường này, hoạt động sẽ **không giới hạn** khoa/khóa tham gia.
-- Khi tạo hoặc cập nhật, hệ thống sẽ tự động tìm khoa/khóa tương ứng và lưu vào bảng `activity_eligibility`.
+- Khi tạo hoặc cập nhật, hệ thống sẽ tự động lưu vào bảng `activity_eligibility`.
 
 **Lưu ý - Create Activity:**
 
@@ -1191,8 +1358,8 @@ The response format is the same as Staff Profile responses.
   "activity_image": "https://example.com/image-updated.jpg",
   "max_points": 20,
   "requirements": [
-    { "type": "falcuty", "name": "cntt" },
-    { "type": "cohort", "year": 2023 }
+    { "type": "faculty", "id": "faculty_id_here" },
+    { "type": "cohort", "id": "cohort_id_here" }
   ]
 }
 ```
@@ -1427,11 +1594,13 @@ The response format is the same as Staff Profile responses.
       "total_qr_created": 3,
       "requirements": [
         {
-          "type": "falcuty",
+          "type": "faculty",
+          "id": "faculty_id_here",
           "name": "Khoa Công nghệ Thông tin"
         },
         {
           "type": "cohort",
+          "id": "cohort_id_here",
           "year": 2022
         }
       ]
@@ -1479,7 +1648,7 @@ The response format is the same as Staff Profile responses.
       },
       "requirements": [
         {
-          "type": "falcuty",
+          "type": "faculty",
           "name": "Khoa Công nghệ Thông tin"
         },
         {
@@ -1561,7 +1730,7 @@ GET /api/activities/activity_id_123/student/user_id_or_student_id_456
       },
       "requirements": [
         {
-          "type": "falcuty",
+          "type": "faculty",
           "name": "Khoa Công nghệ Thông tin"
         },
         {
@@ -1938,7 +2107,7 @@ GET /api/activities/activity_id_123/student/user_id_or_student_id_456
       "code": "CTSV"
     },
     "requirements": [
-      { "type": "falcuty", "id": "faculty_id_here", "name": "Khoa Công nghệ Thông tin" },
+      { "type": "faculty", "id": "faculty_id_here", "name": "Khoa Công nghệ Thông tin" },
       { "type": "cohort", "id": "cohort_id_here", "year": 2022 }
     ]
   }
