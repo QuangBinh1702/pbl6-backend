@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Post API - Đăng bài hoạt động</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* Background blur effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><rect fill="%23f0f0f0" width="1200" height="600"/><path d="M0,300 Q300,200 600,300 T1200,300" stroke="%23e0e0e0" stroke-width="2" fill="none"/></svg>') center/cover;
+            opacity: 0.3;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Token Section */
+        .token-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .token-section h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .token-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .token-input-group input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .token-input-group button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-login {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-login:hover {
+            background: #218838;
+        }
+
+        .btn-clear {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #c82333;
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Open Modal Button */
+        .open-modal-btn {
+            background: #007bff;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .open-modal-btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        /* Modal */
+        .modal {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            position: relative;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Modal Header */
+        .modal-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #333;
+            font-size: 24px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #999;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        /* Modal Body */
+        .modal-body {
+            padding: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* File Upload Area */
+        .file-upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+
+        .file-upload-area:hover {
+            border-color: #667eea;
+            background: #f0f0f0;
+        }
+
+        .file-upload-area.dragover {
+            border-color: #667eea;
+            background: #e8e8ff;
+        }
+
+        .file-upload-area input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-text {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .file-upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .file-preview {
+            margin-top: 15px;
+            display: none;
+        }
+
+        .file-preview img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .file-name {
+            margin-top: 10px;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Modal Footer */
+        .modal-footer {
+            padding: 20px 25px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn-confirm {
+            background: #dc3545;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-confirm:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+        }
+
+        .btn-confirm:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+
+        /* Results Section */
+        .results-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .results-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .result-content {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .result-content.success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .result-content.error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Token Section -->
+        <div class="token-section">
+            <h2>🔐 Authentication</h2>
+            <div class="token-input-group">
+                <input type="text" id="token" placeholder="Nhập token hoặc đăng nhập bên dưới">
+                <button class="btn-clear" onclick="clearToken()">Xóa</button>
+            </div>
+            <div style="margin-top: 15px;">
+                <input type="text" id="loginUsername" placeholder="Username" style="margin-bottom: 10px;">
+                <input type="password" id="loginPassword" placeholder="Password" style="margin-bottom: 10px;">
+                <button class="btn-login" onclick="quickLogin()">Đăng nhập</button>
+            </div>
+            <div id="tokenMessage" class="message"></div>
+        </div>
+
+        <!-- Open Modal Button -->
+        <button class="open-modal-btn" onclick="openModal()">📝 Mở form đăng bài hoạt động</button>
+
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection">
+            <h3>📊 Kết quả</h3>
+            <div class="result-content" id="resultContent"></div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnOverlay(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Đăng bài hoạt động</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="postForm">
+                    <div class="form-group">
+                        <label for="activitySelect">Tên hoạt động</label>
+                        <select id="activitySelect" required>
+                            <option value="">-- Chọn hoạt động --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="registrationStart">Chọn thời gian bắt đầu đăng ký</label>
+                        <input type="datetime-local" id="registrationStart" required 
+                               placeholder="Chọn thời gian bắt đầu mở đăng ký">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="registrationEnd">Chọn thời gian kết thúc đăng ký</label>
+                        <input type="datetime-local" id="registrationEnd" required 
+                               placeholder="Chọn thời gian đóng đăng ký">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tải ảnh hoạt động</label>
+                        <div class="file-upload-area" id="fileUploadArea" onclick="document.getElementById('imageFile').click()">
+                            <div class="file-upload-icon">📷</div>
+                            <div class="file-upload-text">Chọn ảnh từ thiết bị của bạn</div>
+                            <input type="file" id="imageFile" accept="image/*" onchange="handleFileSelect(event)">
+                            <div class="file-preview" id="filePreview">
+                                <img id="previewImage" src="" alt="Preview">
+                                <div class="file-name" id="fileName"></div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal()">Hủy</button>
+                <button class="btn-confirm" id="confirmBtn" onclick="submitPost()">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        let selectedFile = null;
+
+        // Token Management
+        function getToken() {
+            let token = document.getElementById('token').value.trim() || localStorage.getItem('testToken');
+            if (!token) return null;
+            token = token.replace(/^Bearer\s+/i, '').trim();
+            return token;
+        }
+
+        function saveToken(token) {
+            const cleanToken = token.replace(/^Bearer\s+/i, '').trim();
+            localStorage.setItem('testToken', cleanToken);
+            document.getElementById('token').value = cleanToken;
+        }
+
+        function clearToken() {
+            document.getElementById('token').value = '';
+            localStorage.removeItem('testToken');
+            showMessage('tokenMessage', 'Token đã được xóa', 'success');
+        }
+
+        async function quickLogin() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!username || !password) {
+                showMessage('tokenMessage', 'Vui lòng nhập username và password', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const token = data.token || data.data?.token;
+                    if (token) {
+                        saveToken(token);
+                        showMessage('tokenMessage', '✅ Đăng nhập thành công! Token đã được lưu.', 'success');
+                        document.getElementById('loginUsername').value = '';
+                        document.getElementById('loginPassword').value = '';
+                    } else {
+                        showMessage('tokenMessage', '❌ Không tìm thấy token trong response', 'error');
+                    }
+                } else {
+                    showMessage('tokenMessage', `❌ Đăng nhập thất bại: ${data.message || 'Lỗi không xác định'}`, 'error');
+                }
+            } catch (error) {
+                showMessage('tokenMessage', `❌ Lỗi kết nối: ${error.message}`, 'error');
+            }
+        }
+
+        function showMessage(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `message ${type}`;
+            element.style.display = 'block';
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000);
+        }
+
+        // Modal Management
+        function openModal() {
+            const token = getToken();
+            if (!token) {
+                showMessage('tokenMessage', '⚠️ Vui lòng đăng nhập hoặc nhập token trước', 'error');
+                return;
+            }
+
+            document.getElementById('modalOverlay').classList.add('active');
+            loadActivities();
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+            resetForm();
+        }
+
+        function closeModalOnOverlay(event) {
+            if (event.target.id === 'modalOverlay') {
+                closeModal();
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('postForm').reset();
+            document.getElementById('activitySelect').innerHTML = '<option value="">-- Chọn hoạt động --</option>';
+            selectedFile = null;
+            document.getElementById('filePreview').style.display = 'none';
+            document.getElementById('previewImage').src = '';
+            document.getElementById('fileName').textContent = '';
+        }
+
+        // Load Activities
+        async function loadActivities() {
+            const token = getToken();
+            if (!token) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/activities`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    const select = document.getElementById('activitySelect');
+                    select.innerHTML = '<option value="">-- Chọn hoạt động --</option>';
+                    
+                    data.data.forEach(activity => {
+                        const option = document.createElement('option');
+                        option.value = activity._id;
+                        option.textContent = activity.title || `Activity ${activity._id}`;
+                        select.appendChild(option);
+                    });
+                } else {
+                    console.error('Failed to load activities:', data);
+                }
+            } catch (error) {
+                console.error('Error loading activities:', error);
+            }
+        }
+
+        // File Upload Handling
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                const preview = document.getElementById('filePreview');
+                const previewImage = document.getElementById('previewImage');
+                const fileName = document.getElementById('fileName');
+
+                // Show preview
+                preview.style.display = 'block';
+                fileName.textContent = file.name;
+
+                // Create preview image
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Drag and Drop
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.add('dragover');
+        });
+
+        fileUploadArea.addEventListener('dragleave', () => {
+            fileUploadArea.classList.remove('dragover');
+        });
+
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('dragover');
+            
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                document.getElementById('imageFile').files = e.dataTransfer.files;
+                handleFileSelect({ target: { files: [file] } });
+            }
+        });
+
+        // Submit Post
+        async function submitPost() {
+            const token = getToken();
+            if (!token) {
+                showMessage('tokenMessage', '⚠️ Vui lòng đăng nhập hoặc nhập token', 'error');
+                return;
+            }
+
+            const activityId = document.getElementById('activitySelect').value;
+            const registrationStart = document.getElementById('registrationStart').value;
+            const registrationEnd = document.getElementById('registrationEnd').value;
+
+            if (!activityId || !registrationStart || !registrationEnd) {
+                alert('Vui lòng điền đầy đủ thông tin');
+                return;
+            }
+
+            // Convert datetime-local to ISO string
+            // datetime-local trả về local time (format: "YYYY-MM-DDTHH:mm")
+            // Cần xử lý đúng để lưu đúng thời gian người dùng chọn
+            
+            // Lấy timezone offset (phút)
+            const timezoneOffset = new Date().getTimezoneOffset();
+            const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
+            const offsetMinutes = Math.abs(timezoneOffset) % 60;
+            const offsetSign = timezoneOffset <= 0 ? '+' : '-';
+            const timezoneString = `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`;
+            
+            // Tạo date string với timezone để giữ nguyên local time
+            // Format: "YYYY-MM-DDTHH:mm:ss.sss+HH:mm"
+            const startDateStr = registrationStart + ':00.000' + timezoneString;
+            const endDateStr = registrationEnd + ':00.000' + timezoneString;
+            
+            // Parse và convert sang UTC để lưu vào database
+            // Database sẽ lưu UTC, nhưng khi hiển thị sẽ convert về local time
+            const startDate = new Date(startDateStr);
+            const endDate = new Date(endDateStr);
+            
+            // Kiểm tra xem có hợp lệ không
+            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                alert('Thời gian không hợp lệ');
+                return;
+            }
+            
+            // Gửi local time string với timezone để backend lưu đúng local time
+            // Format: "YYYY-MM-DDTHH:mm:ss.sss+HH:mm" (local time với timezone)
+            const startISO = startDateStr; // Gửi local time string với timezone
+            const endISO = endDateStr; // Gửi local time string với timezone
+            
+            // Log để debug
+            console.log('Local time selected:', {
+                start: registrationStart,
+                end: registrationEnd,
+                timezone: timezoneString
+            });
+            console.log('UTC time being sent:', {
+                start: startISO,
+                end: endISO
+            });
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('activity_id', activityId);
+            formData.append('registration_open', startISO);
+            formData.append('registration_close', endISO);
+            
+            if (selectedFile) {
+                formData.append('activity_image', selectedFile);
+            }
+
+            // Disable button and show loading
+            const confirmBtn = document.getElementById('confirmBtn');
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="loading"></span> Đang xử lý...';
+
+            try {
+                const response = await fetch(`${API_BASE}/posts`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                        // Don't set Content-Type, browser will set it with boundary for FormData
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                // Show results
+                const resultsSection = document.getElementById('resultsSection');
+                const resultContent = document.getElementById('resultContent');
+                
+                resultsSection.classList.add('active');
+
+                if (response.ok && result.success) {
+                    // Convert UTC time từ server về local time để hiển thị
+                    const regOpenUTC = result.data?.activity?.registration_open;
+                    const regCloseUTC = result.data?.activity?.registration_close;
+                    
+                    let regOpenLocal = 'N/A';
+                    let regCloseLocal = 'N/A';
+                    
+                    if (regOpenUTC) {
+                        const regOpenDate = new Date(regOpenUTC);
+                        regOpenLocal = regOpenDate.toLocaleString('vi-VN', {
+                            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: false
+                        });
+                    }
+                    
+                    if (regCloseUTC) {
+                        const regCloseDate = new Date(regCloseUTC);
+                        regCloseLocal = regCloseDate.toLocaleString('vi-VN', {
+                            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: false
+                        });
+                    }
+                    
+                    resultContent.className = 'result-content success';
+                    resultContent.textContent = `✅ THÀNH CÔNG!\n\n` +
+                        `📋 Response từ API:\n` +
+                        JSON.stringify(result, null, 2) +
+                        `\n\n📊 Chi tiết:\n` +
+                        `- Post ID: ${result.data?.post?._id || 'N/A'}\n` +
+                        `- Post Status: ${result.data?.post?.status ? 'Đã đăng' : 'Chưa đăng'}\n` +
+                        `- Activity ID: ${result.data?.activity?._id || 'N/A'}\n` +
+                        `- Activity Title: ${result.data?.activity?.title || 'N/A'}\n` +
+                        `- Registration Open (UTC): ${regOpenUTC || 'N/A'}\n` +
+                        `- Registration Open (Local): ${regOpenLocal}\n` +
+                        `- Registration Close (UTC): ${regCloseUTC || 'N/A'}\n` +
+                        `- Registration Close (Local): ${regCloseLocal}\n` +
+                        `- Activity Image URL: ${result.data?.activity?.activity_image || 'N/A'}\n` +
+                        `\n✅ Ảnh đã được upload và lưu vào database!`;
+                } else {
+                    resultContent.className = 'result-content error';
+                    resultContent.textContent = `❌ THẤT BẠI!\n\n` +
+                        `Status: ${response.status}\n` +
+                        `Message: ${result.message || 'Lỗi không xác định'}\n\n` +
+                        `Response:\n${JSON.stringify(result, null, 2)}`;
+                }
+
+                // Scroll to results
+                resultsSection.scrollIntoView({ behavior: 'smooth' });
+
+                // Close modal if success
+                if (response.ok && result.success) {
+                    setTimeout(() => {
+                        closeModal();
+                    }, 2000);
+                }
+            } catch (error) {
+                const resultsSection = document.getElementById('resultsSection');
+                const resultContent = document.getElementById('resultContent');
+                
+                resultsSection.classList.add('active');
+                resultContent.className = 'result-content error';
+                resultContent.textContent = `❌ LỖI KẾT NỐI!\n\n${error.message}`;
+                
+                resultsSection.scrollIntoView({ behavior: 'smooth' });
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Xác nhận';
+            }
+        }
+
+        // Load token on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedToken = localStorage.getItem('testToken');
+            if (savedToken) {
+                document.getElementById('token').value = savedToken;
+            }
+        });
+    </script>
+</body>
+</html>
+

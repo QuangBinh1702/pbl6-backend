@@ -221,6 +221,13 @@ module.exports = {
         });
       }
 
+      // Xử lý file upload (staff_image)
+      if (req.file) {
+        // Sử dụng Cloudinary URL nếu có, nếu không dùng local URL
+        const { getFileUrl } = require('../utils/cloudinary.util');
+        profileData.staff_image = getFileUrl(req.file, req);
+      }
+
       const staffProfile = new StaffProfile(profileData);
       await staffProfile.save();
       await staffProfile.populate('user_id');
@@ -277,7 +284,16 @@ module.exports = {
       if (phone !== undefined) updateData.phone = phone;
       if (contact_address !== undefined || contactAddress !== undefined) updateData.contact_address = contact_address || contactAddress;
       if (position !== undefined) updateData.position = position;
-      if (staff_image !== undefined || staffImage !== undefined) updateData.staff_image = staff_image || staffImage;
+      
+      // Xử lý file upload (staff_image)
+      if (req.file) {
+        // Sử dụng Cloudinary URL nếu có, nếu không dùng local URL
+        const { getFileUrl } = require('../utils/cloudinary.util');
+        updateData.staff_image = getFileUrl(req.file, req);
+      } else if (staff_image !== undefined || staffImage !== undefined) {
+        // Nếu không có file upload mới, giữ nguyên giá trị từ body (hoặc có thể là URL cũ)
+        updateData.staff_image = staff_image || staffImage;
+      }
 
       const staffProfile = await StaffProfile.findByIdAndUpdate(
         req.params.id,

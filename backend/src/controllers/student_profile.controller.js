@@ -262,6 +262,15 @@ module.exports = {
         });
       }
       
+      // Xử lý file upload (student_image)
+      let studentImageUrl = student_image; // Giữ nguyên ảnh nếu không upload mới
+      
+      if (req.file) {
+        // Sử dụng Cloudinary URL nếu có, nếu không dùng local URL
+        const { getFileUrl } = require('../utils/cloudinary.util');
+        studentImageUrl = getFileUrl(req.file, req);
+      }
+      
       const studentProfile = await StudentProfile.create({
         user_id,
         student_number,
@@ -272,7 +281,7 @@ module.exports = {
         phone,
         enrollment_year,
         class_id,
-        student_image,
+        student_image: studentImageUrl,
         contact_address,
         isClassMonitor: isClassMonitor || false
       });
@@ -300,6 +309,14 @@ module.exports = {
       if (updates.date_of_birth) {
         updates.date_of_birth = new Date(updates.date_of_birth);
       }
+      
+      // Xử lý file upload (student_image)
+      if (req.file) {
+        // Sử dụng Cloudinary URL nếu có, nếu không dùng local URL
+        const { getFileUrl } = require('../utils/cloudinary.util');
+        updates.student_image = getFileUrl(req.file, req);
+      }
+      // Nếu không có file upload mới, giữ nguyên giá trị từ body (nếu có)
       
       const studentProfile = await StudentProfile.findByIdAndUpdate(
         req.params.id,

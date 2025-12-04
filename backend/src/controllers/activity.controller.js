@@ -9,6 +9,7 @@ const ActivityEligibility = require('../models/activity_eligibility.model');
 const Falcuty = require('../models/falcuty.model');
 const Cohort = require('../models/cohort.model');
 const QRCode = require('qrcode');
+const { validateDate } = require('../utils/date.util');
 
 // Mapping status từ tiếng Anh (database) sang tiếng Việt (response)
 const statusMapping = {
@@ -343,38 +344,50 @@ module.exports = {
         });
       }
       
-      // Convert to Date objects for validation
-      const startTimeDate = new Date(start_time);
-      const endTimeDate = new Date(end_time);
-      const registrationOpenDate = registration_open ? new Date(registration_open) : null;
-      const registrationCloseDate = registration_close ? new Date(registration_close) : null;
+      // Convert to Date objects for validation với helper function
+      const startTimeValidation = validateDate(start_time, 'start_time');
+      if (startTimeValidation.error) {
+        return res.status(400).json({ 
+          success: false, 
+          message: startTimeValidation.error 
+        });
+      }
+      const startTimeDate = startTimeValidation.date;
+
+      const endTimeValidation = validateDate(end_time, 'end_time');
+      if (endTimeValidation.error) {
+        return res.status(400).json({ 
+          success: false, 
+          message: endTimeValidation.error 
+        });
+      }
+      const endTimeDate = endTimeValidation.date;
+
+      let registrationOpenDate = null;
+      if (registration_open) {
+        const regOpenValidation = validateDate(registration_open, 'registration_open');
+        if (regOpenValidation.error) {
+          return res.status(400).json({ 
+            success: false, 
+            message: regOpenValidation.error 
+          });
+        }
+        registrationOpenDate = regOpenValidation.date;
+      }
+
+      let registrationCloseDate = null;
+      if (registration_close) {
+        const regCloseValidation = validateDate(registration_close, 'registration_close');
+        if (regCloseValidation.error) {
+          return res.status(400).json({ 
+            success: false, 
+            message: regCloseValidation.error 
+          });
+        }
+        registrationCloseDate = regCloseValidation.date;
+      }
+
       const now = new Date();
-      
-      // Validate: Check if dates are valid
-      if (isNaN(startTimeDate.getTime())) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Invalid start_time format' 
-        });
-      }
-      if (isNaN(endTimeDate.getTime())) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Invalid end_time format' 
-        });
-      }
-      if (registrationOpenDate && isNaN(registrationOpenDate.getTime())) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Invalid registration_open format' 
-        });
-      }
-      if (registrationCloseDate && isNaN(registrationCloseDate.getTime())) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Invalid registration_close format' 
-        });
-      }
       
       // Validate: start_time cannot be in the past
       if (startTimeDate < now) {
@@ -572,38 +585,50 @@ module.exports = {
         });
       }
       
-      // Convert to Date objects for validation
-      const startTimeDate = new Date(start_time);
-      const endTimeDate = new Date(end_time);
-      const registrationOpenDate = registration_open ? new Date(registration_open) : null;
-      const registrationCloseDate = registration_close ? new Date(registration_close) : null;
+      // Convert to Date objects for validation với helper function
+      const startTimeValidation = validateDate(start_time, 'start_time');
+      if (startTimeValidation.error) {
+        return res.status(400).json({ 
+          success: false, 
+          message: startTimeValidation.error 
+        });
+      }
+      const startTimeDate = startTimeValidation.date;
+
+      const endTimeValidation = validateDate(end_time, 'end_time');
+      if (endTimeValidation.error) {
+        return res.status(400).json({ 
+          success: false, 
+          message: endTimeValidation.error 
+        });
+      }
+      const endTimeDate = endTimeValidation.date;
+
+      let registrationOpenDate = null;
+      if (registration_open) {
+        const regOpenValidation = validateDate(registration_open, 'registration_open');
+        if (regOpenValidation.error) {
+          return res.status(400).json({ 
+            success: false, 
+            message: regOpenValidation.error 
+          });
+        }
+        registrationOpenDate = regOpenValidation.date;
+      }
+
+      let registrationCloseDate = null;
+      if (registration_close) {
+        const regCloseValidation = validateDate(registration_close, 'registration_close');
+        if (regCloseValidation.error) {
+          return res.status(400).json({ 
+            success: false, 
+            message: regCloseValidation.error 
+          });
+        }
+        registrationCloseDate = regCloseValidation.date;
+      }
+
       const now = new Date();
-      
-      // Validate: Check if dates are valid
-      if (isNaN(startTimeDate.getTime())) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Invalid start_time format' 
-        });
-      }
-      if (isNaN(endTimeDate.getTime())) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Invalid end_time format' 
-        });
-      }
-      if (registrationOpenDate && isNaN(registrationOpenDate.getTime())) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Invalid registration_open format' 
-        });
-      }
-      if (registrationCloseDate && isNaN(registrationCloseDate.getTime())) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Invalid registration_close format' 
-        });
-      }
       
       // Validate: end_time must be after start_time
       if (endTimeDate <= startTimeDate) {
@@ -681,12 +706,48 @@ module.exports = {
       
       // Update time_updated fields if start_time or end_time changed
       if (updates.start_time) {
-        updates.start_time = new Date(updates.start_time);
+        const startTimeValidation = validateDate(updates.start_time, 'start_time');
+        if (startTimeValidation.error) {
+          return res.status(400).json({ 
+            success: false, 
+            message: startTimeValidation.error 
+          });
+        }
+        updates.start_time = startTimeValidation.date;
         updates.start_time_updated = new Date();
       }
       if (updates.end_time) {
-        updates.end_time = new Date(updates.end_time);
+        const endTimeValidation = validateDate(updates.end_time, 'end_time');
+        if (endTimeValidation.error) {
+          return res.status(400).json({ 
+            success: false, 
+            message: endTimeValidation.error 
+          });
+        }
+        updates.end_time = endTimeValidation.date;
         updates.end_time_updated = new Date();
+      }
+      
+      // Validate registration_open and registration_close if provided
+      if (updates.registration_open) {
+        const regOpenValidation = validateDate(updates.registration_open, 'registration_open');
+        if (regOpenValidation.error) {
+          return res.status(400).json({ 
+            success: false, 
+            message: regOpenValidation.error 
+          });
+        }
+        updates.registration_open = regOpenValidation.date;
+      }
+      if (updates.registration_close) {
+        const regCloseValidation = validateDate(updates.registration_close, 'registration_close');
+        if (regCloseValidation.error) {
+          return res.status(400).json({ 
+            success: false, 
+            message: regCloseValidation.error 
+          });
+        }
+        updates.registration_close = regCloseValidation.date;
       }
       
       const activity = await Activity.findByIdAndUpdate(

@@ -3,6 +3,8 @@ const router = express.Router();
 const staffProfileController = require('../controllers/staff_profile.controller');
 const auth = require('../middlewares/auth.middleware');
 const { checkPermission } = require('../middlewares/check_permission.middleware');
+const upload = require('../middlewares/upload.middleware');
+const { uploadToCloudinaryMiddleware } = require('../middlewares/upload.middleware');
 
 // Lấy tất cả hồ sơ cán bộ (admin/staff)
 router.get('/', 
@@ -50,17 +52,21 @@ router.get('/:id',
   staffProfileController.getStaffProfileById
 );
 
-// Tạo hồ sơ cán bộ mới (admin/staff)
+// Tạo hồ sơ cán bộ mới (admin/staff) - với file upload
 router.post('/', 
   auth, 
   checkPermission('staff_profile', 'CREATE'),
+  upload.single('staff_image'), // Middleware để upload file ảnh
+  uploadToCloudinaryMiddleware, // Tự động upload lên Cloudinary nếu có config
   staffProfileController.createStaffProfile
 );
 
-// Cập nhật hồ sơ cán bộ
+// Cập nhật hồ sơ cán bộ - với file upload
 router.put('/:id', 
   auth, 
   checkPermission('staff_profile', 'UPDATE'),
+  upload.single('staff_image'), // Middleware để upload file ảnh
+  uploadToCloudinaryMiddleware, // Tự động upload lên Cloudinary nếu có config
   staffProfileController.updateStaffProfile
 );
 

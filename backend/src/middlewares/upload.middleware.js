@@ -1,6 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { uploadToCloudinary, isCloudinaryConfigured } = require('../utils/cloudinary.util');
 
 // Tạo thư mục uploads nếu chưa có
 const uploadsDir = path.join(__dirname, '../../public/uploads');
@@ -38,4 +39,35 @@ const upload = multer({
   }
 });
 
+/**
+ * Middleware để tự động upload lên Cloudinary sau khi multer lưu file local
+ * Nếu có Cloudinary config, file sẽ được upload lên Cloudinary và xóa file local
+ */
+const uploadToCloudinaryMiddleware = async (req, res, next) => {
+  // Nếu có file và có Cloudinary config, upload lên Cloudinary
+  if (req.file && isCloudinaryConfigured()) {
+    try {
+      const filePath = req.file.path;
+      const folder = 'uploads';
+      
+      const cloudinaryResult = await uploadToCloudinary(filePath, folder);
+
+      if (cloudinaryResult) {
+        // Lưu URL từ Cloudinary vào req.file
+        req.file.cloudinaryUrl = cloudinaryResult.url;
+        req.file.publicId = cloudinaryResult.public_id;
+        // File local đã được xóa trong uploadToCloudinary
+      }
+    } catch (error) {
+      console.error('Cloudinary upload error:', error);
+      // Không throw error, để fallback về local URL
+      // File local vẫn còn, có thể dùng local URL
+    }
+  }
+
+  next();
+};
+
+// Export multer instance và middleware
 module.exports = upload;
+module.exports.uploadToCloudinaryMiddleware = uploadToCloudinaryMiddleware;

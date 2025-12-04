@@ -4,6 +4,7 @@ const postController = require('../controllers/post.controller');
 const auth = require('../middlewares/auth.middleware');
 const { checkPermission } = require('../middlewares/check_permission.middleware');
 const upload = require('../middlewares/upload.middleware');
+const { uploadToCloudinaryMiddleware } = require('../middlewares/upload.middleware');
 
 // Lấy tất cả bài đăng (all users can view)
 router.get('/', 
@@ -31,6 +32,7 @@ router.post('/',
   auth, 
   checkPermission('post', 'CREATE'),
   upload.single('activity_image'), // Middleware để upload file ảnh
+  uploadToCloudinaryMiddleware, // Tự động upload lên Cloudinary nếu có config
   postController.createPost
 );
 

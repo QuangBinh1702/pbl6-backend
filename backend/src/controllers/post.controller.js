@@ -1,6 +1,7 @@
 // Quản lý bài đăng
 const Post = require('../models/post.model');
 const Activity = require('../models/activity.model');
+const { validateDate } = require('../utils/date.util');
 
 module.exports = {
   async getAllPosts(req, res) {
@@ -121,17 +122,26 @@ module.exports = {
         });
       }
 
-      // Validate dates
-      const registrationOpenDate = new Date(registration_open);
-      const registrationCloseDate = new Date(registration_close);
-      
-      if (isNaN(registrationOpenDate.getTime()) || isNaN(registrationCloseDate.getTime())) {
+      // Validate dates với helper function
+      const regOpenValidation = validateDate(registration_open, 'registration_open');
+      if (regOpenValidation.error) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Định dạng thời gian không hợp lệ' 
+          message: regOpenValidation.error 
         });
       }
+      const registrationOpenDate = regOpenValidation.date;
 
+      const regCloseValidation = validateDate(registration_close, 'registration_close');
+      if (regCloseValidation.error) {
+        return res.status(400).json({ 
+          success: false, 
+          message: regCloseValidation.error 
+        });
+      }
+      const registrationCloseDate = regCloseValidation.date;
+
+      // Validate: registration_close phải sau registration_open
       if (registrationCloseDate < registrationOpenDate) {
         return res.status(400).json({ 
           success: false, 
@@ -139,20 +149,104 @@ module.exports = {
         });
       }
 
+      // Validate: registration_open và registration_close phải trước start_time của activity
+      if (activity.start_time) {
+        const activityStartTime = new Date(activity.start_time);
+        
+        if (registrationOpenDate >= activityStartTime) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Thời gian bắt đầu đăng ký phải trước thời gian bắt đầu hoạt động' 
+          });
+        }
+        
+        if (registrationCloseDate >= activityStartTime) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Thời gian kết thúc đăng ký phải trước thời gian bắt đầu hoạt động' 
+          });
+        }
+      }
+
+      // Validate: registration_close không được trong quá khứ
+      const now = new Date();
+      if (registrationOpenDate < now) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Thời gian bắt đầu đăng ký không được trong quá khứ' 
+        });
+      }
+      
+      if (registrationCloseDate < now) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Thời gian kết thúc đăng ký không được trong quá khứ' 
+        });
+      }
+
       // Xử lý file upload (activity_image)
       let activityImageUrl = activity.activity_image; // Giữ nguyên ảnh cũ nếu không upload mới
       
       if (req.file) {
-        // Tạo URL cho file đã upload
-        const protocol = req.protocol;
-        const host = req.get('host');
-        activityImageUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+        // Sử dụng Cloudinary URL nếu có, nếu không dùng local URL
+        const { getFileUrl } = require('../utils/cloudinary.util');
+        activityImageUrl = getFileUrl(req.file, req);
       }
 
-      // Cập nhật Activity với các thông tin mới
+      // Lưu local time vào database
+      // Parse date string với timezone và extract local time components
+      // Sau đó tạo Date object với local time values (không convert timezone)
+      const extractLocalTimeFromString = (dateString) => {
+        // Parse date string để lấy local time components và timezone offset
+        // Format: "YYYY-MM-DDTHH:mm:ss.sss+HH:mm" hoặc "YYYY-MM-DDTHH:mm:ss.sssZ"
+        const fullMatch = dateString.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{3}))?(?:([+-])(\d{2}):(\d{2})|Z)?/);
+        
+        if (fullMatch) {
+          const [, year, month, day, hour, minute, second, millisecond, tzSign, tzHour, tzMinute] = fullMatch;
+          
+          // Extract timezone offset (nếu có)
+          let timezoneOffsetMinutes = 0;
+          if (tzSign && tzHour && tzMinute) {
+            const offsetHours = parseInt(tzHour);
+            const offsetMinutes = parseInt(tzMinute);
+            timezoneOffsetMinutes = (tzSign === '+' ? 1 : -1) * (offsetHours * 60 + offsetMinutes);
+          } else if (dateString.endsWith('Z')) {
+            // UTC timezone
+            timezoneOffsetMinutes = 0;
+          }
+          
+          // Tạo Date object với local time values
+          // Sử dụng UTC methods nhưng với local time values
+          // Sau đó adjust với timezone offset để giữ nguyên local time
+          const localDate = new Date(Date.UTC(
+            parseInt(year),
+            parseInt(month) - 1,
+            parseInt(day),
+            parseInt(hour),
+            parseInt(minute),
+            parseInt(second || 0),
+            parseInt(millisecond || 0)
+          ));
+          
+          // Adjust với timezone offset để giữ nguyên local time
+          // Nếu timezone là +07:00, ta cần subtract 7 hours từ UTC date
+          // để giữ nguyên local time values
+          const adjustedDate = new Date(localDate.getTime() - timezoneOffsetMinutes * 60 * 1000);
+          
+          return adjustedDate;
+        }
+        
+        // Fallback: parse như bình thường
+        return new Date(dateString);
+      };
+      
+      // Extract local time từ date strings
+      const registrationOpenLocal = extractLocalTimeFromString(registration_open);
+      const registrationCloseLocal = extractLocalTimeFromString(registration_close);
+      
       const updateData = {
-        registration_open: registrationOpenDate,
-        registration_close: registrationCloseDate
+        registration_open: registrationOpenLocal,
+        registration_close: registrationCloseLocal
       };
 
       if (activityImageUrl) {

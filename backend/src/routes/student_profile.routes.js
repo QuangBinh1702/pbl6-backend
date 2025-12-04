@@ -3,6 +3,8 @@ const router = express.Router();
 const studentProfileController = require('../controllers/student_profile.controller');
 const auth = require('../middlewares/auth.middleware');
 const { checkPermission } = require('../middlewares/check_permission.middleware');
+const upload = require('../middlewares/upload.middleware');
+const { uploadToCloudinaryMiddleware } = require('../middlewares/upload.middleware');
 
 // Get all class monitors
 router.get('/class-monitors', 
@@ -49,17 +51,21 @@ router.get('/:id',
   studentProfileController.getStudentProfileById
 );
 
-// Create student profile
+// Create student profile - với file upload
 router.post('/', 
   auth, 
-  checkPermission('student_profile', 'CREATE'), 
+  checkPermission('student_profile', 'CREATE'),
+  upload.single('student_image'), // Middleware để upload file ảnh
+  uploadToCloudinaryMiddleware, // Tự động upload lên Cloudinary nếu có config
   studentProfileController.createStudentProfile
 );
 
-// Update student profile
+// Update student profile - với file upload
 router.put('/:id', 
   auth, 
-  checkPermission('student_profile', 'UPDATE'), 
+  checkPermission('student_profile', 'UPDATE'),
+  upload.single('student_image'), // Middleware để upload file ảnh
+  uploadToCloudinaryMiddleware, // Tự động upload lên Cloudinary nếu có config
   studentProfileController.updateStudentProfile
 );
 
