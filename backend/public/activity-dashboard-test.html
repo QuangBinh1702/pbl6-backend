@@ -574,7 +574,7 @@
         }
 
         function displayDashboard(data) {
-            const stats = data.data;
+            const stats = data.data.statistics;
             const selectedYear = stats.selectedYear || new Date().getFullYear();
             const previousYear = selectedYear - 1;
 

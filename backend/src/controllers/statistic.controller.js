@@ -47,7 +47,7 @@ module.exports = {
   async getActivityDashboard(req, res) {
     try {
       // Get filter parameters from query
-      const { year, field_id, org_unit_id, status } = req.query;
+      const { year, field_id, org_unit_id, status, page = 1, limit = 10 } = req.query;
       
       // Build base filter
       const baseFilter = {};
@@ -112,15 +112,40 @@ module.exports = {
         growth = 100;
       }
       
+      // Pagination
+      const pageNum = parseInt(page) || 1;
+      const limitNum = parseInt(limit) || 10;
+      const skip = (pageNum - 1) * limitNum;
+      
+      // Get activities list with filters (for the selected year)
+      const activities = await Activity.find(yearFilter)
+        .populate('field_id', 'name')
+        .populate('org_unit_id', 'name')
+        .sort({ start_time: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean();
+      
+      const totalPages = Math.ceil(activitiesThisYear / limitNum);
+      
       res.json({
         data: {
-          totalActivities: totalActivities,
-          activitiesThisYear: activitiesThisYear,
-          activitiesPreviousYear: activitiesPreviousYear,
-          growthPercentage: growth,
-          selectedYear: selectedYear
+          statistics: {
+            totalActivities: totalActivities,
+            activitiesThisYear: activitiesThisYear,
+            activitiesPreviousYear: activitiesPreviousYear,
+            growthPercentage: growth,
+            selectedYear: selectedYear
+          },
+          activities: activities,
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total: activitiesThisYear,
+            totalPages: totalPages
+          }
         },
-        message: 'Dashboard statistics retrieved successfully'
+        message: 'Dashboard statistics and activities retrieved successfully'
       });
     } catch (err) {
       console.error('Error in getActivityDashboard:', err);
