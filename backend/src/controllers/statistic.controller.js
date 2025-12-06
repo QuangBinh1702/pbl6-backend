@@ -47,7 +47,7 @@ module.exports = {
   async getActivityDashboard(req, res) {
     try {
       // Get filter parameters from query
-      const { year, field_id, org_unit_id, status, page = 1, limit = 10 } = req.query;
+      const { year, field_id, org_unit_id, status } = req.query;
       
       // Build base filter
       const baseFilter = {};
@@ -75,58 +75,55 @@ module.exports = {
         baseFilter.status = statusMapping[status] || status;
       }
       
-      // Determine year range
+      // Determine year range - if no year selected, get all activities
       let selectedYear = year ? parseInt(year) : new Date().getFullYear();
       const previousYear = selectedYear - 1;
+      let activityFilter = baseFilter;
+      let compareFilter = baseFilter;
+      
+      // If year is explicitly selected, apply year filter
+      if (year) {
+        const startOfYear = new Date(selectedYear, 0, 1);
+        const endOfYear = new Date(selectedYear + 1, 0, 1);
+        
+        activityFilter = {
+          ...baseFilter,
+          start_time: { $gte: startOfYear, $lt: endOfYear }
+        };
+        
+        // Hoạt động năm trước
+        const startOfPreviousYear = new Date(previousYear, 0, 1);
+        const endOfPreviousYear = new Date(selectedYear, 0, 1);
+        
+        compareFilter = {
+          ...baseFilter,
+          start_time: { $gte: startOfPreviousYear, $lt: endOfPreviousYear }
+        };
+      }
       
       // Tổng hoạt động (với filter nếu có)
       const totalActivities = await Activity.countDocuments(baseFilter);
       
-      // Hoạt động năm được chọn (dựa trên start_time)
-      const startOfYear = new Date(selectedYear, 0, 1);
-      const endOfYear = new Date(selectedYear + 1, 0, 1);
-      
-      const yearFilter = {
-        ...baseFilter,
-        start_time: { $gte: startOfYear, $lt: endOfYear }
-      };
-      
-      const activitiesThisYear = await Activity.countDocuments(yearFilter);
+      // Hoạt động năm được chọn hoặc tất cả
+      const activitiesThisYear = await Activity.countDocuments(activityFilter);
       
       // Hoạt động năm trước
-      const startOfPreviousYear = new Date(previousYear, 0, 1);
-      const endOfPreviousYear = new Date(selectedYear, 0, 1);
-      
-      const previousYearFilter = {
-        ...baseFilter,
-        start_time: { $gte: startOfPreviousYear, $lt: endOfPreviousYear }
-      };
-      
-      const activitiesPreviousYear = await Activity.countDocuments(previousYearFilter);
+      const activitiesPreviousYear = await Activity.countDocuments(compareFilter);
       
       // Tính phần trăm tăng/giảm
       let growth = 0;
-      if (activitiesPreviousYear > 0) {
+      if (year && activitiesPreviousYear > 0) {
         growth = Math.round(((activitiesThisYear - activitiesPreviousYear) / activitiesPreviousYear) * 100);
-      } else if (activitiesThisYear > 0) {
+      } else if (year && activitiesThisYear > 0) {
         growth = 100;
       }
       
-      // Pagination
-      const pageNum = parseInt(page) || 1;
-      const limitNum = parseInt(limit) || 10;
-      const skip = (pageNum - 1) * limitNum;
-      
-      // Get activities list with filters (for the selected year)
-      const activities = await Activity.find(yearFilter)
+      // Get all activities without pagination
+      const activities = await Activity.find(activityFilter)
         .populate('field_id', 'name')
         .populate('org_unit_id', 'name')
         .sort({ start_time: -1 })
-        .skip(skip)
-        .limit(limitNum)
         .lean();
-      
-      const totalPages = Math.ceil(activitiesThisYear / limitNum);
       
       res.json({
         data: {
@@ -137,13 +134,7 @@ module.exports = {
             growthPercentage: growth,
             selectedYear: selectedYear
           },
-          activities: activities,
-          pagination: {
-            page: pageNum,
-            limit: limitNum,
-            total: activitiesThisYear,
-            totalPages: totalPages
-          }
+          activities: activities
         },
         message: 'Dashboard statistics and activities retrieved successfully'
       });

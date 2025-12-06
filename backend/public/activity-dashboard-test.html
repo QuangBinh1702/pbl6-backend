@@ -575,6 +575,7 @@
 
         function displayDashboard(data) {
             const stats = data.data.statistics;
+            const activities = data.data.activities;
             const selectedYear = stats.selectedYear || new Date().getFullYear();
             const previousYear = selectedYear - 1;
 
@@ -598,8 +599,15 @@
             // Show stats grid
             document.getElementById('stats-grid').classList.add('show');
             
-            // Display JSON data
-            document.getElementById('json-data').textContent = JSON.stringify(data, null, 2);
+            // Display JSON data with activities count
+            const displayData = {
+                ...data,
+                data: {
+                    ...data.data,
+                    activitiesCount: activities.length
+                }
+            };
+            document.getElementById('json-data').textContent = JSON.stringify(displayData, null, 2);
             document.getElementById('json-view').style.display = 'block';
         }
 
