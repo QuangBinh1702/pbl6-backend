@@ -144,6 +144,137 @@ module.exports = {
     }
   },
 
+  async getDashboardStatisticByYear(req, res) {
+    try {
+      const { year } = req.query;
+      
+      // Validate year parameter
+      if (!year) {
+        return res.status(400).json({
+          success: false,
+          message: 'Year parameter is required'
+        });
+      }
+
+      const selectedYear = parseInt(year);
+      if (isNaN(selectedYear) || selectedYear < 1900 || selectedYear > 2100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid year format'
+        });
+      }
+
+      const startOfYear = new Date(selectedYear, 0, 1);
+      const endOfYear = new Date(selectedYear + 1, 0, 1);
+
+      // Get all activities for the year
+      const activities = await Activity.find({
+        start_time: { $gte: startOfYear, $lt: endOfYear }
+      }).populate('org_unit_id', '_id name').lean();
+
+      // Calculate monthly activities
+      const monthlyMap = new Map();
+      const monthNames = ['Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6', 'Th7', 'Th8', 'Th9', 'Th10', 'Th11', 'Th12'];
+      
+      // Initialize all months with 0
+      monthNames.forEach((month, index) => {
+        monthlyMap.set(index, { month, totalActivities: 0 });
+      });
+
+      // Count activities by month
+      activities.forEach(act => {
+        const actDate = new Date(act.start_time);
+        const monthIndex = actDate.getMonth();
+        const existing = monthlyMap.get(monthIndex);
+        if (existing) {
+          existing.totalActivities++;
+        }
+      });
+
+      const monthly = Array.from(monthlyMap.values());
+
+      // Calculate activities by organization
+      const orgMap = new Map();
+      activities.forEach(act => {
+        if (act.org_unit_id) {
+          const orgName = act.org_unit_id.name;
+          const existing = orgMap.get(orgName) || { organization: orgName, totalActivities: 0 };
+          existing.totalActivities++;
+          orgMap.set(orgName, existing);
+        }
+      });
+
+      const byOrganization = Array.from(orgMap.values()).sort((a, b) => b.totalActivities - a.totalActivities);
+
+      // Get community points by faculty
+      const records = await PvcdRecord.find({
+        year: selectedYear
+      }).populate({
+        path: 'student_id',
+        populate: {
+          path: 'class_id',
+          populate: {
+            path: 'falcuty_id',
+            select: '_id name'
+          }
+        }
+      }).lean();
+
+      const facultyMap = new Map();
+      let totalFacultyPoints = 0;
+      let facultyCount = 0;
+
+      records.forEach(record => {
+        if (record.student_id && record.student_id.class_id && record.student_id.class_id.falcuty_id) {
+          const faculty = record.student_id.class_id.falcuty_id;
+          const facultyName = faculty.name;
+          
+          if (!facultyMap.has(facultyName)) {
+            facultyMap.set(facultyName, { 
+              faculty: facultyName,
+              totalPoints: 0,
+              studentCount: 0,
+              students: new Set()
+            });
+          }
+          
+          const data = facultyMap.get(facultyName);
+          data.totalPoints += record.total_point;
+          data.students.add(record.student_id._id.toString());
+          data.studentCount = data.students.size;
+        }
+      });
+
+      // Calculate average points per student
+      const communityPoint = Array.from(facultyMap.values()).map(item => ({
+        faculty: item.faculty,
+        avgCPoint: item.studentCount > 0 ? Math.round(item.totalPoints / item.studentCount) : 0
+      })).sort((a, b) => b.avgCPoint - a.avgCPoint);
+
+      // Build response
+      const response = [{
+        year: selectedYear,
+        activity: {
+          monthly,
+          byOrganization
+        },
+        communityPoint
+      }];
+
+      res.json({
+        success: true,
+        message: 'Dashboard statistics retrieved successfully',
+        data: response
+      });
+    } catch (err) {
+      console.error('Error in getDashboardStatisticByYear:', err);
+      res.status(500).json({
+        success: false,
+        message: err.message
+      });
+    }
+  },
+
   async getGradesStatistic(req, res) {
     try {
       const pageNum = parseInt(req.query.page) || 1;
@@ -188,21 +319,21 @@ module.exports = {
                 success: true,
                 message: 'Lấy thống kê điểm thành công',
                 data: {
-                  records: [],
-                  statistics: {
-                    total_students: 0,
-                    total_points: 0,
-                    average_points: '0.00',
-                    max_points: 0,
-                    min_points: 0
-                  },
-                  pagination: {
-                    page: pageNum,
-                    limit: limitNum,
-                    total: 0,
-                    totalPages: 0
-                  }
-                }
+                   records: [],
+                   statistics: {
+                     total_students: 0,
+                     total_points: 0,
+                     average_points: '0.00',
+                     max_points: 0,
+                     min_points: 0
+                   },
+                   pagination: {
+                     page: pageNum,
+                     limit: limitNum,
+                     total: 0,
+                     totalPages: 0
+                   }
+                 }
               });
             }
           } catch (err) {
@@ -211,21 +342,21 @@ module.exports = {
               success: true,
               message: 'Lấy thống kê điểm thành công',
               data: {
-                records: [],
-                statistics: {
-                  total_students: 0,
-                  total_points: 0,
-                  average_points: '0.00',
-                  max_points: 0,
-                  min_points: 0
-                },
-                pagination: {
-                  page: pageNum,
-                  limit: limitNum,
-                  total: 0,
-                  totalPages: 0
-                }
-              }
+                 records: [],
+                 statistics: {
+                   total_students: 0,
+                   total_points: 0,
+                   average_points: '0.00',
+                   max_points: 0,
+                   min_points: 0
+                 },
+                 pagination: {
+                   page: pageNum,
+                   limit: limitNum,
+                   total: 0,
+                   totalPages: 0
+                 }
+               }
             });
           }
         }
@@ -240,21 +371,21 @@ module.exports = {
               success: true,
               message: 'Lấy thống kê điểm thành công',
               data: {
-                records: [],
-                statistics: {
-                  total_students: 0,
-                  total_points: 0,
-                  average_points: '0.00',
-                  max_points: 0,
-                  min_points: 0
-                },
-                pagination: {
-                  page: pageNum,
-                  limit: limitNum,
-                  total: 0,
-                  totalPages: 0
-                }
-              }
+                 records: [],
+                 statistics: {
+                   total_students: 0,
+                   total_points: 0,
+                   average_points: '0.00',
+                   max_points: 0,
+                   min_points: 0
+                 },
+                 pagination: {
+                   page: pageNum,
+                   limit: limitNum,
+                   total: 0,
+                   totalPages: 0
+                 }
+               }
             });
           }
 

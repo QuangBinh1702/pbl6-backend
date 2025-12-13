@@ -26,11 +26,255 @@ module.exports = {
   },
   async createUser(req, res) {
     try {
-      const user = new User(req.body);
+      const { username, password, email, role, isLocked } = req.body;
+
+      // Validate required fields
+      if (!username || username.trim() === '') {
+        return res.status(400).json({
+          success: false,
+          message: 'Username is required'
+        });
+      }
+
+      if (!password || password.trim() === '') {
+        return res.status(400).json({
+          success: false,
+          message: 'Password is required'
+        });
+      }
+
+      if (!email || email.trim() === '') {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is required'
+        });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid email format'
+        });
+      }
+
+      // Check if username already exists
+      const existingUsername = await User.findOne({ username });
+      if (existingUsername) {
+        return res.status(400).json({
+          success: false,
+          message: 'Username already exists'
+        });
+      }
+
+      // Check if email already exists
+      const existingEmail = await User.findOne({ email });
+      if (existingEmail) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email already exists'
+        });
+      }
+
+      const user = new User({
+        username: username.trim(),
+        password: password.trim(),
+        email: email.trim().toLowerCase(),
+        role: role || 'student',
+        isLocked: isLocked === true
+      });
+
       await user.save();
-      res.status(201).json(user);
+
+      res.status(201).json({
+        success: true,
+        message: 'User created successfully',
+        data: {
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          isLocked: user.isLocked
+        }
+      });
     } catch (err) {
-      res.status(400).json({ message: err.message });
+      console.error('Create user error:', err);
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+  },
+
+  async createMultipleUsers(req, res) {
+    try {
+      const { users } = req.body;
+
+      // Validate request
+      if (!Array.isArray(users) || users.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'users array is required and must not be empty'
+        });
+      }
+
+      if (users.length > 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Maximum 100 users can be created at once'
+        });
+      }
+
+      const results = [];
+      const errors = [];
+
+      // Collect all usernames and emails to check for duplicates
+      const usernames = new Set();
+      const emails = new Set();
+      const existingUsernames = new Set();
+      const existingEmails = new Set();
+
+      // Get all existing usernames and emails in database
+      const existingUsers = await User.find({
+        $or: [
+          { username: { $in: users.map(u => u.username) } },
+          { email: { $in: users.map(u => u.email) } }
+        ]
+      }).select('username email');
+
+      existingUsers.forEach(user => {
+        existingUsernames.add(user.username);
+        existingEmails.add(user.email);
+      });
+
+      // Validate each user object
+      for (let i = 0; i < users.length; i++) {
+        const { username, password, email, role, isLocked } = users[i];
+
+        // Validate required fields
+        if (!username || username.trim() === '') {
+          errors.push({
+            index: i,
+            error: 'Username is required'
+          });
+          continue;
+        }
+
+        if (!password || password.trim() === '') {
+          errors.push({
+            index: i,
+            error: 'Password is required'
+          });
+          continue;
+        }
+
+        if (!email || email.trim() === '') {
+          errors.push({
+            index: i,
+            error: 'Email is required'
+          });
+          continue;
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          errors.push({
+            index: i,
+            error: 'Invalid email format'
+          });
+          continue;
+        }
+
+        const usernameNormalized = username.trim();
+        const emailNormalized = email.trim().toLowerCase();
+
+        // Check for duplicate in current batch
+        if (usernames.has(usernameNormalized)) {
+          errors.push({
+            index: i,
+            error: 'Duplicate username in batch'
+          });
+          continue;
+        }
+
+        if (emails.has(emailNormalized)) {
+          errors.push({
+            index: i,
+            error: 'Duplicate email in batch'
+          });
+          continue;
+        }
+
+        // Check if username already exists in database
+        if (existingUsernames.has(usernameNormalized)) {
+          errors.push({
+            index: i,
+            error: 'Username already exists'
+          });
+          continue;
+        }
+
+        // Check if email already exists in database
+        if (existingEmails.has(emailNormalized)) {
+          errors.push({
+            index: i,
+            error: 'Email already exists'
+          });
+          continue;
+        }
+
+        usernames.add(usernameNormalized);
+        emails.add(emailNormalized);
+
+        // Create user object
+        try {
+          const user = new User({
+            username: usernameNormalized,
+            password: password.trim(),
+            email: emailNormalized,
+            role: role || 'student',
+            isLocked: isLocked === true
+          });
+
+          await user.save();
+
+          results.push({
+            index: i,
+            success: true,
+            user: {
+              _id: user._id,
+              username: user.username,
+              email: user.email,
+              role: user.role,
+              isLocked: user.isLocked
+            }
+          });
+        } catch (err) {
+          errors.push({
+            index: i,
+            error: err.message
+          });
+        }
+      }
+
+      res.json({
+        success: errors.length === 0,
+        message: `Created ${results.length} users${errors.length > 0 ? `, with ${errors.length} errors` : ''}`,
+        data: {
+          created: results.length,
+          failed: errors.length,
+          results: results,
+          errors: errors.length > 0 ? errors : undefined
+        }
+      });
+    } catch (err) {
+      console.error('Create multiple users error:', err);
+      res.status(500).json({
+        success: false,
+        message: err.message
+      });
     }
   },
   async updateUser(req, res) {

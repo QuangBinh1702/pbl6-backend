@@ -23,7 +23,14 @@ router.get('/:id',
 router.post('/', 
   auth, 
   checkPermission('user', 'CREATE'), 
-  authController.createUser
+  userController.createUser
+);
+
+// Create multiple users (admin only)
+router.post('/bulk/create', 
+  auth, 
+  checkPermission('user', 'CREATE'), 
+  userController.createMultipleUsers
 );
 
 // Update user

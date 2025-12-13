@@ -574,7 +574,8 @@ module.exports = {
         requires_approval,
         org_unit_id,
         field_id,
-        activity_image
+        activity_image,
+        requirements // <-- thêm trường này
       } = req.body;
       
       // Validate required fields
@@ -682,14 +683,59 @@ module.exports = {
         status: 'pending' // Đề xuất hoạt động luôn có status = pending
       });
       
+      // Xử lý requirements nếu có
+      const requirementsWarnings = [];
+      if (Array.isArray(requirements) && requirements.length > 0) {
+        for (const reqItem of requirements) {
+          if (!reqItem.type) {
+            requirementsWarnings.push(`Requirement thiếu trường 'type'`);
+            continue;
+          }
+
+          if (reqItem.type === 'faculty') {
+            if (!reqItem.id) {
+              requirementsWarnings.push(`Requirement type 'faculty' thiếu trường 'id'`);
+              continue;
+            }
+            const falcuty = await Falcuty.findById(reqItem.id);
+            if (falcuty) {
+              await ActivityEligibility.create({
+                activity_id: activity._id,
+                type: 'faculty',
+                reference_id: falcuty._id
+              });
+            } else {
+              requirementsWarnings.push(`Không tìm thấy khoa với id: "${reqItem.id}"`);
+            }
+          } else if (reqItem.type === 'cohort') {
+            if (!reqItem.id) {
+              requirementsWarnings.push(`Requirement type 'cohort' thiếu trường 'id'`);
+              continue;
+            }
+            const cohort = await Cohort.findById(reqItem.id);
+            if (cohort) {
+              await ActivityEligibility.create({
+                activity_id: activity._id,
+                type: 'cohort',
+                reference_id: cohort._id
+              });
+            } else {
+              requirementsWarnings.push(`Không tìm thấy khóa với id: "${reqItem.id}"`);
+            }
+          } else {
+            requirementsWarnings.push(`Requirement type không hợp lệ: "${reqItem.type}". Chỉ chấp nhận 'faculty' hoặc 'cohort'`);
+          }
+        }
+      }
+      
       // Transform activity to return Vietnamese status
       const transformedActivity = transformActivity(activity);
+      const response = { success: true, message: 'Activity suggested successfully. Waiting for approval.', data: transformedActivity };
+      if (requirementsWarnings.length > 0) {
+        response.warnings = requirementsWarnings;
+      }
       
-      res.status(201).json({ 
-        success: true, 
-        message: 'Activity suggested successfully. Waiting for approval.',
-        data: transformedActivity 
-      });
+      res.status(201).json(response);
     } catch (err) {
       console.error('Suggest activity error:', err);
       res.status(400).json({ success: false, message: err.message });
@@ -1580,12 +1626,31 @@ module.exports = {
           message: 'Vui lòng nhập lý do hủy hoạt động' 
         });
       }
+
+      // Validate cancellation_reason length
+      const trimmedReason = cancellation_reason.trim();
+      if (trimmedReason.length < 5) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Lý do hủy hoạt động phải có ít nhất 5 ký tự' 
+        });
+      }
+
+      if (trimmedReason.length > 500) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Lý do hủy hoạt động không thể vượt quá 500 ký tự' 
+        });
+      }
       
-      const activity = await Activity.findById(req.params.id);
+      const activity = await Activity.findById(req.params.id)
+        .populate('org_unit_id', 'name')
+        .populate('field_id', 'name');
+
       if (!activity) {
         return res.status(404).json({ 
           success: false, 
-          message: 'Activity not found' 
+          message: 'Hoạt động không tồn tại' 
         });
       }
 
@@ -1597,19 +1662,74 @@ module.exports = {
         });
       }
 
+      // Check if activity has started (cannot cancel ongoing or completed activities)
+      const now = new Date();
+      if (new Date(activity.start_time) <= now) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Không thể hủy hoạt động đã bắt đầu hoặc đã kết thúc' 
+        });
+      }
+
       // Update activity status to cancelled
       activity.status = 'cancelled';
       activity.cancelled_at = new Date();
-      activity.cancellation_reason = cancellation_reason.trim();
+      activity.cancellation_reason = trimmedReason;
       await activity.save();
+
+      // Get all registered students for this activity
+      const registrations = await ActivityRegistration.find({ 
+        activity_id: activity._id 
+      }).select('student_id').lean();
+
+      // Get student user IDs
+      const studentProfileIds = registrations.map(reg => reg.student_id);
+      
+      if (studentProfileIds.length > 0) {
+        // Get user IDs from student profiles
+        const studentProfiles = await StudentProfile.find({
+          _id: { $in: studentProfileIds }
+        }).select('user_id').lean();
+
+        const userIds = studentProfiles
+          .map(sp => sp.user_id)
+          .filter(uid => uid !== null && uid !== undefined);
+
+        // Create notification for each registered student
+        if (userIds.length > 0) {
+          const Notification = require('../models/notification.model');
+          
+          const notificationTitle = `Hoạt động "${activity.title}" đã bị hủy`;
+          const notificationContent = `Hoạt động "${activity.title}" mà bạn đã đăng ký đã bị hủy. Lý do: ${trimmedReason}`;
+
+          try {
+            await Notification.create({
+              title: notificationTitle,
+              content: notificationContent,
+              published_date: new Date(),
+              notification_type: 'cancellation',
+              icon_type: 'cancel',
+              target_audience: 'specific',
+              target_user_ids: userIds,
+              created_by: req.user?.id || null
+            });
+
+            console.log(`Notification created for ${userIds.length} students for cancelled activity ${activity._id}`);
+          } catch (notifErr) {
+            console.error('Error creating cancellation notification:', notifErr);
+            // Don't fail the cancellation if notification fails
+          }
+        }
+      }
 
       // Transform activity to return Vietnamese status
       const transformedActivity = transformActivity(activity);
 
       res.json({ 
         success: true, 
-        message: 'Hoạt động đã được hủy',
-        data: transformedActivity 
+        message: `Hoạt động đã được hủy. Thông báo đã được gửi đến ${studentProfileIds.length} học sinh đã đăng ký`,
+        data: transformedActivity,
+        notifiedStudents: studentProfileIds.length
       });
     } catch (err) {
       console.error('Cancel activity error:', err);
@@ -1780,15 +1900,18 @@ module.exports = {
 
       if (status) {
         filtered = filtered.filter(act => {
-          // Filter by registration status if registration exists
-          if (act.registration) {
-            return act.registration.status === status;
+          // Convert Vietnamese status to English if needed
+          const statusEn = getStatusEn(status);
+          const statusVi = getStatusVi(statusEn);
+          
+          // Filter by activity status (Vietnamese or English)
+          // Also support filtering by registration status
+          if (act.registration && act.registration.status === status) {
+            return true;
           }
-          // If no registration but has attendance, show only if looking for 'attended'
-          if (act.attendance) {
-            return status === 'attended';
-          }
-          return false;
+          
+          // Filter by activity status
+          return act.status === status || act.status === statusVi;
         });
       }
 
