@@ -458,6 +458,32 @@
 
         <form onsubmit="searchStudentActivities(event)">
           <div class="form-group">
+            <label for="auth-token"
+              >Token (Bearer Token) <span style="color: red">*</span></label
+            >
+            <div style="display: flex; gap: 10px">
+              <input
+                type="password"
+                id="auth-token"
+                placeholder="Nhập bearer token (từ login page)"
+                style="flex: 1"
+              />
+              <button
+                type="button"
+                class="btn btn-reset"
+                onclick="saveToken()"
+                style="flex: 0 0 auto; padding: 10px 15px"
+              >
+                💾 Lưu
+              </button>
+            </div>
+            <small style="color: #666; display: block; margin-top: 5px">
+              Token được lưu vào localStorage. Lấy token từ login page hoặc
+              DevTools
+            </small>
+          </div>
+
+          <div class="form-group">
             <label for="student-id"
               >ID Sinh viên <span style="color: red">*</span></label
             >
@@ -875,9 +901,32 @@
       }
 
       function getToken() {
-        // Lấy token từ localStorage (nếu lưu từ lần đăng nhập)
+        // Lấy token từ localStorage
         return localStorage.getItem("token") || "";
       }
+
+      function saveToken() {
+        const tokenInput = document.getElementById("auth-token");
+        const token = tokenInput.value.trim();
+
+        if (!token) {
+          alert("Vui lòng nhập token trước khi lưu");
+          return;
+        }
+
+        localStorage.setItem("token", token);
+        console.log("[Token Manager] Token saved to localStorage");
+        alert("✅ Token đã được lưu thành công!");
+      }
+
+      // Auto-load token from localStorage on page load
+      window.addEventListener("DOMContentLoaded", function () {
+        const token = getToken();
+        if (token) {
+          document.getElementById("auth-token").value = token;
+          console.log("[Token Manager] Token loaded from localStorage");
+        }
+      });
 
       // Log thông tin API
       console.log("API Base URL:", API_BASE_URL);
