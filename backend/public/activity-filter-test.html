@@ -660,6 +660,7 @@
         if (field_id) params.append("field_id", field_id);
         if (org_unit_id) params.append("org_unit_id", org_unit_id);
         if (title) params.append("title", title);
+        if (post_status) params.append("post_status", post_status);
 
         const queryString = params.toString();
         const url = `${API_BASE_URL}/activities/filter${
@@ -671,29 +672,8 @@
         document.getElementById("empty-all").style.display = "none";
 
         try {
-          // Prepare request options with POST body if post_status is selected
-          const options = {};
-          if (post_status) {
-            options.method = "POST";
-            options.headers = {
-              "Content-Type": "application/json",
-            };
-            // Convert string 'true'/'false' to boolean
-            options.body = JSON.stringify({
-              status: post_status === "true" ? true : false,
-            });
-            console.log("[Search All Activities] POST body:", options.body);
-            console.log("[Search All Activities] Request URL:", url);
-            console.log(
-              "[Search All Activities] Request method:",
-              options.method
-            );
-          }
-
-          const response = await fetch(
-            url,
-            Object.keys(options).length > 0 ? options : undefined
-          );
+          console.log("[Search All Activities] Request URL:", url);
+          const response = await fetch(url);
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
@@ -732,6 +712,7 @@
         if (field_id) params.append("field_id", field_id);
         if (org_unit_id) params.append("org_unit_id", org_unit_id);
         if (title) params.append("title", title);
+        if (post_status) params.append("post_status", post_status);
 
         const queryString = params.toString();
         const url = `${API_BASE_URL}/activities/student/${student_id}/filter${
@@ -743,30 +724,19 @@
         document.getElementById("empty-student").style.display = "none";
 
         try {
-          // Prepare request options with POST body if post_status is selected
+          const token = getToken();
+          console.log("[Search Student Activities] Request URL:", url);
+          console.log(
+            "[Search Student Activities] Token:",
+            token ? "Present" : "Missing"
+          );
+
           const options = {
             headers: {
-              Authorization: `Bearer ${getToken()}`,
+              Authorization: `Bearer ${token}`,
             },
           };
 
-          if (post_status) {
-            options.method = "POST";
-            options.headers["Content-Type"] = "application/json";
-            // Convert string 'true'/'false' to boolean
-            options.body = JSON.stringify({
-              status: post_status === "true" ? true : false,
-            });
-            console.log("[Search Student Activities] POST body:", options.body);
-            console.log("[Search Student Activities] Request URL:", url);
-            console.log(
-              "[Search Student Activities] Request method:",
-              options.method
-            );
-          }
-
-          console.log("[Search Student Activities] Final URL:", url);
-          console.log("[Search Student Activities] Final options:", options);
           const response = await fetch(url, options);
 
           if (!response.ok) {

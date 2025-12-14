@@ -1746,29 +1746,22 @@ module.exports = {
   async getStudentActivitiesWithFilter(req, res) {
     try {
       const { student_id } = req.params;
-      const { status, field_id, org_unit_id, title } = req.query;
+      const { status, field_id, org_unit_id, title, post_status } = req.query;
       let postStatusFilter = null;
 
-      // ✅ Validate POST status flag if POST request body is provided
-      if (req.body && Object.keys(req.body).length > 0) {
-        // Validate POST status - must be boolean (true = posted, false = not posted)
-        if ('status' in req.body) {
-          if (typeof req.body.status !== 'boolean') {
-            return res.status(400).json({
-              success: false,
-              message: 'Invalid POST status. Must be boolean (true or false) indicating if data has been posted'
-            });
-          }
-          postStatusFilter = req.body.status;
-          console.log(`[Filter Student Activities] POST Status Filter: ${postStatusFilter ? 'Posted' : 'Not Posted'}`);
+      // ✅ Parse post_status query parameter
+      if (post_status) {
+        if (post_status === 'true') {
+          postStatusFilter = true;
+        } else if (post_status === 'false') {
+          postStatusFilter = false;
+        } else {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid post_status. Must be "true" or "false"'
+          });
         }
-
-        // Additional validation for any other POST fields
-        for (const key in req.body) {
-          if (key !== 'status') {
-            console.warn(`[Filter Student Activities] Unknown POST field: ${key}`);
-          }
-        }
+        console.log(`[Filter Student Activities] Post Status Filter: ${postStatusFilter ? 'Posted' : 'Not Posted'}`);
       }
 
       // Get all registrations for the student
@@ -1996,29 +1989,22 @@ module.exports = {
 
   async getActivitiesWithFilter(req, res) {
     try {
-      const { status, field_id, org_unit_id, title } = req.query;
+      const { status, field_id, org_unit_id, title, post_status } = req.query;
       let postStatusFilter = null;
 
-      // ✅ Validate POST status flag if POST request body is provided
-      if (req.body && Object.keys(req.body).length > 0) {
-        // Validate POST status - must be boolean (true = posted, false = not posted)
-        if ('status' in req.body) {
-          if (typeof req.body.status !== 'boolean') {
-            return res.status(400).json({
-              success: false,
-              message: 'Invalid POST status. Must be boolean (true or false) indicating if data has been posted'
-            });
-          }
-          postStatusFilter = req.body.status;
-          console.log(`[Filter Activities] POST Status Filter: ${postStatusFilter ? 'Posted' : 'Not Posted'}`);
+      // ✅ Parse post_status query parameter
+      if (post_status) {
+        if (post_status === 'true') {
+          postStatusFilter = true;
+        } else if (post_status === 'false') {
+          postStatusFilter = false;
+        } else {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid post_status. Must be "true" or "false"'
+          });
         }
-
-        // Additional validation for any other POST fields
-        for (const key in req.body) {
-          if (key !== 'status') {
-            console.warn(`[Filter Activities] Unknown POST field: ${key}`);
-          }
-        }
+        console.log(`[Filter Activities] Post Status Filter: ${postStatusFilter ? 'Posted' : 'Not Posted'}`);
       }
 
       // Get all activities
