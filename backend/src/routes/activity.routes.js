@@ -32,6 +32,9 @@ router.get('/student/:studentId',
   activityController.getStudentActivities
 );
 
+// ⚠️ IMPORTANT: /student/:student_id/filter MUST come before generic /filter POST
+// because Express matches routes in order, and :student_id could conflict with 'filter'
+
 router.get('/student/:student_id/filter', 
   auth, 
   (req, res, next) => {
@@ -40,6 +43,21 @@ router.get('/student/:student_id/filter',
     next();
   },
   activityController.getStudentActivitiesWithFilter
+);
+
+router.post('/student/:student_id/filter', 
+  auth, 
+  (req, res, next) => {
+    // Check if user has either activity_registration:READ or attendance:READ permission
+    req.requiredPermissions = ['activity_registration:READ', 'attendance:READ'];
+    next();
+  },
+  activityController.getStudentActivitiesWithFilter
+);
+
+// POST /filter MUST come after /student/:student_id/filter to avoid conflicts
+router.post('/filter', 
+  activityController.getActivitiesWithFilter
 );
 
 // Get activity details with student's registration status
