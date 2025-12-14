@@ -1,745 +1,896 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Activity Filter Test</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-        }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+      }
 
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
 
-        .header h1 {
-            font-size: 2em;
-            margin-bottom: 10px;
-        }
+      .header h1 {
+        font-size: 2em;
+        margin-bottom: 10px;
+      }
 
-        .tabs {
-            display: flex;
-            border-bottom: 2px solid #e0e0e0;
-        }
+      .tabs {
+        display: flex;
+        border-bottom: 2px solid #e0e0e0;
+      }
 
-        .tab-btn {
-            flex: 1;
-            padding: 15px;
-            border: none;
-            background: white;
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: 500;
-            transition: all 0.3s;
-        }
+      .tab-btn {
+        flex: 1;
+        padding: 15px;
+        border: none;
+        background: white;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 500;
+        transition: all 0.3s;
+      }
 
-        .tab-btn:hover {
-            background: #f5f5f5;
-        }
+      .tab-btn:hover {
+        background: #f5f5f5;
+      }
 
-        .tab-btn.active {
-            border-bottom: 3px solid #667eea;
-            color: #667eea;
-        }
+      .tab-btn.active {
+        border-bottom: 3px solid #667eea;
+        color: #667eea;
+      }
 
-        .tab-content {
-            display: none;
-            padding: 30px;
-        }
+      .tab-content {
+        display: none;
+        padding: 30px;
+      }
 
-        .tab-content.active {
-            display: block;
-        }
+      .tab-content.active {
+        display: block;
+      }
 
-        .form-group {
-            margin-bottom: 20px;
-        }
+      .form-group {
+        margin-bottom: 20px;
+      }
 
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #333;
-        }
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+      }
 
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 0.95em;
-            transition: border-color 0.3s;
-        }
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 0.95em;
+        transition: border-color 0.3s;
+      }
 
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
-        }
+      .form-group input:focus,
+      .form-group select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+      }
 
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 30px;
+      }
+
+      .btn {
+        flex: 1;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 5px;
+        font-size: 1em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .btn-search {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .btn-search:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn-reset {
+        background: #f0f0f0;
+        color: #333;
+      }
+
+      .btn-reset:hover {
+        background: #e0e0e0;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 20px;
+        display: none;
+      }
+
+      .loading.show {
+        display: block;
+      }
+
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .error {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        display: none;
+      }
+
+      .error.show {
+        display: block;
+      }
+
+      .results {
+        margin-top: 30px;
+      }
+
+      .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f9f9f9;
+        border-radius: 5px;
+      }
+
+      .results-header h3 {
+        color: #333;
+      }
+
+      .count-badge {
+        background: #667eea;
+        color: white;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+      }
+
+      .table-container {
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      table thead {
+        background: #f9f9f9;
+      }
+
+      table th {
+        padding: 15px;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid #ddd;
+        color: #333;
+      }
+
+      table td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #ddd;
+      }
+
+      table tbody tr:hover {
+        background: #f5f5f5;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-weight: 500;
+      }
+
+      .status-approved {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .status-pending {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .status-rejected {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .status-in_progress {
+        background: #d1ecf1;
+        color: #0c5460;
+      }
+
+      .status-completed {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .status-cancelled {
+        background: #e2e3e5;
+        color: #383d41;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #999;
+      }
+
+      .empty-state-icon {
+        font-size: 3em;
+        margin-bottom: 10px;
+      }
+
+      .json-view {
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 15px;
+        margin-top: 20px;
+        overflow-x: auto;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .json-view pre {
+        margin: 0;
+        font-family: "Courier New", monospace;
+        font-size: 0.85em;
+        color: #333;
+      }
+
+      @media (max-width: 768px) {
         .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+          grid-template-columns: 1fr;
         }
 
         .button-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 30px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-search {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-search:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-reset {
-            background: #f0f0f0;
-            color: #333;
-        }
-
-        .btn-reset:hover {
-            background: #e0e0e0;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            display: none;
-        }
-
-        .loading.show {
-            display: block;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .error {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .error.show {
-            display: block;
-        }
-
-        .results {
-            margin-top: 30px;
-        }
-
-        .results-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f9f9f9;
-            border-radius: 5px;
-        }
-
-        .results-header h3 {
-            color: #333;
-        }
-
-        .count-badge {
-            background: #667eea;
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-        }
-
-        .table-container {
-            overflow-x: auto;
+          flex-direction: column;
         }
 
         table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+          font-size: 0.85em;
         }
 
-        table thead {
-            background: #f9f9f9;
-        }
-
-        table th {
-            padding: 15px;
-            text-align: left;
-            font-weight: 600;
-            border-bottom: 2px solid #ddd;
-            color: #333;
-        }
-
+        table th,
         table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #ddd;
+          padding: 8px 5px;
         }
 
-        table tbody tr:hover {
-            background: #f5f5f5;
+        .header h1 {
+          font-size: 1.5em;
         }
-
-        .status-badge {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: 500;
-        }
-
-        .status-approved {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status-pending {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .status-rejected {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .status-in_progress {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
-
-        .status-completed {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status-cancelled {
-            background: #e2e3e5;
-            color: #383d41;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #999;
-        }
-
-        .empty-state-icon {
-            font-size: 3em;
-            margin-bottom: 10px;
-        }
-
-        .json-view {
-            background: #f5f5f5;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 15px;
-            margin-top: 20px;
-            overflow-x: auto;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .json-view pre {
-            margin: 0;
-            font-family: 'Courier New', monospace;
-            font-size: 0.85em;
-            color: #333;
-        }
-
-        @media (max-width: 768px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            .button-group {
-                flex-direction: column;
-            }
-
-            table {
-                font-size: 0.85em;
-            }
-
-            table th, table td {
-                padding: 8px 5px;
-            }
-
-            .header h1 {
-                font-size: 1.5em;
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="header">
-            <h1>🎯 Activity Filter Test</h1>
-            <p>Kiểm tra API lọc hoạt động</p>
-        </div>
+      <div class="header">
+        <h1>🎯 Activity Filter Test</h1>
+        <p>Kiểm tra API lọc hoạt động</p>
+      </div>
 
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('all-activities')">
-                📋 Tất cả hoạt động
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('all-activities')">
+          📋 Tất cả hoạt động
+        </button>
+        <button class="tab-btn" onclick="switchTab('student-activities')">
+          👤 Hoạt động của sinh viên
+        </button>
+      </div>
+
+      <!-- Tab 1: Tất cả hoạt động -->
+      <div id="all-activities" class="tab-content active">
+        <div class="error" id="error-all"></div>
+
+        <form onsubmit="searchAllActivities(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="status-all">Trạng thái hoạt động</label>
+              <select id="status-all">
+                <option value="">-- Chọn trạng thái --</option>
+                <option value="chờ duyệt">Chờ duyệt</option>
+                <option value="chưa tổ chức">Chưa tổ chức</option>
+                <option value="đang tổ chức">Đang tổ chức</option>
+                <option value="đã tổ chức">Đã tổ chức</option>
+                <option value="từ chối">Từ chối</option>
+                <option value="hủy hoạt động">Hủy hoạt động</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="post-status-all">Trạng thái Post</label>
+              <select id="post-status-all">
+                <option value="">-- Tất cả --</option>
+                <option value="true">Đã post</option>
+                <option value="false">Chưa post</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="field-all">Lĩnh vực</label>
+              <input type="text" id="field-all" placeholder="Nhập field_id" />
+            </div>
+            <div class="form-group">
+              <label for="org-all">Tổ chức</label>
+              <input type="text" id="org-all" placeholder="Nhập org_unit_id" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="title-all">Tên hoạt động</label>
+              <input
+                type="text"
+                id="title-all"
+                placeholder="Nhập từ khóa tên hoạt động"
+                style="grid-column: 1 / -1"
+              />
+            </div>
+          </div>
+
+          <div class="button-group">
+            <button type="submit" class="btn btn-search">🔍 Tìm kiếm</button>
+            <button
+              type="button"
+              class="btn btn-reset"
+              onclick="resetForm('all')"
+            >
+              🔄 Reset
             </button>
-            <button class="tab-btn" onclick="switchTab('student-activities')">
-                👤 Hoạt động của sinh viên
+          </div>
+        </form>
+
+        <div class="loading" id="loading-all">
+          <div class="spinner"></div>
+          <p>Đang tải...</p>
+        </div>
+
+        <div class="results" id="results-all" style="display: none">
+          <div class="results-header">
+            <h3>📊 Kết quả tìm kiếm</h3>
+            <div class="count-badge" id="count-all">0 kết quả</div>
+          </div>
+
+          <div class="table-container">
+            <table id="table-all">
+              <thead>
+                <tr>
+                  <th>Tên hoạt động</th>
+                  <th>Lĩnh vực</th>
+                  <th>Tổ chức</th>
+                  <th>Trạng thái</th>
+                  <th>Post</th>
+                  <th>Ngày bắt đầu</th>
+                  <th>Địa điểm</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="json-view">
+            <pre id="json-all">[]</pre>
+          </div>
+        </div>
+
+        <div class="empty-state" id="empty-all" style="display: none">
+          <div class="empty-state-icon">📭</div>
+          <p>Không tìm thấy hoạt động nào</p>
+        </div>
+      </div>
+
+      <!-- Tab 2: Hoạt động của sinh viên -->
+      <div id="student-activities" class="tab-content">
+        <div class="error" id="error-student"></div>
+
+        <form onsubmit="searchStudentActivities(event)">
+          <div class="form-group">
+            <label for="student-id"
+              >ID Sinh viên <span style="color: red">*</span></label
+            >
+            <input
+              type="text"
+              id="student-id"
+              placeholder="Nhập student_id (bắt buộc)"
+              required
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="status-student">Trạng thái</label>
+              <select id="status-student">
+                <option value="">-- Chọn trạng thái --</option>
+                <option value="chờ duyệt">Chờ duyệt</option>
+                <option value="chưa tổ chức">Chưa tổ chức</option>
+                <option value="đang tổ chức">Đang tổ chức</option>
+                <option value="đã tổ chức">Đã tổ chức</option>
+                <option value="từ chối">Từ chối</option>
+                <option value="hủy hoạt động">Hủy hoạt động</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="post-status-student">Trạng thái Post</label>
+              <select id="post-status-student">
+                <option value="">-- Tất cả --</option>
+                <option value="true">Đã post</option>
+                <option value="false">Chưa post</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="field-student">Lĩnh vực</label>
+              <input
+                type="text"
+                id="field-student"
+                placeholder="Nhập field_id"
+              />
+            </div>
+            <div class="form-group">
+              <label for="org-student">Tổ chức</label>
+              <input
+                type="text"
+                id="org-student"
+                placeholder="Nhập org_unit_id"
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="title-student">Tên hoạt động</label>
+              <input
+                type="text"
+                id="title-student"
+                placeholder="Nhập từ khóa tên hoạt động"
+                style="grid-column: 1 / -1"
+              />
+            </div>
+          </div>
+
+          <div class="button-group">
+            <button type="submit" class="btn btn-search">🔍 Tìm kiếm</button>
+            <button
+              type="button"
+              class="btn btn-reset"
+              onclick="resetForm('student')"
+            >
+              🔄 Reset
             </button>
+          </div>
+        </form>
+
+        <div class="loading" id="loading-student">
+          <div class="spinner"></div>
+          <p>Đang tải...</p>
         </div>
 
-        <!-- Tab 1: Tất cả hoạt động -->
-        <div id="all-activities" class="tab-content active">
-            <div class="error" id="error-all"></div>
+        <div class="results" id="results-student" style="display: none">
+          <div class="results-header">
+            <h3>📊 Kết quả tìm kiếm</h3>
+            <div class="count-badge" id="count-student">0 kết quả</div>
+          </div>
 
-            <form onsubmit="searchAllActivities(event)">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="status-all">Trạng thái</label>
-                        <select id="status-all">
-                            <option value="">-- Chọn trạng thái --</option>
-                            <option value="chờ duyệt">Chờ duyệt</option>
-                            <option value="chưa tổ chức">Chưa tổ chức</option>
-                            <option value="đang tổ chức">Đang tổ chức</option>
-                            <option value="đã tổ chức">Đã tổ chức</option>
-                            <option value="từ chối">Từ chối</option>
-                            <option value="hủy hoạt động">Hủy hoạt động</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="field-all">Lĩnh vực</label>
-                        <input type="text" id="field-all" placeholder="Nhập field_id">
-                    </div>
-                </div>
+          <div class="table-container">
+            <table id="table-student">
+              <thead>
+                <tr>
+                  <th>Tên hoạt động</th>
+                  <th>Lĩnh vực</th>
+                  <th>Tổ chức</th>
+                  <th>Trạng thái</th>
+                  <th>Post</th>
+                  <th>Đã đăng ký</th>
+                  <th>Tham dự</th>
+                  <th>Ngày bắt đầu</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="org-all">Tổ chức</label>
-                        <input type="text" id="org-all" placeholder="Nhập org_unit_id">
-                    </div>
-                    <div class="form-group">
-                        <label for="title-all">Tên hoạt động</label>
-                        <input type="text" id="title-all" placeholder="Nhập từ khóa tên hoạt động">
-                    </div>
-                </div>
-
-                <div class="button-group">
-                    <button type="submit" class="btn btn-search">🔍 Tìm kiếm</button>
-                    <button type="button" class="btn btn-reset" onclick="resetForm('all')">🔄 Reset</button>
-                </div>
-            </form>
-
-            <div class="loading" id="loading-all">
-                <div class="spinner"></div>
-                <p>Đang tải...</p>
-            </div>
-
-            <div class="results" id="results-all" style="display: none;">
-                <div class="results-header">
-                    <h3>📊 Kết quả tìm kiếm</h3>
-                    <div class="count-badge" id="count-all">0 kết quả</div>
-                </div>
-
-                <div class="table-container">
-                    <table id="table-all">
-                        <thead>
-                            <tr>
-                                <th>Tên hoạt động</th>
-                                <th>Lĩnh vực</th>
-                                <th>Tổ chức</th>
-                                <th>Trạng thái</th>
-                                <th>Ngày bắt đầu</th>
-                                <th>Địa điểm</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-
-                <div class="json-view">
-                    <pre id="json-all">[]</pre>
-                </div>
-            </div>
-
-            <div class="empty-state" id="empty-all" style="display: none;">
-                <div class="empty-state-icon">📭</div>
-                <p>Không tìm thấy hoạt động nào</p>
-            </div>
+          <div class="json-view">
+            <pre id="json-student">[]</pre>
+          </div>
         </div>
 
-        <!-- Tab 2: Hoạt động của sinh viên -->
-        <div id="student-activities" class="tab-content">
-            <div class="error" id="error-student"></div>
-
-            <form onsubmit="searchStudentActivities(event)">
-                <div class="form-group">
-                    <label for="student-id">ID Sinh viên <span style="color: red;">*</span></label>
-                    <input type="text" id="student-id" placeholder="Nhập student_id (bắt buộc)" required>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="status-student">Trạng thái</label>
-                        <select id="status-student">
-                            <option value="">-- Chọn trạng thái --</option>
-                            <option value="đã đăng ký">Đã đăng ký</option>
-                            <option value="đã duyệt">Đã duyệt</option>
-                            <option value="đã tham gia">Đã tham gia</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="field-student">Lĩnh vực</label>
-                        <input type="text" id="field-student" placeholder="Nhập field_id">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="org-student">Tổ chức</label>
-                        <input type="text" id="org-student" placeholder="Nhập org_unit_id">
-                    </div>
-                    <div class="form-group">
-                        <label for="title-student">Tên hoạt động</label>
-                        <input type="text" id="title-student" placeholder="Nhập từ khóa tên hoạt động">
-                    </div>
-                </div>
-
-                <div class="button-group">
-                    <button type="submit" class="btn btn-search">🔍 Tìm kiếm</button>
-                    <button type="button" class="btn btn-reset" onclick="resetForm('student')">🔄 Reset</button>
-                </div>
-            </form>
-
-            <div class="loading" id="loading-student">
-                <div class="spinner"></div>
-                <p>Đang tải...</p>
-            </div>
-
-            <div class="results" id="results-student" style="display: none;">
-                <div class="results-header">
-                    <h3>📊 Kết quả tìm kiếm</h3>
-                    <div class="count-badge" id="count-student">0 kết quả</div>
-                </div>
-
-                <div class="table-container">
-                    <table id="table-student">
-                        <thead>
-                            <tr>
-                                <th>Tên hoạt động</th>
-                                <th>Lĩnh vực</th>
-                                <th>Tổ chức</th>
-                                <th>Trạng thái</th>
-                                <th>Đã đăng ký</th>
-                                <th>Tham dự</th>
-                                <th>Ngày bắt đầu</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-
-                <div class="json-view">
-                    <pre id="json-student">[]</pre>
-                </div>
-            </div>
-
-            <div class="empty-state" id="empty-student" style="display: none;">
-                <div class="empty-state-icon">📭</div>
-                <p>Không tìm thấy hoạt động nào</p>
-            </div>
+        <div class="empty-state" id="empty-student" style="display: none">
+          <div class="empty-state-icon">📭</div>
+          <p>Không tìm thấy hoạt động nào</p>
         </div>
+      </div>
     </div>
 
     <script>
-        const API_BASE_URL = 'https://pbl6-backend-iy5q.onrender.com/api';
+      const API_BASE_URL = "https://pbl6-backend-iy5q.onrender.com/api";
 
-        function switchTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
+      function switchTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll(".tab-content").forEach((tab) => {
+          tab.classList.remove("active");
+        });
 
-            // Remove active class from all buttons
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
+        // Remove active class from all buttons
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.classList.remove("active");
+        });
 
-            // Show selected tab
-            document.getElementById(tabName).classList.add('active');
+        // Show selected tab
+        document.getElementById(tabName).classList.add("active");
 
-            // Add active class to clicked button
-            event.target.classList.add('active');
+        // Add active class to clicked button
+        event.target.classList.add("active");
+      }
+
+      function resetForm(type) {
+        if (type === "all") {
+          document.getElementById("status-all").value = "";
+          document.getElementById("post-status-all").value = "";
+          document.getElementById("field-all").value = "";
+          document.getElementById("org-all").value = "";
+          document.getElementById("title-all").value = "";
+          document.getElementById("results-all").style.display = "none";
+          document.getElementById("empty-all").style.display = "none";
+          document.getElementById("error-all").classList.remove("show");
+        } else {
+          document.getElementById("student-id").value = "";
+          document.getElementById("status-student").value = "";
+          document.getElementById("post-status-student").value = "";
+          document.getElementById("field-student").value = "";
+          document.getElementById("org-student").value = "";
+          document.getElementById("title-student").value = "";
+          document.getElementById("results-student").style.display = "none";
+          document.getElementById("empty-student").style.display = "none";
+          document.getElementById("error-student").classList.remove("show");
+        }
+      }
+
+      function showError(type, message) {
+        const errorEl = document.getElementById(`error-${type}`);
+        errorEl.textContent = `❌ ${message}`;
+        errorEl.classList.add("show");
+      }
+
+      function hideError(type) {
+        document.getElementById(`error-${type}`).classList.remove("show");
+      }
+
+      async function searchAllActivities(e) {
+        e.preventDefault();
+        hideError("all");
+
+        const status = document.getElementById("status-all").value;
+        const post_status = document.getElementById("post-status-all").value;
+        const field_id = document.getElementById("field-all").value;
+        const org_unit_id = document.getElementById("org-all").value;
+        const title = document.getElementById("title-all").value;
+
+        // Validate post_status
+        if (post_status && post_status !== "true" && post_status !== "false") {
+          showError(
+            "all",
+            "Giá trị trạng thái post không hợp lệ (phải là true hoặc false)"
+          );
+          return;
         }
 
-        function resetForm(type) {
-            if (type === 'all') {
-                document.getElementById('status-all').value = '';
-                document.getElementById('field-all').value = '';
-                document.getElementById('org-all').value = '';
-                document.getElementById('title-all').value = '';
-                document.getElementById('results-all').style.display = 'none';
-                document.getElementById('empty-all').style.display = 'none';
-                document.getElementById('error-all').classList.remove('show');
-            } else {
-                document.getElementById('student-id').value = '';
-                document.getElementById('status-student').value = '';
-                document.getElementById('field-student').value = '';
-                document.getElementById('org-student').value = '';
-                document.getElementById('title-student').value = '';
-                document.getElementById('results-student').style.display = 'none';
-                document.getElementById('empty-student').style.display = 'none';
-                document.getElementById('error-student').classList.remove('show');
-            }
-        }
+        // Build query string
+        const params = new URLSearchParams();
+        if (status) params.append("status", status);
+        if (field_id) params.append("field_id", field_id);
+        if (org_unit_id) params.append("org_unit_id", org_unit_id);
+        if (title) params.append("title", title);
 
-        function showError(type, message) {
-            const errorEl = document.getElementById(`error-${type}`);
-            errorEl.textContent = `❌ ${message}`;
-            errorEl.classList.add('show');
-        }
+        const url = `${API_BASE_URL}/activities/filter?${params.toString()}`;
 
-        function hideError(type) {
-            document.getElementById(`error-${type}`).classList.remove('show');
-        }
+        document.getElementById("loading-all").classList.add("show");
+        document.getElementById("results-all").style.display = "none";
+        document.getElementById("empty-all").style.display = "none";
 
-        async function searchAllActivities(e) {
-            e.preventDefault();
-            hideError('all');
-
-            const status = document.getElementById('status-all').value;
-            const field_id = document.getElementById('field-all').value;
-            const org_unit_id = document.getElementById('org-all').value;
-            const title = document.getElementById('title-all').value;
-
-            // Build query string
-            const params = new URLSearchParams();
-            if (status) params.append('status', status);
-            if (field_id) params.append('field_id', field_id);
-            if (org_unit_id) params.append('org_unit_id', org_unit_id);
-            if (title) params.append('title', title);
-
-            const url = `${API_BASE_URL}/activities/filter?${params.toString()}`;
-
-            document.getElementById('loading-all').classList.add('show');
-            document.getElementById('results-all').style.display = 'none';
-            document.getElementById('empty-all').style.display = 'none';
-
-            try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                displayResultsAll(data);
-            } catch (error) {
-                console.error('Error:', error);
-                showError('all', error.message);
-            } finally {
-                document.getElementById('loading-all').classList.remove('show');
-            }
-        }
-
-        async function searchStudentActivities(e) {
-            e.preventDefault();
-            hideError('student');
-
-            const student_id = document.getElementById('student-id').value;
-            const status = document.getElementById('status-student').value;
-            const field_id = document.getElementById('field-student').value;
-            const org_unit_id = document.getElementById('org-student').value;
-            const title = document.getElementById('title-student').value;
-
-            // Build query string
-            const params = new URLSearchParams();
-            if (status) params.append('status', status);
-            if (field_id) params.append('field_id', field_id);
-            if (org_unit_id) params.append('org_unit_id', org_unit_id);
-            if (title) params.append('title', title);
-
-            const url = `${API_BASE_URL}/activities/student/${student_id}/filter?${params.toString()}`;
-
-            document.getElementById('loading-student').classList.add('show');
-            document.getElementById('results-student').style.display = 'none';
-            document.getElementById('empty-student').style.display = 'none';
-
-            try {
-                const response = await fetch(url, {
-                    headers: {
-                        'Authorization': `Bearer ${getToken()}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                displayResultsStudent(data);
-            } catch (error) {
-                console.error('Error:', error);
-                showError('student', error.message);
-            } finally {
-                document.getElementById('loading-student').classList.remove('show');
-            }
-        }
-
-        function getStatusClass(status) {
-            const statusMap = {
-                'chờ duyệt': 'status-pending',
-                'chưa tổ chức': 'status-approved',
-                'đang tổ chức': 'status-in_progress',
-                'đã tổ chức': 'status-completed',
-                'từ chối': 'status-rejected',
-                'hủy hoạt động': 'status-cancelled'
+        try {
+          // Prepare request options with POST body if post_status is selected
+          const options = {};
+          if (post_status) {
+            options.method = "POST";
+            options.headers = {
+              "Content-Type": "application/json",
             };
-            return statusMap[status] || 'status-pending';
-        }
-
-        function formatDate(dateString) {
-            if (!dateString) return '-';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('vi-VN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
+            // Convert string 'true'/'false' to boolean
+            options.body = JSON.stringify({
+              status: post_status === "true" ? true : false,
             });
+            console.log("[Search All Activities] POST body:", options.body);
+          }
+
+          const response = await fetch(
+            url,
+            Object.keys(options).length > 0 ? options : undefined
+          );
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          displayResultsAll(data);
+        } catch (error) {
+          console.error("Error:", error);
+          showError("all", error.message);
+        } finally {
+          document.getElementById("loading-all").classList.remove("show");
+        }
+      }
+
+      async function searchStudentActivities(e) {
+        e.preventDefault();
+        hideError("student");
+
+        const student_id = document.getElementById("student-id").value;
+        if (!student_id) {
+          showError("student", "Vui lòng nhập ID sinh viên");
+          return;
         }
 
-        function displayResultsAll(data) {
-            const results = data.data || [];
-            const count = data.count || 0;
+        const status = document.getElementById("status-student").value;
+        const post_status = document.getElementById(
+          "post-status-student"
+        ).value;
+        const field_id = document.getElementById("field-student").value;
+        const org_unit_id = document.getElementById("org-student").value;
+        const title = document.getElementById("title-student").value;
 
-            if (count === 0) {
-                document.getElementById('empty-all').style.display = 'block';
-                return;
-            }
+        // Build query string
+        const params = new URLSearchParams();
+        if (status) params.append("status", status);
+        if (field_id) params.append("field_id", field_id);
+        if (org_unit_id) params.append("org_unit_id", org_unit_id);
+        if (title) params.append("title", title);
 
-            document.getElementById('count-all').textContent = `${count} kết quả`;
-            document.getElementById('json-all').textContent = JSON.stringify(results, null, 2);
+        const url = `${API_BASE_URL}/activities/student/${student_id}/filter?${params.toString()}`;
 
-            const tbody = document.querySelector('#table-all tbody');
-            tbody.innerHTML = '';
+        document.getElementById("loading-student").classList.add("show");
+        document.getElementById("results-student").style.display = "none";
+        document.getElementById("empty-student").style.display = "none";
 
-            results.forEach(activity => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><strong>${activity.title || '-'}</strong></td>
-                    <td>${activity.field_id?.name || activity.field_id || '-'}</td>
-                    <td>${activity.org_unit_id?.name || activity.org_unit_id || '-'}</td>
-                    <td><span class="status-badge ${getStatusClass(activity.status)}">${activity.status}</span></td>
+        try {
+          // Prepare request options with POST body if post_status is selected
+          const options = {
+            headers: {
+              Authorization: `Bearer ${getToken()}`,
+            },
+          };
+
+          if (post_status) {
+            options.method = "POST";
+            options.headers["Content-Type"] = "application/json";
+            // Convert string 'true'/'false' to boolean
+            options.body = JSON.stringify({
+              status: post_status === "true" ? true : false,
+            });
+          }
+
+          const response = await fetch(url, options);
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          displayResultsStudent(data);
+        } catch (error) {
+          console.error("Error:", error);
+          showError("student", error.message);
+        } finally {
+          document.getElementById("loading-student").classList.remove("show");
+        }
+      }
+
+      function getStatusClass(status) {
+        const statusMap = {
+          "chờ duyệt": "status-pending",
+          "chưa tổ chức": "status-approved",
+          "đang tổ chức": "status-in_progress",
+          "đã tổ chức": "status-completed",
+          "từ chối": "status-rejected",
+          "hủy hoạt động": "status-cancelled",
+        };
+        return statusMap[status] || "status-pending";
+      }
+
+      function formatDate(dateString) {
+        if (!dateString) return "-";
+        const date = new Date(dateString);
+        return date.toLocaleDateString("vi-VN", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
+      function displayResultsAll(data) {
+        const results = data.data || [];
+        const count = data.count || 0;
+
+        if (count === 0) {
+          document.getElementById("empty-all").style.display = "block";
+          return;
+        }
+
+        document.getElementById("count-all").textContent = `${count} kết quả`;
+        document.getElementById("json-all").textContent = JSON.stringify(
+          results,
+          null,
+          2
+        );
+
+        const tbody = document.querySelector("#table-all tbody");
+        tbody.innerHTML = "";
+
+        results.forEach((activity) => {
+          const postBadge = activity.post_status
+            ? '<span class="status-badge" style="background: #d4edda; color: #155724;">✓ Đã</span>'
+            : '<span class="status-badge" style="background: #f8d7da; color: #721c24;">✗ Chưa</span>';
+
+          const row = document.createElement("tr");
+          row.innerHTML = `
+                    <td><strong>${activity.title || "-"}</strong></td>
+                    <td>${
+                      activity.field_id?.name || activity.field_id || "-"
+                    }</td>
+                    <td>${
+                      activity.org_unit_id?.name || activity.org_unit_id || "-"
+                    }</td>
+                    <td><span class="status-badge ${getStatusClass(
+                      activity.status
+                    )}">${activity.status}</span></td>
+                    <td>${postBadge}</td>
                     <td>${formatDate(activity.start_time)}</td>
-                    <td>${activity.location || '-'}</td>
+                    <td>${activity.location || "-"}</td>
                 `;
-                tbody.appendChild(row);
-            });
+          tbody.appendChild(row);
+        });
 
-            document.getElementById('results-all').style.display = 'block';
+        document.getElementById("results-all").style.display = "block";
+      }
+
+      function displayResultsStudent(data) {
+        const results = data.data || [];
+        const count = data.count || 0;
+
+        if (count === 0) {
+          document.getElementById("empty-student").style.display = "block";
+          return;
         }
 
-        function displayResultsStudent(data) {
-            const results = data.data || [];
-            const count = data.count || 0;
+        document.getElementById(
+          "count-student"
+        ).textContent = `${count} kết quả`;
+        document.getElementById("json-student").textContent = JSON.stringify(
+          results,
+          null,
+          2
+        );
 
-            if (count === 0) {
-                document.getElementById('empty-student').style.display = 'block';
-                return;
-            }
+        const tbody = document.querySelector("#table-student tbody");
+        tbody.innerHTML = "";
 
-            document.getElementById('count-student').textContent = `${count} kết quả`;
-            document.getElementById('json-student').textContent = JSON.stringify(results, null, 2);
+        results.forEach((activity) => {
+          const registered = activity.registration ? "✓" : "✗";
+          const attended = activity.attendance ? "✓" : "✗";
+          const postBadge = activity.post_status
+            ? '<span class="status-badge" style="background: #d4edda; color: #155724;">✓ Đã</span>'
+            : '<span class="status-badge" style="background: #f8d7da; color: #721c24;">✗ Chưa</span>';
 
-            const tbody = document.querySelector('#table-student tbody');
-            tbody.innerHTML = '';
-
-            results.forEach(activity => {
-                const registered = activity.registration ? '✓' : '✗';
-                const attended = activity.attendance ? '✓' : '✗';
-
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><strong>${activity.title || '-'}</strong></td>
-                    <td>${activity.field_id?.name || activity.field_id || '-'}</td>
-                    <td>${activity.org_unit_id?.name || activity.org_unit_id || '-'}</td>
-                    <td><span class="status-badge ${getStatusClass(activity.status)}">${activity.status}</span></td>
+          const row = document.createElement("tr");
+          row.innerHTML = `
+                    <td><strong>${activity.title || "-"}</strong></td>
+                    <td>${
+                      activity.field_id?.name || activity.field_id || "-"
+                    }</td>
+                    <td>${
+                      activity.org_unit_id?.name || activity.org_unit_id || "-"
+                    }</td>
+                    <td><span class="status-badge ${getStatusClass(
+                      activity.status
+                    )}">${activity.status}</span></td>
+                    <td>${postBadge}</td>
                     <td style="text-align: center;">${registered}</td>
                     <td style="text-align: center;">${attended}</td>
                     <td>${formatDate(activity.start_time)}</td>
                 `;
-                tbody.appendChild(row);
-            });
+          tbody.appendChild(row);
+        });
 
-            document.getElementById('results-student').style.display = 'block';
-        }
+        document.getElementById("results-student").style.display = "block";
+      }
 
-        function getToken() {
-            // Lấy token từ localStorage (nếu lưu từ lần đăng nhập)
-            return localStorage.getItem('token') || '';
-        }
+      function getToken() {
+        // Lấy token từ localStorage (nếu lưu từ lần đăng nhập)
+        return localStorage.getItem("token") || "";
+      }
 
-        // Log thông tin API
-        console.log('API Base URL:', API_BASE_URL);
-        console.log('Tất cả hoạt động: GET /api/activities/filter');
-        console.log('Hoạt động sinh viên: GET /api/activities/student/{studentId}/filter');
+      // Log thông tin API
+      console.log("API Base URL:", API_BASE_URL);
+      console.log("Tất cả hoạt động: GET /api/activities/filter");
+      console.log(
+        "Hoạt động sinh viên: GET /api/activities/student/{studentId}/filter"
+      );
     </script>
-</body>
+  </body>
 </html>

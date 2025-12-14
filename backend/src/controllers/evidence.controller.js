@@ -229,5 +229,209 @@ module.exports = {
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
     }
+  },
+
+  // Get approved evidences for student score results page
+  async getApprovedEvidencesForStudent(req, res) {
+    try {
+      const { studentId } = req.params;
+      const userId = req.user._id; // From auth middleware (user object)
+      
+      // Validate studentId parameter
+      if (!studentId || studentId.trim() === '') {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'studentId is required and cannot be empty' 
+        });
+      }
+
+      // Validate MongoDB ObjectId format
+      const mongoose = require('mongoose');
+      if (!mongoose.Types.ObjectId.isValid(studentId)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid studentId format' 
+        });
+      }
+
+      // Permission check: Student can only view their own approved evidences
+      // Staff/Teacher/Admin can view any student's approved evidences
+      const StudentProfileModel = require('../models/student_profile.model');
+      const student = await StudentProfileModel.findById(studentId).select('user_id');
+      
+      if (!student) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Student not found' 
+        });
+      }
+
+      // Check if user is the student or has staff/teacher/admin role
+      const User = require('../models/user.model');
+      const currentUser = await User.findById(userId).select('role');
+      
+      if (!currentUser) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'User not found' 
+        });
+      }
+
+      // Allow access if user is student or has staff/admin role
+      const isOwnStudent = student.user_id.toString() === userId.toString();
+      const allowedRoles = ['admin', 'staff'];
+      const hasPermission = isOwnStudent || allowedRoles.includes(currentUser.role);
+
+      if (!hasPermission) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'You do not have permission to view this student\'s evidence' 
+        });
+      }
+
+      // Get approved evidences for student
+      const approvedEvidences = await Evidence.find({
+        student_id: studentId,
+        status: 'approved'
+      })
+        .populate({
+          path: 'student_id',
+          select: 'student_number full_name email class_id',
+          populate: {
+            path: 'user_id',
+            select: 'email'
+          }
+        })
+        .populate({
+          path: 'activity_id',
+          select: 'title field_id org_unit_id max_points',
+          populate: [
+            {
+              path: 'field_id',
+              select: 'name'
+            },
+            {
+              path: 'org_unit_id',
+              select: 'name'
+            }
+          ]
+        })
+        .populate({
+          path: 'approved_by',
+          select: 'email first_name last_name'
+        })
+        .sort({ verified_at: -1 });
+
+      // Calculate total points from approved evidences
+      const totalPoints = approvedEvidences.reduce((sum, evidence) => {
+        return sum + (evidence.faculty_point || 0);
+      }, 0);
+
+      res.json({
+        success: true,
+        data: {
+          student_id: studentId,
+          total_approved_evidences: approvedEvidences.length,
+          total_points: totalPoints,
+          evidences: approvedEvidences
+        }
+      });
+    } catch (err) {
+      console.error('Error getting approved evidences:', err);
+      res.status(500).json({ 
+        success: false, 
+        message: err.message 
+      });
+    }
+  },
+
+  // Get approved evidences for current authenticated student
+  async getMyApprovedEvidences(req, res) {
+    try {
+      const userId = req.user._id; // From auth middleware (user object)
+      
+      // Validate userId
+      if (!userId) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'User not authenticated' 
+        });
+      }
+
+      // Validate MongoDB ObjectId format
+      const mongoose = require('mongoose');
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid user ID format' 
+        });
+      }
+
+      // Find student profile for current user
+      const StudentProfileModel = require('../models/student_profile.model');
+      const student = await StudentProfileModel.findOne({ user_id: userId });
+      
+      if (!student) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Student profile not found' 
+        });
+      }
+
+      // Get approved evidences for current student
+      const approvedEvidences = await Evidence.find({
+        student_id: student._id,
+        status: 'approved'
+      })
+        .populate({
+          path: 'student_id',
+          select: 'student_number full_name email class_id',
+          populate: {
+            path: 'user_id',
+            select: 'email'
+          }
+        })
+        .populate({
+          path: 'activity_id',
+          select: 'title field_id org_unit_id max_points',
+          populate: [
+            {
+              path: 'field_id',
+              select: 'name'
+            },
+            {
+              path: 'org_unit_id',
+              select: 'name'
+            }
+          ]
+        })
+        .populate({
+          path: 'approved_by',
+          select: 'email first_name last_name'
+        })
+        .sort({ verified_at: -1 });
+
+      // Calculate total points from approved evidences
+      const totalPoints = approvedEvidences.reduce((sum, evidence) => {
+        return sum + (evidence.faculty_point || 0);
+      }, 0);
+
+      res.json({
+        success: true,
+        data: {
+          student_id: student._id,
+          student_number: student.student_number,
+          total_approved_evidences: approvedEvidences.length,
+          total_points: totalPoints,
+          evidences: approvedEvidences
+        }
+      });
+    } catch (err) {
+      console.error('Error getting my approved evidences:', err);
+      res.status(500).json({ 
+        success: false, 
+        message: err.message 
+      });
+    }
   }
 };

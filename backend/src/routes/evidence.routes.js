@@ -7,21 +7,37 @@ const { checkPermission, checkPermissionOrClassMonitor } = require('../middlewar
 
 // Quản lý minh chứng hoạt động ngoài trường
 
-// Danh sách minh chứng (admin/staff/teacher can view)
+// 🔴 ROUTES CHUYÊN BIỆT (phải nằm trước routes với :id để tránh nhầm lẫn)
+
+// Lấy minh chứng đã duyệt cho trang kết quả điểm của sinh viên (staff/admin hoặc sinh viên xem của mình)
+router.get('/approved/my-evidences', 
+  auth,
+  evidenceController.getMyApprovedEvidences
+);
+
+// Lấy minh chứng đã duyệt của một sinh viên cụ thể (staff/admin hoặc sinh viên xem của mình)
+router.get('/approved/:studentId', 
+  auth,
+  evidenceController.getApprovedEvidencesForStudent
+);
+
+// 🟢 ROUTES CHUNG (nằm sau routes chuyên biệt)
+
+// Danh sách minh chứng (admin/staff can view)
 router.get('/', 
   auth, 
   checkPermission('evidence', 'READ'),
   evidenceController.getAllEvidences
 );
 
-// Danh sách minh chứng theo khoa (admin/staff/teacher)
+// Danh sách minh chứng theo khoa (admin/staff)
 router.get('/faculty/:facultyId', 
   auth,
   checkPermission('evidence', 'READ'),
   evidenceController.getEvidencesByFaculty
 );
 
-// Danh sách minh chứng theo classId (admin/staff/teacher/class monitor)
+// Danh sách minh chứng theo classId (admin/staff/class monitor)
 router.get('/class/:classId', 
   auth,
   checkPermission('evidence', 'READ'),
@@ -53,14 +69,14 @@ router.put('/:id',
   evidenceController.updateEvidence
 );
 
-// Duyệt minh chứng (staff/teacher)
+// Duyệt minh chứng (staff)
 router.put('/:id/approve', 
   auth, 
   checkPermissionOrClassMonitor('evidence', 'APPROVE'),
   evidenceController.approveEvidence
 );
 
-// Từ chối minh chứng (staff/teacher)
+// Từ chối minh chứng (staff)
 router.put('/:id/reject', 
   auth, 
   checkPermissionOrClassMonitor('evidence', 'REJECT'),

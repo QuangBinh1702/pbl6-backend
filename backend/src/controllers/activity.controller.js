@@ -1345,6 +1345,9 @@ module.exports = {
           
           // Convert status to Vietnamese
           activityData.status = getStatusVi(activityData.status);
+          // Add post status info
+          activityData.post_status = postMap.get(activityData._id.toString()) || false;
+          
           activityMap.set(activityData._id.toString(), {
             ...activityData,
             registration: {
@@ -1406,6 +1409,9 @@ module.exports = {
             
             // Convert status to Vietnamese
             activityData.status = getStatusVi(activityData.status);
+            // Add post status info
+            activityData.post_status = postMap.get(activityId) || false;
+            
             activityMap.set(activityId, {
               ...activityData,
               registration: null,
@@ -1741,6 +1747,29 @@ module.exports = {
     try {
       const { student_id } = req.params;
       const { status, field_id, org_unit_id, title } = req.query;
+      let postStatusFilter = null;
+
+      // ✅ Validate POST status flag if POST request body is provided
+      if (req.body && Object.keys(req.body).length > 0) {
+        // Validate POST status - must be boolean (true = posted, false = not posted)
+        if ('status' in req.body) {
+          if (typeof req.body.status !== 'boolean') {
+            return res.status(400).json({
+              success: false,
+              message: 'Invalid POST status. Must be boolean (true or false) indicating if data has been posted'
+            });
+          }
+          postStatusFilter = req.body.status;
+          console.log(`[Filter Student Activities] POST Status Filter: ${postStatusFilter ? 'Posted' : 'Not Posted'}`);
+        }
+
+        // Additional validation for any other POST fields
+        for (const key in req.body) {
+          if (key !== 'status') {
+            console.warn(`[Filter Student Activities] Unknown POST field: ${key}`);
+          }
+        }
+      }
 
       // Get all registrations for the student
       const registrations = await ActivityRegistration.find({ 
@@ -1781,6 +1810,18 @@ module.exports = {
       rejections.forEach(rej => {
         rejectionMap.set(rej.activity_id.toString(), rej);
       });
+
+      // Get all posts if post_status filter is applied
+      let postMap = new Map();
+      if (postStatusFilter !== null) {
+        const Post = require('../models/post.model');
+        const posts = await Post.find({
+          activity_id: { $in: Array.from(activityIds) }
+        });
+        posts.forEach(post => {
+          postMap.set(post.activity_id.toString(), post.status);
+        });
+      }
 
       const activities = [];
       const activityMap = new Map();
@@ -1896,7 +1937,7 @@ module.exports = {
       let filtered = activities;
 
       // Debug: Log filter parameters
-      console.log('Student filter params:', { student_id, status, field_id, org_unit_id, title });
+      console.log('Student filter params:', { student_id, status, field_id, org_unit_id, title, postStatusFilter });
 
       if (status) {
         filtered = filtered.filter(act => {
@@ -1913,6 +1954,10 @@ module.exports = {
           // Filter by activity status
           return act.status === status || act.status === statusVi;
         });
+      }
+
+      if (postStatusFilter !== null) {
+        filtered = filtered.filter(act => act.post_status === postStatusFilter);
       }
 
       if (field_id) {
@@ -1952,6 +1997,29 @@ module.exports = {
   async getActivitiesWithFilter(req, res) {
     try {
       const { status, field_id, org_unit_id, title } = req.query;
+      let postStatusFilter = null;
+
+      // ✅ Validate POST status flag if POST request body is provided
+      if (req.body && Object.keys(req.body).length > 0) {
+        // Validate POST status - must be boolean (true = posted, false = not posted)
+        if ('status' in req.body) {
+          if (typeof req.body.status !== 'boolean') {
+            return res.status(400).json({
+              success: false,
+              message: 'Invalid POST status. Must be boolean (true or false) indicating if data has been posted'
+            });
+          }
+          postStatusFilter = req.body.status;
+          console.log(`[Filter Activities] POST Status Filter: ${postStatusFilter ? 'Posted' : 'Not Posted'}`);
+        }
+
+        // Additional validation for any other POST fields
+        for (const key in req.body) {
+          if (key !== 'status') {
+            console.warn(`[Filter Activities] Unknown POST field: ${key}`);
+          }
+        }
+      }
 
       // Get all activities
       const activities = await Activity.find()
@@ -1965,6 +2033,16 @@ module.exports = {
       rejections.forEach(rej => {
         rejectionMap.set(rej.activity_id.toString(), rej);
       });
+
+      // Get all posts if post_status filter is applied
+      let postMap = new Map();
+      if (postStatusFilter !== null) {
+        const Post = require('../models/post.model');
+        const posts = await Post.find();
+        posts.forEach(post => {
+          postMap.set(post.activity_id.toString(), post.status);
+        });
+      }
 
       // Process all activities
       const processedActivities = activities.map(act => {
@@ -1992,6 +2070,10 @@ module.exports = {
 
         // Convert status to Vietnamese
         activityData.status = getStatusVi(activityData.status);
+        
+        // Add post status info
+        activityData.post_status = postMap.get(activityData._id.toString()) || false;
+        
         return activityData;
       });
 
@@ -2001,6 +2083,10 @@ module.exports = {
       if (status) {
         const statusEn = getStatusEn(status);
         filtered = filtered.filter(act => act.status === status || act.status === statusEn);
+      }
+
+      if (postStatusFilter !== null) {
+        filtered = filtered.filter(act => act.post_status === postStatusFilter);
       }
 
       if (field_id) {

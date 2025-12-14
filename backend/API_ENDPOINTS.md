@@ -18,10 +18,11 @@ Tài liệu này mô tả tất cả các API endpoints có sẵn trong hệ th�
 4. [Activities](#activities)
 5. [Activity Registration](#-activity-registration) ⭐ NEW
 6. [Points & Feedback](#points--feedback)
-7. [Communication](#communication)
-8. [System & Permissions](#system--permissions)
-9. [Statistics](#statistics)
-10. [Registration Status Detail](#-registration-status-detail-by-student-id) ⭐ NEW
+7. [Evidence (Minh Chứng)](#evidence-routes) ⭐ NEW ENDPOINTS
+8. [Communication](#communication)
+9. [System & Permissions](#system--permissions)
+10. [Statistics](#statistics)
+11. [Registration Status Detail](#-registration-status-detail-by-student-id) ⭐ NEW
 
 ---
 
@@ -1508,6 +1509,58 @@ The response format is the same as Staff Profile responses.
 - `org_unit_id` (optional): Lọc theo đơn vị tổ chức (org unit UUID)
 - `title` (optional): Tìm kiếm theo tên hoạt động (hỗ trợ tìm kiếm từ riêng, không phân biệt hoa/thường)
 
+**Request Body - POST Status Check (`POST /api/activities/filter`):**
+
+Khi gửi POST request, có thể thêm `status` flag để kiểm tra xem dữ liệu đã được POST/xử lý hay chưa:
+
+```json
+{
+  "status": true
+}
+```
+
+Hoặc:
+
+```json
+{
+  "status": false
+}
+```
+
+**Validation - POST Status Check:**
+
+- `status` (optional): Phải là boolean (`true` hoặc `false`) nếu được cung cấp
+  - `true`: Dữ liệu đã được POST/xử lý
+  - `false`: Dữ liệu chưa được POST/xử lý
+- Nếu `status` không phải boolean, API sẽ trả về lỗi 400 Bad Request
+- Nếu trường `status` không được cung cấp, API sẽ không kiểm tra POST status
+
+**Response - Invalid POST Status (không phải boolean):**
+
+```json
+{
+  "success": false,
+  "message": "Invalid POST status. Must be boolean (true or false) indicating if data has been posted"
+}
+```
+
+**Response - Valid POST Status Request:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "activity_id",
+      "title": "Hoạt động tình nguyện",
+      "status": "chưa tổ chức",
+      ...
+    }
+  ],
+  "count": 1
+}
+```
+
 **Ví dụ:**
 - Lấy tất cả hoạt động: `GET /api/activities/filter`
 - Lọc theo trạng thái: `GET /api/activities/filter?status=chưa tổ chức`
@@ -2840,18 +2893,20 @@ activity_image: [file từ máy]
 
 ### Evidence Routes (`/api/evidences`)
 
-| Method | Endpoint                            | Description                     | Auth Required | Permission Required    |
-| ------ | ----------------------------------- | ------------------------------- | ------------- | ---------------------- |
-| GET    | `/api/evidences`                    | Lấy tất cả minh chứng           | ✅            | `evidence:READ`        |
-| GET    | `/api/evidences/faculty/:facultyId` | Lấy tất cả minh chứng theo khoa | ✅            | `evidence:READ`        |
-| GET    | `/api/evidences/class/:classId`     | Lấy tất cả minh chứng trong lớp | ✅            | `evidence:READ`        |
-| GET    | `/api/evidences/student/:studentId` | Lấy minh chứng theo sinh viên   | ✅            | -                      |
-| GET    | `/api/evidences/:id`                | Lấy chi tiết minh chứng theo ID | ✅            | -                            |
-| POST   | `/api/evidences`                    | Tạo minh chứng mới              | ✅            | student                      |
-| PUT    | `/api/evidences/:id`                | Cập nhật minh chứng             | ✅            | -                            |
-| PUT    | `/api/evidences/:id/approve`        | Phê duyệt minh chứng            | ✅            | ctsv, khoa, loptruong        |
-| PUT    | `/api/evidences/:id/reject`         | Từ chối minh chứng              | ✅            | ctsv, khoa, loptruong        |
-| DELETE | `/api/evidences/:id`                | Xóa minh chứng                  | ✅            | admin, ctsv                  |
+| Method | Endpoint                                       | Description                                                  | Auth Required | Permission Required    |
+| ------ | ---------------------------------------------- | ------------------------------------------------------------ | ------------- | ---------------------- |
+| GET    | `/api/evidences`                               | Lấy tất cả minh chứng                                        | ✅            | `evidence:READ`        |
+| GET    | `/api/evidences/faculty/:facultyId`            | Lấy tất cả minh chứng theo khoa                              | ✅            | `evidence:READ`        |
+| GET    | `/api/evidences/class/:classId`                | Lấy tất cả minh chứng trong lớp                              | ✅            | `evidence:READ`        |
+| GET    | `/api/evidences/student/:studentId`            | Lấy minh chứng theo sinh viên                                | ✅            | -                      |
+| GET    | `/api/evidences/:id`                           | Lấy chi tiết minh chứng theo ID                              | ✅            | -                      |
+| GET    | `/api/evidences/approved/my-evidences`         | Lấy minh chứng đã duyệt của sinh viên hiện tại (trang điểm) | ✅            | -                      |
+| GET    | `/api/evidences/approved/:studentId`           | Lấy minh chứng đã duyệt của sinh viên (staff/admin/student)  | ✅            | -                      |
+| POST   | `/api/evidences`                               | Tạo minh chứng mới                                           | ✅            | student                |
+| PUT    | `/api/evidences/:id`                           | Cập nhật minh chứng                                          | ✅            | -                      |
+| PUT    | `/api/evidences/:id/approve`                   | Phê duyệt minh chứng                                         | ✅            | ctsv, khoa, loptruong  |
+| PUT    | `/api/evidences/:id/reject`                    | Từ chối minh chứng                                           | ✅            | ctsv, khoa, loptruong  |
+| DELETE | `/api/evidences/:id`                           | Xóa minh chứng                                               | ✅            | admin, ctsv            |
 
 **Request Body - Create Evidence:**
 
@@ -3005,6 +3060,232 @@ activity_image: [file từ máy]
   ]
 }
 ```
+
+#### Get My Approved Evidences (`GET /api/evidences/approved/my-evidences`) ⭐ NEW
+
+Lấy danh sách minh chứng **đã được duyệt** của sinh viên hiện tại. Được sử dụng để hiển thị trên **trang kết quả điểm** của sinh viên.
+
+**Authentication:** Yêu cầu JWT token
+
+**URL Parameters:** Không có
+
+**Query Parameters:** Không có
+
+**Request:**
+
+```bash
+curl -X GET "http://localhost:5000/api/evidences/approved/my-evidences" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json"
+```
+
+**Response (Success):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "student_id": "507f1f77bcf86cd799439011",
+    "student_number": "20210001",
+    "total_approved_evidences": 3,
+    "total_points": 25,
+    "evidences": [
+      {
+        "_id": "507f1f77bcf86cd799439012",
+        "student_id": {
+          "_id": "507f1f77bcf86cd799439011",
+          "student_number": "20210001",
+          "full_name": "Nguyễn Văn A",
+          "email": "a@student.edu.vn",
+          "user_id": {
+            "_id": "507f1f77bcf86cd799439010",
+            "email": "a@student.edu.vn"
+          }
+        },
+        "title": "Tham gia hoạt động tình nguyện",
+        "description": "Tham gia dọn vệ sinh khuôn viên trường",
+        "file_url": "https://example.com/evidence1.pdf",
+        "submitted_at": "2024-12-01T10:30:00Z",
+        "status": "approved",
+        "verified_at": "2024-12-05T14:20:00Z",
+        "self_point": 5,
+        "faculty_point": 5,
+        "activity_id": {
+          "_id": "507f1f77bcf86cd799439013",
+          "title": "Hoạt động tình nguyện",
+          "field_id": {
+            "_id": "507f1f77bcf86cd799439014",
+            "name": "Tình nguyện"
+          },
+          "org_unit_id": {
+            "_id": "507f1f77bcf86cd799439015",
+            "name": "Đoàn thanh niên"
+          },
+          "max_points": 10
+        },
+        "approved_by": {
+          "_id": "507f1f77bcf86cd799439016",
+          "email": "staff@university.edu.vn",
+          "first_name": "Trần",
+          "last_name": "Văn B"
+        },
+        "feedback": "Minh chứng rõ ràng, đủ điều kiện duyệt"
+      }
+    ]
+  }
+}
+```
+
+**Response (Student Profile Not Found):**
+
+```json
+{
+  "success": false,
+  "message": "Student profile not found"
+}
+```
+
+**Error Responses:**
+
+- `401`: User not authenticated
+- `500`: Error message
+
+**Lưu ý:**
+
+- ✅ Chỉ lấy minh chứng với `status = 'approved'`
+- ✅ Sắp xếp theo `verified_at` giảm dần (mới nhất trước)
+- ✅ Tự động tính tổng `total_points` từ `faculty_point`
+- ✅ Populate đầy đủ thông tin: student, activity, approver
+- ✅ Không cần permission check - sinh viên xem được minh chứng của chính mình
+
+---
+
+#### Get Student Approved Evidences (`GET /api/evidences/approved/:studentId`) ⭐ NEW
+
+Lấy danh sách minh chứng **đã được duyệt** của một sinh viên cụ thể.
+
+**Được sử dụng bởi**:
+- 👔 **Staff/Admin**: Xem kết quả điểm của bất kỳ sinh viên nào
+- 👨‍🎓 **Sinh viên**: Xem kết quả điểm của **chính mình**
+
+**Authentication:** Yêu cầu JWT token
+
+**URL Parameters:**
+
+| Tham số | Kiểu | Bắt buộc | Mô tả |
+|---------|------|----------|-------|
+| `studentId` | ObjectId | ✅ | ID của sinh viên (MongoDB ObjectId format) |
+
+**Request:**
+
+```bash
+curl -X GET "http://localhost:5000/api/evidences/approved/507f1f77bcf86cd799439011" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json"
+```
+
+**Response (Success):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "student_id": "507f1f77bcf86cd799439011",
+    "total_approved_evidences": 3,
+    "total_points": 25,
+    "evidences": [
+      {
+        "_id": "507f1f77bcf86cd799439012",
+        "student_id": {
+          "_id": "507f1f77bcf86cd799439011",
+          "student_number": "20210001",
+          "full_name": "Nguyễn Văn A",
+          "email": "a@student.edu.vn"
+        },
+        "title": "Tham gia hoạt động tình nguyện",
+        "file_url": "https://example.com/evidence1.pdf",
+        "submitted_at": "2024-12-01T10:30:00Z",
+        "status": "approved",
+        "verified_at": "2024-12-05T14:20:00Z",
+        "faculty_point": 5,
+        "activity_id": {
+          "_id": "507f1f77bcf86cd799439013",
+          "title": "Hoạt động tình nguyện"
+        },
+        "approved_by": {
+          "_id": "507f1f77bcf86cd799439016",
+          "email": "staff@university.edu.vn",
+          "first_name": "Trần",
+          "last_name": "Văn B"
+        }
+      }
+    ]
+  }
+}
+```
+
+**Error Responses:**
+
+- `400 Bad Request` - studentId rỗng hoặc format không hợp lệ
+  ```json
+  {
+    "success": false,
+    "message": "studentId is required and cannot be empty"
+  }
+  ```
+  
+  Hoặc:
+  ```json
+  {
+    "success": false,
+    "message": "Invalid studentId format"
+  }
+  ```
+
+- `401 Unauthorized` - User không tồn tại
+  ```json
+  {
+    "success": false,
+    "message": "User not found"
+  }
+  ```
+
+- `403 Forbidden` - Không có quyền xem minh chứng của sinh viên này
+  ```json
+  {
+    "success": false,
+    "message": "You do not have permission to view this student's evidence"
+  }
+  ```
+
+- `404 Not Found` - Student không tồn tại
+  ```json
+  {
+    "success": false,
+    "message": "Student not found"
+  }
+  ```
+
+- `500 Internal Server Error` - Lỗi server
+
+**Lưu ý - Permission Check:**
+
+- **Sinh viên**: Chỉ xem được minh chứng của **chính mình**
+  - Nếu cố xem của sinh viên khác → 403 Forbidden
+- **Staff/Admin**: Xem được minh chứng của **bất kỳ sinh viên nào**
+- Hệ thống kiểm tra:
+  ```javascript
+  const isOwnStudent = student.user_id === currentUser._id;
+  const allowedRoles = ['admin', 'staff'];
+  const hasPermission = isOwnStudent || allowedRoles.includes(currentUser.role);
+  ```
+
+**Lưu ý - Data Validation:**
+
+- `studentId` phải có định dạng MongoDB ObjectId hợp lệ (24 ký tự hex)
+- Chỉ lấy minh chứng với `status = 'approved'`
+- Sắp xếp theo `verified_at` giảm dần (mới nhất trước)
+- Tự động tính tổng `total_points` từ `faculty_point`
 
 ---
 

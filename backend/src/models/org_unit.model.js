@@ -7,7 +7,7 @@ const orgUnitSchema = new mongoose.Schema({
   },
   type: { 
     type: String, 
-    required: true 
+    required: false 
   },
   leader_id: { 
     type: mongoose.Schema.Types.ObjectId, 
