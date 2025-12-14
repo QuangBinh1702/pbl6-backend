@@ -675,6 +675,11 @@
               status: post_status === "true" ? true : false,
             });
             console.log("[Search All Activities] POST body:", options.body);
+            console.log("[Search All Activities] Request URL:", url);
+            console.log(
+              "[Search All Activities] Request method:",
+              options.method
+            );
           }
 
           const response = await fetch(
@@ -741,8 +746,16 @@
             options.body = JSON.stringify({
               status: post_status === "true" ? true : false,
             });
+            console.log("[Search Student Activities] POST body:", options.body);
+            console.log("[Search Student Activities] Request URL:", url);
+            console.log(
+              "[Search Student Activities] Request method:",
+              options.method
+            );
           }
 
+          console.log("[Search Student Activities] Final URL:", url);
+          console.log("[Search Student Activities] Final options:", options);
           const response = await fetch(url, options);
 
           if (!response.ok) {
