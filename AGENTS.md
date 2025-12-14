@@ -43,7 +43,8 @@
 - **Auth:** JWT tokens in Authorization header; Permission-based access control
 - **Code Comments:** Vietnamese comments in some files; keep consistent
 
-## rule# File Creation
+## rule# File Creation & Commands
 
 - Do NOT create .md files unless explicitly requested by the user
 - Only create documentation files when the user specifically asks for them
+- Do NOT run any commands without explicit user confirmation - always ask before executing
