@@ -1,0 +1,167 @@
+.feedback-widget {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.feedback-widget h4 {
+  margin: 0 0 0.8rem 0;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.feedback-error {
+  background: #ffe0e0;
+  border: 1px solid #ffb3b3;
+  color: #c92a2a;
+  padding: 0.6rem;
+  border-radius: 0.3rem;
+  margin-bottom: 0.8rem;
+  font-size: 0.85rem;
+}
+
+.feedback-error p {
+  margin: 0;
+}
+
+.rating-stars {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.star {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  padding: 0.2rem;
+  opacity: 0.4;
+}
+
+.star:hover {
+  transform: scale(1.2);
+  opacity: 0.7;
+}
+
+.star.active {
+  opacity: 1;
+}
+
+.star:disabled {
+  cursor: not-allowed;
+}
+
+.issue-selection {
+  margin-bottom: 0.8rem;
+}
+
+.issue-selection label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.issue-select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 0.3rem;
+  font-size: 0.9rem;
+  background-color: white;
+  cursor: pointer;
+}
+
+.issue-select:disabled {
+  background-color: #f0f0f0;
+  cursor: not-allowed;
+}
+
+.suggestion-textarea {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 0.3rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 0.8rem;
+}
+
+.suggestion-textarea:disabled {
+  background-color: #f0f0f0;
+  cursor: not-allowed;
+}
+
+.feedback-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-submit-feedback,
+.btn-skip-feedback {
+  flex: 1;
+  padding: 0.6rem;
+  border: none;
+  border-radius: 0.3rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.btn-submit-feedback {
+  background: #667eea;
+  color: white;
+}
+
+.btn-submit-feedback:hover:not(:disabled) {
+  background: #5568d3;
+}
+
+.btn-skip-feedback {
+  background: #e0e0e0;
+  color: #666;
+}
+
+.btn-skip-feedback:hover:not(:disabled) {
+  background: #d0d0d0;
+}
+
+.btn-submit-feedback:disabled,
+.btn-skip-feedback:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.feedback-success {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+  padding: 0.8rem;
+  border-radius: 0.3rem;
+  text-align: center;
+  animation: slideUp 0.3s ease-out;
+}
+
+.feedback-success p {
+  margin: 0;
+  font-weight: 500;
+}

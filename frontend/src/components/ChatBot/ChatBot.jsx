@@ -89,7 +89,7 @@ const ChatBot = () => {
       const botResponse = {
         id: messages.length + 2,
         type: 'bot',
-        content: data.data?.response || data.data?.extracted_text || 'Không thể xử lý yêu cầu',
+        content: data.data?.answer || data.data?.response || data.data?.extracted_text || 'Không thể xử lý yêu cầu',
         timestamp: new Date(),
         suggested_questions: data.data?.suggested_questions || [],
         regulations: data.data?.regulations || [],

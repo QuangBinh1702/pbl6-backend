@@ -1,72 +1,126 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import ChatBot from './components/ChatBot';
+import ChatPage from './pages/ChatPage';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [userInfo, setUserInfo] = useState(null);
+  const [token, setToken] = useState(null);
 
   useEffect(() => {
     // Check if token exists in localStorage
-    const token = localStorage.getItem('token');
-    if (token) {
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      setToken(storedToken);
       setIsLoggedIn(true);
-      // Optionally fetch user info
-      fetchUserInfo(token);
+    } else {
+      // For testing, we can set a mock token
+      // In production, this would come from a login page
+      setIsLoggedIn(false);
     }
     setLoading(false);
   }, []);
 
-  const fetchUserInfo = async (token) => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/chatbot/my-info`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUserInfo(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching user info:', error);
-    }
-  };
-
-  const handleLogin = (token) => {
-    localStorage.setItem('token', token);
+  const handleLogin = (newToken) => {
+    localStorage.setItem('token', newToken);
+    setToken(newToken);
     setIsLoggedIn(true);
-    fetchUserInfo(token);
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    setToken(null);
     setIsLoggedIn(false);
-    setUserInfo(null);
   };
 
   if (loading) {
     return (
       <div className="loading-container">
         <div className="spinner"></div>
-        <p>Loading...</p>
+        <p>⏳ Loading...</p>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="login-container">
+        <div className="login-card">
+          <h1>🤖 Chatbot Hỏi Đáp</h1>
+          <p>Hệ thống Q&A thông minh</p>
+          
+          <div className="login-info">
+            <p>Để testing, vui lòng nhập token JWT:</p>
+            <input
+              type="password"
+              id="token-input"
+              placeholder="Dán JWT token tại đây..."
+              style={{
+                width: '100%',
+                padding: '0.8rem',
+                marginBottom: '1rem',
+                border: '1px solid #ddd',
+                borderRadius: '0.5rem',
+                fontSize: '0.9rem'
+              }}
+            />
+            <button
+              onClick={() => {
+                const tokenInput = document.getElementById('token-input');
+                if (tokenInput.value.trim()) {
+                  handleLogin(tokenInput.value);
+                } else {
+                  alert('Vui lòng nhập token');
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '0.8rem',
+                background: '#667eea',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.5rem',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                marginBottom: '1rem'
+              }}
+            >
+              ➤ Đăng nhập
+            </button>
+          </div>
+
+          <div className="demo-section">
+            <p style={{ fontSize: '0.9rem', color: '#999' }}>
+              💡 Hoặc bạn có thể test API trực tiếp thông qua Postman hoặc curl
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="App">
-      {isLoggedIn ? (
-        <>
-          <Dashboard userInfo={userInfo} onLogout={handleLogout} />
-          <ChatBot />
-        </>
-      ) : (
-        <Login onLogin={handleLogin} />
-      )}
+      <ChatPage />
+      <button
+        onClick={handleLogout}
+        style={{
+          position: 'absolute',
+          top: '1rem',
+          right: '1rem',
+          background: 'rgba(255, 255, 255, 0.2)',
+          color: 'white',
+          border: 'none',
+          padding: '0.6rem 1.2rem',
+          borderRadius: '0.5rem',
+          cursor: 'pointer',
+          fontSize: '0.9rem',
+          zIndex: 50
+        }}
+      >
+        🚪 Đăng xuất
+      </button>
     </div>
   );
 }

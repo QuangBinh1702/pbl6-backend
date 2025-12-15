@@ -117,9 +117,14 @@ app.use('/api/chatbot', (req, res, next) => {
   next();
 });
 
-// Use only enhanced route (new version)
-// app.use('/api/chatbot', require('./routes/chatbot.route')); // OLD - disabled
-app.use('/api/chatbot', require('./routes/chatbot.enhanced.route')); // NEW - active
+// Phase 1 Refactored routes (clean service-based architecture)
+app.use('/api/chatbot', require('./routes/chatbot.routes')); // PHASE 1 - refactored
+
+// Phase 4 Advanced features routes
+app.use('/api/chatbot', require('./routes/chatbot.phase4.routes')); // PHASE 4 - advanced features
+
+// Legacy enhanced route (kept for backward compatibility)
+// app.use('/api/chatbot', require('./routes/chatbot.enhanced.route')); // LEGACY - disabled
 
 // System
 app.use('/api/permissions', require('./routes/permission.routes'));
