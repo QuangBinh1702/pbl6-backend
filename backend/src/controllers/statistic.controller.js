@@ -1,4 +1,5 @@
 // Thống kê
+const mongoose = require('mongoose');
 const Activity = require('../models/activity.model');
 const Evidence = require('../models/evidence.model');
 const PvcdRecord = require('../models/pvcd_record.model');
@@ -279,13 +280,55 @@ module.exports = {
     try {
       const pageNum = parseInt(req.query.page) || 1;
       const limitNum = parseInt(req.query.limit) || 10;
-      const { student_number, faculty_id, class_id, year } = req.query;
+      let { student_number, faculty_id, class_id, year } = req.query;
+
+      // Validate and sanitize inputs
+      if (pageNum < 1) {
+        return res.status(400).json({
+          success: false,
+          message: 'Page number must be >= 1'
+        });
+      }
+
+      if (limitNum < 1 || limitNum > 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Limit must be between 1 and 100'
+        });
+      }
+
+      // Validate ObjectIds
+      if (faculty_id && !mongoose.Types.ObjectId.isValid(faculty_id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid faculty_id format'
+        });
+      }
+
+      if (class_id && !mongoose.Types.ObjectId.isValid(class_id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid class_id format'
+        });
+      }
+
+      // Validate year
+      if (year) {
+        const yearNum = parseInt(year);
+        if (isNaN(yearNum) || yearNum < 1900 || yearNum > 2100) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid year format (must be between 1900 and 2100)'
+          });
+        }
+        year = yearNum;
+      }
 
       // Build filter for PVCD records
       const filter = {};
 
       if (year) {
-        filter.year = parseInt(year);
+        filter.year = year;
       }
 
       // If searching by student_number, class_id, or faculty_id, we need to first find the student
@@ -299,21 +342,19 @@ module.exports = {
           studentFilter.student_number = { $regex: student_number, $options: 'i' };
         }
 
-        // Search by class
-        if (class_id) {
-          studentFilter.class_id = class_id;
-        }
+        // Determine which classes to filter by
+        let classesToUse = [];
 
-        // Search by faculty (need to get students from that faculty's classes)
-        if (faculty_id) {
+        // If class_id is provided, use it directly
+        if (class_id) {
+          classesToUse = [class_id];
+        } else if (faculty_id) {
+          // If only faculty_id is provided (no class_id), get all classes from that faculty
           try {
-            // First get all classes from this faculty
             const classesInFaculty = await Class.find({ falcuty_id: faculty_id }).select('_id');
-            const classIds = classesInFaculty.map(c => c._id);
+            classesToUse = classesInFaculty.map(c => c._id);
             
-            if (classIds.length > 0) {
-              studentFilter.class_id = { $in: classIds };
-            } else {
+            if (classesToUse.length === 0) {
               // No classes in this faculty
               return res.json({
                 success: true,
@@ -338,27 +379,13 @@ module.exports = {
             }
           } catch (err) {
             console.error('Error getting classes by faculty:', err);
-            return res.json({
-              success: true,
-              message: 'Lấy thống kê điểm thành công',
-              data: {
-                 records: [],
-                 statistics: {
-                   total_students: 0,
-                   total_points: 0,
-                   average_points: '0.00',
-                   max_points: 0,
-                   min_points: 0
-                 },
-                 pagination: {
-                   page: pageNum,
-                   limit: limitNum,
-                   total: 0,
-                   totalPages: 0
-                 }
-               }
-            });
+            throw err;
           }
+        }
+
+        // Apply class filter if we have classes to filter by
+        if (classesToUse.length > 0) {
+          studentFilter.class_id = classesToUse.length === 1 ? classesToUse[0] : { $in: classesToUse };
         }
 
         // Find students matching the filters
@@ -403,6 +430,9 @@ module.exports = {
 
       // Get PVCD records with population
       const records = await PvcdRecord.find(filter)
+        .sort({ year: -1 }) // Sort BEFORE populate
+        .skip(skip)
+        .limit(limitNum)
         .populate({
           path: 'student_id',
           select: 'student_number full_name email phone enrollment_year isClassMonitor class_id user_id',
@@ -423,9 +453,6 @@ module.exports = {
             }
           ]
         })
-        .sort({ year: -1, 'student_id.student_number': 1 })
-        .skip(skip)
-        .limit(limitNum)
         .lean();
 
       // Transform records to include nested faculty info
@@ -465,7 +492,7 @@ module.exports = {
         };
       });
 
-      // Calculate statistics (from all matching records, not just current page)
+      // Calculate statistics from ALL matching records (not just current page)
       let statistics = {
         total_students: 0,
         total_points: 0,
@@ -474,15 +501,29 @@ module.exports = {
         min_points: 0
       };
 
-      if (transformedRecords.length > 0) {
-        const points = transformedRecords.map(r => r.total_point);
-        const uniqueStudents = new Set(transformedRecords.map(r => r.student._id.toString()));
-        
-        statistics.total_students = uniqueStudents.size;
-        statistics.total_points = points.reduce((sum, p) => sum + p, 0);
-        statistics.average_points = (statistics.total_points / transformedRecords.length).toFixed(2);
-        statistics.max_points = Math.max(...points);
-        statistics.min_points = Math.min(...points);
+      if (total > 0) {
+        // Get ALL matching records for statistics (no pagination)
+        const allRecords = await PvcdRecord.find(filter)
+          .populate({
+            path: 'student_id',
+            select: '_id student_number full_name email phone enrollment_year isClassMonitor class_id user_id'
+          })
+          .lean();
+
+        if (allRecords.length > 0) {
+          const validRecords = allRecords.filter(r => r.student_id && r.total_point !== undefined && r.total_point !== null);
+          
+          if (validRecords.length > 0) {
+            const points = validRecords.map(r => r.total_point).filter(p => p !== null && p !== undefined);
+            const uniqueStudents = new Set(validRecords.map(r => r.student_id._id.toString()));
+            
+            statistics.total_students = uniqueStudents.size;
+            statistics.total_points = points.reduce((sum, p) => sum + (parseFloat(p) || 0), 0);
+            statistics.average_points = points.length > 0 ? (statistics.total_points / points.length).toFixed(2) : '0.00';
+            statistics.max_points = points.length > 0 ? Math.max(...points) : 0;
+            statistics.min_points = points.length > 0 ? Math.min(...points) : 0;
+          }
+        }
       }
 
       res.json({
