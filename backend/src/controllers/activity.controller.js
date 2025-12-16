@@ -811,7 +811,7 @@ module.exports = {
       
       // Handle requirements update
       const requirementsWarnings = [];
-      if (Array.isArray(requirements)) {
+      if (requirements !== undefined && requirements !== null && Array.isArray(requirements)) {
         // Delete all existing requirements for this activity
         await ActivityEligibility.deleteMany({ activity_id: activity._id });
         
@@ -865,9 +865,18 @@ module.exports = {
         await updateActivityStatusBasedOnTime(activity);
       }
       
+      // Get updated requirements to return in response
+      const updatedRequirements = await getActivityRequirementsData(activity._id);
+      
       // Transform activity to return Vietnamese status
       const transformedActivity = transformActivity(activity);
-      const response = { success: true, data: transformedActivity };
+      const response = { 
+        success: true, 
+        data: {
+          ...transformedActivity,
+          requirements: updatedRequirements
+        }
+      };
       if (requirementsWarnings.length > 0) {
         response.warnings = requirementsWarnings;
       }

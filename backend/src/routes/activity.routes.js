@@ -36,11 +36,7 @@ router.get('/student/:studentId',
 // GET /student/:student_id/filter - Filter student activities (requires auth)
 router.get('/student/:student_id/filter', 
   auth, 
-  (req, res, next) => {
-    // Check if user has either activity_registration:READ or attendance:READ permission
-    req.requiredPermissions = ['activity_registration:READ', 'attendance:READ'];
-    next();
-  },
+  checkPermission('activity_registration', 'READ'),
   activityController.getStudentActivitiesWithFilter
 );
 

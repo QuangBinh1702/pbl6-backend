@@ -1449,7 +1449,7 @@ The response format is the same as Staff Profile responses.
 }
 ```
 
-**Request Body - Update Activity:**
+**Request Body - Update Activity (Postman Raw JSON):**
 
 ```json
 {
@@ -1462,11 +1462,60 @@ The response format is the same as Staff Profile responses.
   "registration_open": "2024-01-10T00:00:00.000Z",
   "registration_close": "2024-01-15T23:59:59.000Z",
   "requires_approval": false,
-  "org_unit_id": "org_unit_id_here",
-  "field_id": "field_id_here",
-  "activity_image": "https://example.com/image_updated.jpg"
+  "org_unit_id": "67a1b2c3d4e5f6g7h8i9j0k1",
+  "field_id": "67b2c3d4e5f6g7h8i9j0k1l2",
+  "activity_image": "https://example.com/image_updated.jpg",
+  "requirements": [
+    {
+      "type": "cohort",
+      "id": "67c3d4e5f6g7h8i9j0k1l2m3"
+    },
+    {
+      "type": "faculty",
+      "id": "67d4e5f6g7h8i9j0k1l2m3n4"
+    }
+  ]
 }
 ```
+
+**Cách dùng Postman:**
+1. Method: `PUT`
+2. URL: `http://localhost:5000/api/activities/{activity_id}`
+3. Tab "Headers": Thêm `Authorization: Bearer {your_jwt_token}`
+4. Tab "Body": Chọn `raw` → `JSON` → Paste code trên
+5. Thay `org_unit_id`, `field_id`, `requirements[].id` bằng ObjectId thực tế từ database
+
+**Hoặc để request chỉ update requirements:**
+
+```json
+{
+  "requirements": [
+    {
+      "type": "cohort",
+      "id": "67c3d4e5f6g7h8i9j0k1l2m3"
+    },
+    {
+      "type": "faculty",
+      "id": "67d4e5f6g7h8i9j0k1l2m3n4"
+    }
+  ]
+}
+```
+
+**Để reset về tất cả khoa/khóa (xóa requirements):**
+
+```json
+{
+  "requirements": []
+}
+```
+
+**Lưu ý - Update Requirements:**
+- `requirements` là tùy chọn
+- **Nếu không gửi `requirements`** → giữ nguyên requirements cũ (không thay đổi)
+- **Nếu gửi `requirements: []`** (mảng rỗng) → xóa tất cả requirements → hoạt động dành cho **TẤT CẢ khoa và khóa** (như lúc tạo không có requirements)
+- **Nếu gửi `requirements` với các item** → cập nhật thành những yêu cầu mới (ví dụ: chỉ khóa 2022 và khoa CNTT)
+- Mỗi requirement cần `type` ('faculty' hoặc 'cohort') và `id` (MongoDB ObjectId)
 
 **Request Body - Approve Activity (tùy chọn):**
 
