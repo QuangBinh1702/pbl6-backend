@@ -811,52 +811,84 @@ module.exports = {
       
       // Handle requirements update
       const requirementsWarnings = [];
+      let requirementsUpdated = false;
+      
       if (requirements !== undefined && requirements !== null && Array.isArray(requirements)) {
-        // Delete all existing requirements for this activity
-        await ActivityEligibility.deleteMany({ activity_id: activity._id });
+        // Get existing requirements to compare
+        const existingRequirements = await ActivityEligibility.find({ activity_id: activity._id });
         
-        // Create new requirements if provided
-        if (requirements.length > 0) {
-          for (const reqItem of requirements) {
-            if (!reqItem.type) {
-              requirementsWarnings.push(`Requirement thiếu trường 'type'`);
-              continue;
-            }
+        // Helper function to normalize requirements for comparison
+        const normalizeRequirements = (reqs) => {
+          return reqs.map(r => `${r.type}:${r.reference_id || r.id}`).sort();
+        };
+        
+        // Compare with new requirements
+        const existingNormalized = normalizeRequirements(
+          existingRequirements.map(r => ({
+            type: r.type,
+            reference_id: r.reference_id
+          }))
+        );
+        
+        const newNormalized = normalizeRequirements(
+          requirements.map(r => ({
+            type: r.type,
+            reference_id: r.id
+          }))
+        );
+        
+        // Only update if requirements actually changed
+        const requirementsChanged = existingNormalized.length !== newNormalized.length || 
+                                   !existingNormalized.every((val, idx) => val === newNormalized[idx]);
+        
+        if (requirementsChanged) {
+          // Delete all existing requirements for this activity
+          await ActivityEligibility.deleteMany({ activity_id: activity._id });
+          
+          // Create new requirements if provided
+          if (requirements.length > 0) {
+            for (const reqItem of requirements) {
+              if (!reqItem.type) {
+                requirementsWarnings.push(`Requirement thiếu trường 'type'`);
+                continue;
+              }
 
-            if (reqItem.type === 'faculty') {
-              if (!reqItem.id) {
-                requirementsWarnings.push(`Requirement type 'faculty' thiếu trường 'id'`);
-                continue;
-              }
-              const falcuty = await Falcuty.findById(reqItem.id);
-              if (falcuty) {
-                await ActivityEligibility.create({
-                  activity_id: activity._id,
-                  type: 'faculty',
-                  reference_id: falcuty._id
-                });
+              if (reqItem.type === 'faculty') {
+                if (!reqItem.id) {
+                  requirementsWarnings.push(`Requirement type 'faculty' thiếu trường 'id'`);
+                  continue;
+                }
+                const falcuty = await Falcuty.findById(reqItem.id);
+                if (falcuty) {
+                  await ActivityEligibility.create({
+                    activity_id: activity._id,
+                    type: 'faculty',
+                    reference_id: falcuty._id
+                  });
+                } else {
+                  requirementsWarnings.push(`Không tìm thấy khoa với id: "${reqItem.id}"`);
+                }
+              } else if (reqItem.type === 'cohort') {
+                if (!reqItem.id) {
+                  requirementsWarnings.push(`Requirement type 'cohort' thiếu trường 'id'`);
+                  continue;
+                }
+                const cohort = await Cohort.findById(reqItem.id);
+                if (cohort) {
+                  await ActivityEligibility.create({
+                    activity_id: activity._id,
+                    type: 'cohort',
+                    reference_id: cohort._id
+                  });
+                } else {
+                  requirementsWarnings.push(`Không tìm thấy khóa với id: "${reqItem.id}"`);
+                }
               } else {
-                requirementsWarnings.push(`Không tìm thấy khoa với id: "${reqItem.id}"`);
+                requirementsWarnings.push(`Requirement type không hợp lệ: "${reqItem.type}". Chỉ chấp nhận 'faculty' hoặc 'cohort'`);
               }
-            } else if (reqItem.type === 'cohort') {
-              if (!reqItem.id) {
-                requirementsWarnings.push(`Requirement type 'cohort' thiếu trường 'id'`);
-                continue;
-              }
-              const cohort = await Cohort.findById(reqItem.id);
-              if (cohort) {
-                await ActivityEligibility.create({
-                  activity_id: activity._id,
-                  type: 'cohort',
-                  reference_id: cohort._id
-                });
-              } else {
-                requirementsWarnings.push(`Không tìm thấy khóa với id: "${reqItem.id}"`);
-              }
-            } else {
-              requirementsWarnings.push(`Requirement type không hợp lệ: "${reqItem.type}". Chỉ chấp nhận 'faculty' hoặc 'cohort'`);
             }
           }
+          requirementsUpdated = true;
         }
       }
       
@@ -877,6 +909,15 @@ module.exports = {
           requirements: updatedRequirements
         }
       };
+      
+      // Add info about whether requirements were updated
+      if (requirements !== undefined && requirements !== null && Array.isArray(requirements)) {
+        response.requirementsUpdated = requirementsUpdated;
+        if (!requirementsUpdated) {
+          response.message = 'Requirements không có thay đổi (giống với dữ liệu cũ)';
+        }
+      }
+      
       if (requirementsWarnings.length > 0) {
         response.warnings = requirementsWarnings;
       }
@@ -942,6 +983,31 @@ module.exports = {
       activity.approved_at = new Date();
       
       await activity.save();
+
+      // Send notification to activity creator when activity is approved
+      try {
+        const Notification = require('../models/notification.model');
+        const statusVi = getStatusVi(newStatus);
+        
+        const notificationTitle = `Hoạt động "${activity.title}" đã được phê duyệt`;
+        const notificationContent = `Hoạt động "${activity.title}" của bạn đã được phê duyệt. Trạng thái: ${statusVi}`;
+
+        await Notification.create({
+          title: notificationTitle,
+          content: notificationContent,
+          published_date: new Date(),
+          notification_type: 'activity',
+          icon_type: 'check_circle',
+          target_audience: 'specific',
+          target_user_ids: [activity.created_by],
+          created_by: req.user?.id || null
+        });
+
+        console.log(`Notification created for activity creator about approved activity`);
+      } catch (notifErr) {
+        console.error('Error creating activity approval notification:', notifErr);
+        // Don't fail the approval if notification fails
+      }
       
       // Transform activity to return Vietnamese status
       const transformedActivity = transformActivity(activity);
@@ -1521,6 +1587,30 @@ module.exports = {
       // Update activity status to rejected
       activity.status = 'rejected';
       await activity.save();
+
+      // Send notification to activity creator when activity is rejected
+      try {
+        const Notification = require('../models/notification.model');
+        
+        const notificationTitle = `Hoạt động "${activity.title}" bị từ chối`;
+        const notificationContent = `Hoạt động "${activity.title}" của bạn bị từ chối. Lý do: ${reason.trim()}`;
+
+        await Notification.create({
+          title: notificationTitle,
+          content: notificationContent,
+          published_date: new Date(),
+          notification_type: 'activity',
+          icon_type: 'cancel',
+          target_audience: 'specific',
+          target_user_ids: [activity.created_by],
+          created_by: req.user?.id || null
+        });
+
+        console.log(`Notification created for activity creator about rejected activity`);
+      } catch (notifErr) {
+        console.error('Error creating activity rejection notification:', notifErr);
+        // Don't fail the rejection if notification fails
+      }
 
       // Populate rejection data
       const populatedRejection = await ActivityRejection.findById(rejection._id)

@@ -137,6 +137,32 @@ module.exports = {
       
       await evidence.save();
       await evidence.populate('student_id');
+
+      // Send notification to staff/admin when new evidence is submitted
+      try {
+        const Notification = require('../models/notification.model');
+        const studentInfo = evidence.student_id;
+        
+        const notificationTitle = `Minh chứng mới cần duyệt`;
+        const notificationContent = `Sinh viên ${studentInfo.full_name || studentInfo.student_number} đã nộp minh chứng: "${title}"`;
+
+        await Notification.create({
+          title: notificationTitle,
+          content: notificationContent,
+          published_date: new Date(),
+          notification_type: 'activity',
+          icon_type: 'document',
+          target_audience: 'staff',
+          target_user_ids: [],
+          created_by: req.user?.id || null
+        });
+
+        console.log(`Notification created for staff/admin about new evidence submission`);
+      } catch (notifErr) {
+        console.error('Error creating evidence submission notification:', notifErr);
+        // Don't fail the submission if notification fails
+      }
+
       res.status(201).json({ success: true, data: evidence });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });
@@ -166,6 +192,11 @@ module.exports = {
 
   async approveEvidence(req, res) {
     try {
+      const evidence = await Evidence.findById(req.params.id)
+        .populate('student_id');
+      
+      if (!evidence) return res.status(404).json({ success: false, message: 'Evidence not found' });
+
       const updateData = { 
         status: 'approved', 
         verified_at: new Date() 
@@ -176,15 +207,44 @@ module.exports = {
         updateData.faculty_point = req.body.faculty_point;
       }
 
-      const evidence = await Evidence.findByIdAndUpdate(
+      const updatedEvidence = await Evidence.findByIdAndUpdate(
         req.params.id,
         updateData,
         { new: true }
       )
         .populate('student_id');
       
-      if (!evidence) return res.status(404).json({ success: false, message: 'Evidence not found' });
-      res.json({ success: true, data: evidence });
+      // Send notification to student when evidence is approved
+      try {
+        const Notification = require('../models/notification.model');
+        const StudentProfile = require('../models/student_profile.model');
+        
+        const studentProfile = await StudentProfile.findById(evidence.student_id._id)
+          .select('user_id');
+
+        if (studentProfile && studentProfile.user_id) {
+          const notificationTitle = `Minh chứng "${evidence.title}" đã được phê duyệt`;
+          const notificationContent = `Minh chứng "${evidence.title}" của bạn đã được phê duyệt. Bạn nhận được ${updateData.faculty_point || evidence.faculty_point || 0} điểm.`;
+
+          await Notification.create({
+            title: notificationTitle,
+            content: notificationContent,
+            published_date: new Date(),
+            notification_type: 'score_update',
+            icon_type: 'check_circle',
+            target_audience: 'specific',
+            target_user_ids: [studentProfile.user_id],
+            created_by: req.user?.id || null
+          });
+
+          console.log(`Notification created for student about approved evidence`);
+        }
+      } catch (notifErr) {
+        console.error('Error creating evidence approval notification:', notifErr);
+        // Don't fail the approval if notification fails
+      }
+
+      res.json({ success: true, data: updatedEvidence });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });
     }
@@ -192,7 +252,12 @@ module.exports = {
 
   async rejectEvidence(req, res) {
     try {
-      const evidence = await Evidence.findByIdAndUpdate(
+      const evidence = await Evidence.findById(req.params.id)
+        .populate('student_id');
+      
+      if (!evidence) return res.status(404).json({ success: false, message: 'Evidence not found' });
+
+      const updatedEvidence = await Evidence.findByIdAndUpdate(
         req.params.id,
         { 
           status: 'rejected', 
@@ -202,8 +267,38 @@ module.exports = {
       )
         .populate('student_id');
       
-      if (!evidence) return res.status(404).json({ success: false, message: 'Evidence not found' });
-      res.json({ success: true, data: evidence });
+      // Send notification to student when evidence is rejected
+      try {
+        const Notification = require('../models/notification.model');
+        const StudentProfile = require('../models/student_profile.model');
+        
+        const studentProfile = await StudentProfile.findById(evidence.student_id._id)
+          .select('user_id');
+
+        if (studentProfile && studentProfile.user_id) {
+          const rejectReason = req.body.reason || 'Minh chứng không đủ điều kiện';
+          const notificationTitle = `Minh chứng "${evidence.title}" bị từ chối`;
+          const notificationContent = `Minh chứng "${evidence.title}" của bạn bị từ chối. Lý do: ${rejectReason}`;
+
+          await Notification.create({
+            title: notificationTitle,
+            content: notificationContent,
+            published_date: new Date(),
+            notification_type: 'activity',
+            icon_type: 'cancel',
+            target_audience: 'specific',
+            target_user_ids: [studentProfile.user_id],
+            created_by: req.user?.id || null
+          });
+
+          console.log(`Notification created for student about rejected evidence`);
+        }
+      } catch (notifErr) {
+        console.error('Error creating evidence rejection notification:', notifErr);
+        // Don't fail the rejection if notification fails
+      }
+
+      res.json({ success: true, data: updatedEvidence });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });
     }
