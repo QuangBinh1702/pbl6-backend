@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
 import ChatPage from './pages/ChatPage';
+import AdminPermissionPage from './pages/AdminPermissionPage';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -101,27 +103,55 @@ function App() {
   }
 
   return (
-    <div className="App">
-      <ChatPage />
-      <button
-        onClick={handleLogout}
-        style={{
+    <Router>
+      <div className="App">
+        <Routes>
+          <Route path="/admin/permissions" element={<AdminPermissionPage />} />
+          <Route path="/" element={<ChatPage />} />
+        </Routes>
+        <button
+          onClick={handleLogout}
+          style={{
+            position: 'absolute',
+            top: '1rem',
+            right: '1rem',
+            background: 'rgba(255, 255, 255, 0.2)',
+            color: 'white',
+            border: 'none',
+            padding: '0.6rem 1.2rem',
+            borderRadius: '0.5rem',
+            cursor: 'pointer',
+            fontSize: '0.9rem',
+            zIndex: 50
+          }}
+        >
+          🚪 Đăng xuất
+        </button>
+        {/* Navigation links for testing */}
+        <div style={{
           position: 'absolute',
           top: '1rem',
-          right: '1rem',
-          background: 'rgba(255, 255, 255, 0.2)',
-          color: 'white',
-          border: 'none',
-          padding: '0.6rem 1.2rem',
-          borderRadius: '0.5rem',
-          cursor: 'pointer',
-          fontSize: '0.9rem',
+          left: '1rem',
           zIndex: 50
-        }}
-      >
-        🚪 Đăng xuất
-      </button>
-    </div>
+        }}>
+          <Link to="/" style={{
+            color: 'white',
+            textDecoration: 'none',
+            marginRight: '1rem',
+            fontSize: '0.9rem'
+          }}>
+            💬 Chatbot
+          </Link>
+          <Link to="/admin/permissions" style={{
+            color: 'white',
+            textDecoration: 'none',
+            fontSize: '0.9rem'
+          }}>
+            🔐 Quản lý Quyền
+          </Link>
+        </div>
+      </div>
+    </Router>
   );
 }
 

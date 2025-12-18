@@ -89,23 +89,29 @@ module.exports = {
   staff: [
     // Activity - Quản lý hoạt động
     'activity:create', 'activity:read', 'activity:update', 
-    'activity:approve', 'activity:reject', 'activity:export',
+    // 'activity:approve', 'activity:reject', 'activity:export',
     
     // User - Quản lý người dùng sinh viên
     // 'user:create', 'user:read', 'user:update', 'user:lock', 'user:unlock',
-    'user:read', 'user:update',
+    'user:read', 
+    // 'user:update',
     
     // Attendance - Quản lý điểm danh
-    'attendance:scan', 'attendance:read', 'attendance:verify', 'attendance:export',
+    'attendance:scan', 
+    'attendance:read', 
+    'attendance:verify', 
+    'attendance:export',
     
     // Evidence - Duyệt minh chứng
-    'evidence:read', 'evidence:approve', 'evidence:reject',
+    // 'evidence:read', 
+    // 'evidence:approve', 
+    // 'evidence:reject',
     
     // Report - Báo cáo
-    'report:view_overview', 'report:view_detail', 'report:export',
+    // 'report:view_overview', 'report:view_detail', 'report:export',
     
     // Class - Quản lý lớp
-    'class:read', 'class:manage_students', 'class:attendance', 'class:report',
+    // 'class:read', 'class:manage_students', 'class:attendance', 'class:report',
     
     // PVCD Record - Quản lý điểm rèn luyện
     'pvcd_record:create', 'pvcd_record:read', 'pvcd_record:update', 'pvcd_record:adjust',
@@ -118,19 +124,19 @@ module.exports = {
     'student_feedback:read',
     
     // Student Profile - Quản lý hồ sơ sinh viên
-    'student_profile:create', 'student_profile:read', 'student_profile:update',
+    // 'student_profile:create', 'student_profile:read', 'student_profile:update',
     
     // Staff Profile - Xem đồng nghiệp
-    'staff_profile:read', 'staff_profile:update',
+    // 'staff_profile:read', 'staff_profile:update',
     
-    // Student Cohort
-    'student_cohort:create', 'student_cohort:read', 'student_cohort:delete',
+    // Student Cohort admin thôi
+    // 'student_cohort:create', 'student_cohort:read', 'student_cohort:delete',
     
-    // Cohort, Faculty, Org Unit - Xem và cập nhật
-    'cohort:read', 'cohort:update',
-    'faculty:read', 'faculty:update',
-    'org_unit:read', 'org_unit:update',
-    'field:read',
+    // Cohort, Faculty, Org Unit - Xem và cập nhật bên admin luôn
+    // 'cohort:read', 'cohort:update',
+    // 'faculty:read', 'faculty:update',
+    // 'org_unit:read', 'org_unit:update',
+    // 'field:read',
     
     // Post - Quản lý bài đăng
     'post:create', 'post:read', 'post:update', 'post:delete',

@@ -425,7 +425,7 @@ module.exports = {
       
       const responseData = {
         success: true,
-        message: 'User created successfully by admin',
+        message: `User '${username}' created successfully`,
         user: {
           id: user._id,
           username: user.username,

@@ -128,6 +128,7 @@ app.use('/api/chatbot', require('./routes/chatbot.phase4.routes')); // PHASE 4 -
 
 // System
 app.use('/api/permissions', require('./routes/permission.routes'));
+app.use('/api/admin/permissions', require('./routes/admin_permission.routes'));
 app.use('/api/roles', require('./routes/role.routes'));
 app.use('/api/statistics', require('./routes/statistic.routes'));
 
