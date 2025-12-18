@@ -4,14 +4,59 @@ const UserActionOverride = require('../models/user_action_override.model');
 const Action = require('../models/action.model');
 const Role = require('../models/role.model');
 const User = require('../models/user.model');
+const permissionsConfig = require('../permissions.config');
+const staffPermissionsConfig = require('../staff_permissions.config');
+
+/**
+ * Determine permission level based on permissions.config.js & staff_permissions.config.js
+ * Priority: student > staff-basic > staff-optional > admin-only
+ * @param {string} resource - e.g., "activity"
+ * @param {string} actionCode - e.g., "APPROVE" or "approve"
+ * @returns {string} - "admin-only" | "staff" | "student"
+ */
+function getPermissionLevel(resource, actionCode) {
+  // Build the full permission string in format: resource:action (lowercase)
+  const fullPermission = `${resource.toLowerCase()}:${actionCode.toLowerCase()}`;
+  
+  const isInAdmin = permissionsConfig.admin.includes(fullPermission);
+  const isInStudent = permissionsConfig.student.includes(fullPermission);
+  
+  // Check staff BASIC and OPTIONAL
+  const isInStaffBasic = staffPermissionsConfig.basic.includes(fullPermission);
+  const isInStaffOptional = staffPermissionsConfig.optional.includes(fullPermission);
+  const isInStaff = isInStaffBasic || isInStaffOptional;
+
+  let level;
+  
+  // Priority 1: If student has it, anyone can toggle
+  if (isInStudent) {
+    level = 'student';
+  }
+  // Priority 2: If only staff/admin has it (not student), requires staff role
+  else if (isInStaff) {
+    level = 'staff';
+  }
+  // Priority 3: If only admin has it, requires admin role
+  else if (isInAdmin) {
+    level = 'admin-only';
+  }
+  // Fallback: treat as student-level if not found anywhere
+  else {
+    level = 'student';
+    console.warn(`⚠️ Permission not found in any config: ${fullPermission}, defaulting to 'student'`);
+  }
+
+  return level;
+}
 
 /**
  * Build a comprehensive permission matrix for a user
  * Shows what permissions user has via roles, overrides, and final effective state
+ * Permissions are grouped by role
  * 
  * @param {string|ObjectId} userId - User ID
  * @param {string|ObjectId} orgUnitId - Optional: specific org unit context
- * @returns {Promise<Object>} - Permission matrix with roles and permissions
+ * @returns {Promise<Object>} - Permission matrix with roles and permissions grouped by role
  */
 async function buildUserPermissionMatrix(userId, orgUnitId = null) {
   try {
@@ -40,17 +85,21 @@ async function buildUserPermissionMatrix(userId, orgUnitId = null) {
       .filter(ur => ur.role_id)
       .map(ur => ur.role_id._id);
 
-    // 3) Load role_actions for those roles
-    const roleActions = roleIds.length
-      ? await RoleAction.find({ role_id: { $in: roleIds } })
-          .populate('action_id')
-      : [];
-
-    const actionsGrantedByRoles = new Set(
-      roleActions
-        .filter(ra => ra.action_id && ra.action_id.is_active)
-        .map(ra => String(ra.action_id._id))
-    );
+    // 3) Load role_actions for those roles, grouped by role
+    const roleActionsMap = new Map(); // role_id => Set<action_ids>
+    if (roleIds.length > 0) {
+      const roleActions = await RoleAction.find({ role_id: { $in: roleIds } })
+        .populate('action_id');
+      
+      roleActions.forEach(ra => {
+        if (!ra.action_id || !ra.action_id.is_active) return;
+        const roleId = String(ra.role_id);
+        if (!roleActionsMap.has(roleId)) {
+          roleActionsMap.set(roleId, new Set());
+        }
+        roleActionsMap.get(roleId).add(String(ra.action_id._id));
+      });
+    }
 
     // 4) Load all overrides for this user
     const overrides = await UserActionOverride
@@ -64,30 +113,67 @@ async function buildUserPermissionMatrix(userId, orgUnitId = null) {
       overridesByActionId.set(String(ov.action_id._id), ov);
     }
 
-    // 5) Build matrix per action
-    const matrix = allActions.map(action => {
+    // 5) Build permissions grouped by role
+    const permissionsByRole = {};
+    
+    for (const userRole of (userRoles || [])) {
+      const roleId = String(userRole.role_id._id);
+      const roleName = userRole.role_id.name;
+      const roleActionsSet = roleActionsMap.get(roleId) || new Set();
+      
+      const rolePermissions = allActions.map(action => {
+        const id = String(action._id);
+        const viaRoles = roleActionsSet.has(id);
+        const override = overridesByActionId.get(id) || null;
+        const overrideType = override == null
+          ? null
+          : (override.is_granted ? 'grant' : 'revoke');
+
+        // Final decision: override if present, else role-based
+        const effective = override != null ? override.is_granted : viaRoles;
+
+        return {
+          action_id: action._id,
+          resource: action.resource,
+          action_code: action.action_code,
+          action_name: action.action_name,
+          description: action.description,
+          permission_level: getPermissionLevel(action.resource, action.action_code), // Pass both resource and action_code
+          viaRoles,
+          overrideType,       // 'grant' | 'revoke' | null
+          overrideId: override?._id || null,
+          overrideNote: override?.note || null,
+          grantedByName: override?.granted_by?.name || override?.granted_by?.username || null,
+          grantedAt: override?.granted_at || null,
+          effective
+        };
+      });
+
+      permissionsByRole[roleName] = {
+        user_role_id: userRole._id,
+        role_id: userRole.role_id._id,
+        role_name: roleName,
+        role_description: userRole.role_id.description,
+        org_unit_id: userRole.org_unit_id,
+        permissions: rolePermissions,
+        summary: {
+          totalActions: rolePermissions.length,
+          effectiveCount: rolePermissions.filter(p => p.effective).length,
+          overrideCount: rolePermissions.filter(p => p.overrideType).length,
+          grantedCount: rolePermissions.filter(p => p.overrideType === 'grant').length,
+          revokedCount: rolePermissions.filter(p => p.overrideType === 'revoke').length
+        }
+      };
+    }
+
+    // Get all unique permissions across all roles (for total count)
+    const allPermissionsFlat = allActions.map(action => {
       const id = String(action._id);
-      const viaRoles = actionsGrantedByRoles.has(id);
       const override = overridesByActionId.get(id) || null;
-      const overrideType = override == null
-        ? null
-        : (override.is_granted ? 'grant' : 'revoke');
-
-      // Final decision: override if present, else role-based
-      const effective = override != null ? override.is_granted : viaRoles;
-
+      const effective = override != null ? override.is_granted : false;
+      
       return {
         action_id: action._id,
-        resource: action.resource,
-        action_code: action.action_code,
-        action_name: action.action_name,
-        description: action.description,
-        viaRoles,
-        overrideType,       // 'grant' | 'revoke' | null
-        overrideId: override?._id || null,
-        overrideNote: override?.note || null,
-        grantedByName: override?.granted_by?.name || override?.granted_by?.username || null,
-        grantedAt: override?.granted_at || null,
         effective
       };
     });
@@ -108,13 +194,11 @@ async function buildUserPermissionMatrix(userId, orgUnitId = null) {
         role_description: ur.role_id?.description,
         org_unit_id: ur.org_unit_id
       })),
-      permissions: matrix,
+      permissionsByRole, // NEW: permissions grouped by role
       summary: {
-        totalActions: matrix.length,
-        effectiveCount: matrix.filter(p => p.effective).length,
-        overrideCount: matrix.filter(p => p.overrideType).length,
-        grantedCount: matrix.filter(p => p.overrideType === 'grant').length,
-        revokedCount: matrix.filter(p => p.overrideType === 'revoke').length
+        totalRoles: userRoles?.length || 0,
+        totalActions: allActions.length,
+        overrideCount: Array.from(overridesByActionId.values()).length
       }
     };
   } catch (error) {

@@ -80,37 +80,35 @@ module.exports = {
   // STAFF - Cán bộ/giảng viên/sinh viên tham gia tổ chức
   // Phân biệt qua org_unit_id trong user_role
   // 
-  // Bao gồm:
-  // - Phòng CTSV: Duyệt hoạt động, quản lý PVCD toàn trường, tạo hoạt động không cần duyệt, xem thống kê
-  // - Đoàn trường: Duyệt hoạt động do Khoa/CLB/Liên chi đoàn đề xuất, quản lý PVCD toàn trường, xem thống kê
-  // - Khoa: Duyệt minh chứng ngoài trường (sau lớp trưởng), quản lý lớp và sinh viên
-  // - CLB, Hội SV, Liên chi đoàn: Đề xuất hoạt động, quản lý sinh viên đăng ký tham gia
+  // ⚠️ QUAN TRỌNG: Đây là BASIC permissions (tự động có khi có staff role)
+  // ⚠️ OPTIONAL permissions (admin grant thủ công) → xem backend/src/staff_permissions.config.js
+  // 
+  // PHÂN LOẠI TỔ CHỨC:
+  // - Phòng CTSV: Duyệt hoạt động, quản lý PVCD, xem thống kê (grant thêm optional)
+  // - Đoàn trường: Duyệt hoạt động, quản lý PVCD, xem thống kê (grant thêm optional)
+  // - Khoa: Duyệt minh chứng, quản lý lớp và sinh viên (grant thêm optional)
+  // - CLB, Hội SV, Liên chi đoàn: Đề xuất hoạt động, quản lý đăng ký (basic only)
   // ============================================
   staff: [
-    // Activity - Quản lý hoạt động
+    // Activity - BASIC: Quản lý hoạt động cơ bản
     'activity:create', 'activity:read', 'activity:update', 
-    // 'activity:approve', 'activity:reject', 'activity:export',
+    // OPTIONAL (admin grant): 'activity:approve', 'activity:reject', 'activity:export',
     
-    // User - Quản lý người dùng sinh viên
-    // 'user:create', 'user:read', 'user:update', 'user:lock', 'user:unlock',
+    // User - BASIC: Chỉ xem
     'user:read', 
-    // 'user:update',
+    // OPTIONAL (admin grant): 'user:update',
+    // ADMIN-ONLY: 'user:create', 'user:delete', 'user:lock', 'user:unlock',
     
-    // Attendance - Quản lý điểm danh
-    'attendance:scan', 
-    'attendance:read', 
-    'attendance:verify', 
-    'attendance:export',
+    // Attendance - BASIC: Điểm danh
+    'attendance:scan', 'attendance:read', 'attendance:verify', 'attendance:export',
     
-    // Evidence - Duyệt minh chứng
-    // 'evidence:read', 
-    // 'evidence:approve', 
-    // 'evidence:reject',
+    // Evidence - OPTIONAL (admin grant cho Khoa/CLB):
+    // 'evidence:read', 'evidence:approve', 'evidence:reject',
     
-    // Report - Báo cáo
+    // Report - OPTIONAL (admin grant cho Phòng CTSV/Đoàn trường):
     // 'report:view_overview', 'report:view_detail', 'report:export',
     
-    // Class - Quản lý lớp
+    // Class - OPTIONAL (admin grant cho Khoa):
     // 'class:read', 'class:manage_students', 'class:attendance', 'class:report',
     
     // PVCD Record - Quản lý điểm rèn luyện
@@ -123,20 +121,20 @@ module.exports = {
     // Student Feedback - Xem phản hồi
     'student_feedback:read',
     
-    // Student Profile - Quản lý hồ sơ sinh viên
-    // 'student_profile:create', 'student_profile:read', 'student_profile:update',
+    // Student Profile - OPTIONAL (admin grant cho Khoa/Phòng CTSV):
+    // 'student_profile:read', 'student_profile:update',
+    // ADMIN-ONLY: 'student_profile:create', 'student_profile:delete',
     
-    // Staff Profile - Xem đồng nghiệp
+    // Staff Profile - OPTIONAL (admin grant):
     // 'staff_profile:read', 'staff_profile:update',
+    // ADMIN-ONLY: 'staff_profile:create', 'staff_profile:delete',
     
-    // Student Cohort admin thôi
+    // Student Cohort - ADMIN-ONLY:
     // 'student_cohort:create', 'student_cohort:read', 'student_cohort:delete',
     
-    // Cohort, Faculty, Org Unit - Xem và cập nhật bên admin luôn
-    // 'cohort:read', 'cohort:update',
-    // 'faculty:read', 'faculty:update',
-    // 'org_unit:read', 'org_unit:update',
-    // 'field:read',
+    // Cohort, Faculty, Org Unit, Field - OPTIONAL (admin grant):
+    // 'cohort:read', 'faculty:read', 'org_unit:read', 'field:read',
+    // ADMIN-ONLY: create/update/delete
     
     // Post - Quản lý bài đăng
     'post:create', 'post:read', 'post:update', 'post:delete',

@@ -304,6 +304,7 @@ async function seedPermissions() {
     
     // Import permissions config
     const permissionsConfig = require('./src/permissions.config');
+    const staffPermissionsConfig = require('./src/staff_permissions.config');
     
     // Tạo role_action
     let totalRoleActions = 0;
@@ -313,9 +314,18 @@ async function seedPermissions() {
         continue;
       }
       
-      console.log(`   🔐 ${roleName.toUpperCase()}: ${permissions.length} permissions`);
+      // ⚠️ SPECIAL HANDLING cho STAFF role
+      // Chỉ seed BASIC permissions (OPTIONAL không seed vào role_action)
+      let permissionsToSeed = permissions;
+      if (roleName === 'staff') {
+        permissionsToSeed = staffPermissionsConfig.basic;
+        console.log(`   🔐 ${roleName.toUpperCase()}: ${permissionsToSeed.length} BASIC permissions (tự động có)`);
+        console.log(`   ℹ️  ${staffPermissionsConfig.optional.length} OPTIONAL permissions (admin grant thủ công)`);
+      } else {
+        console.log(`   🔐 ${roleName.toUpperCase()}: ${permissions.length} permissions`);
+      }
       
-      for (const permission of permissions) {
+      for (const permission of permissionsToSeed) {
         const [resource, action] = permission.split(':');
         const actionCode = action.toUpperCase().replace(/_/g, '_');
         const actionKey = `${resource}:${actionCode}`;

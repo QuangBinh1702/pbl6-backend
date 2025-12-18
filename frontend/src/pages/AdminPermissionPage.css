@@ -13,3 +13,73 @@
   width: 100%;
   flex: 1;
 }
+
+/* Loading State */
+.loading-container {
+  text-align: center;
+  padding: 100px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  margin-top: 50px;
+}
+
+.loading-container .spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-container p {
+  color: #666;
+  font-size: 16px;
+}
+
+/* Access Denied */
+.access-denied-container {
+  text-align: center;
+  padding: 80px 40px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  margin-top: 50px;
+}
+
+.access-denied-icon {
+  font-size: 80px;
+  margin-bottom: 20px;
+}
+
+.access-denied-container h2 {
+  color: #e74c3c;
+  font-size: 28px;
+  margin: 0 0 15px 0;
+}
+
+.access-denied-container p {
+  color: #666;
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 10px 0;
+}
+
+.access-denied-container strong {
+  color: #667eea;
+  font-weight: 700;
+}
+
+.redirect-text {
+  margin-top: 30px;
+  font-style: italic;
+  color: #999;
+  font-size: 14px;
+}

@@ -1,72 +1,134 @@
-import apiClient from './api';
+import api from './api';
+
+const API_BASE = '/admin/permissions';
 
 /**
- * Get permission matrix for a user
- * Shows all permissions with their states (via roles, overrides, effective)
+ * Lookup user by username and get permissions grouped by role
  */
-export const getUserPermissions = async (userId, orgUnitId = null) => {
-  const params = orgUnitId ? { orgUnitId } : {};
-  const response = await apiClient.get(`/admin/permissions/users/${userId}`, { params });
-  return response.data;
+export const lookupUserByUsername = async (username) => {
+  try {
+    const response = await api.get(`${API_BASE}/lookup-user/${username}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
 /**
- * Get available permissions for a user (based on their roles)
+ * Get user permissions by ID
+ */
+export const getUserPermissions = async (userId) => {
+  try {
+    const response = await api.get(`${API_BASE}/users/${userId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Get available permissions for user
  */
 export const getAvailablePermissions = async (userId, orgUnitId = null) => {
-  const params = orgUnitId ? { orgUnitId } : {};
-  const response = await apiClient.get(`/admin/permissions/users/${userId}/available`, { params });
-  return response.data;
+  try {
+    const params = orgUnitId ? `?orgUnitId=${orgUnitId}` : '';
+    const response = await api.get(`${API_BASE}/users/${userId}/available${params}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
 /**
- * Grant a permission to a user
+ * Grant permission to user
  */
 export const grantPermission = async (userId, actionId, note = null) => {
-  const response = await apiClient.post(
-    `/admin/permissions/users/${userId}/grant/${actionId}`,
-    { note }
-  );
-  return response.data;
+  try {
+    const response = await api.post(`${API_BASE}/users/${userId}/grant/${actionId}`, {
+      note
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
 /**
- * Revoke a permission from a user
+ * Revoke permission from user
  */
 export const revokePermission = async (userId, actionId, note = null) => {
-  const response = await apiClient.post(
-    `/admin/permissions/users/${userId}/revoke/${actionId}`,
-    { note }
-  );
-  return response.data;
+  try {
+    const response = await api.post(`${API_BASE}/users/${userId}/revoke/${actionId}`, {
+      note
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
 /**
- * Delete an override (revert to role-based permissions)
+ * Delete override (revert to role-based)
  */
 export const deleteOverride = async (userId, actionId) => {
-  const response = await apiClient.delete(
-    `/admin/permissions/users/${userId}/override/${actionId}`
-  );
-  return response.data;
+  try {
+    const response = await api.delete(`${API_BASE}/users/${userId}/override/${actionId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
 /**
  * Apply multiple permission changes at once
  */
 export const applyPermissionChanges = async (userId, changes) => {
-  const response = await apiClient.patch(
-    `/admin/permissions/users/${userId}/apply-changes`,
-    { changes }
-  );
-  return response.data;
+  try {
+    const response = await api.patch(`${API_BASE}/users/${userId}/apply-changes`, {
+      changes
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-export default {
-  getUserPermissions,
-  getAvailablePermissions,
-  grantPermission,
-  revokePermission,
-  deleteOverride,
-  applyPermissionChanges
+/**
+ * Get all org units
+ */
+export const getOrgUnits = async () => {
+  try {
+    const response = await api.get(`${API_BASE}/org-units`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Get common positions
+ */
+export const getPositions = async () => {
+  try {
+    const response = await api.get(`${API_BASE}/positions`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Add role to user
+ */
+export const addRoleToUser = async (userId, roleName, orgUnitId = null, position = null) => {
+  try {
+    const response = await api.post(`${API_BASE}/users/${userId}/add-role`, {
+      roleName,
+      orgUnitId,
+      position
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };

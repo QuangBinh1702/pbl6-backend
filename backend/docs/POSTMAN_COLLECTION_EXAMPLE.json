@@ -1,0 +1,258 @@
+{
+  "info": {
+    "name": "Admin Permission Management API",
+    "description": "API endpoints for admin permission management at http://localhost:3000/admin/permissions",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/admin/permissions",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "YOUR_ADMIN_JWT_TOKEN_HERE",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "672e54a0f13c9f2e5c4a1234",
+      "type": "string"
+    },
+    {
+      "key": "actionId",
+      "value": "672e54a0f13c9f2e5c4a2222",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Lookup User by Username",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/lookup-user/102220095",
+          "host": ["{{baseUrl}}"],
+          "path": ["lookup-user", "102220095"]
+        },
+        "description": "Search user by username, student_number, or staff_number"
+      }
+    },
+    {
+      "name": "2. Get User Permissions by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "{{userId}}"]
+        },
+        "description": "Get permissions matrix for a specific user"
+      }
+    },
+    {
+      "name": "3. Get Available Permissions",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/available",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "{{userId}}", "available"]
+        },
+        "description": "Get list of permissions that can be managed for this user"
+      }
+    },
+    {
+      "name": "4. Grant Permission",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"note\": \"Cấp quyền duyệt hoạt động cho Chủ nhiệm CLB\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/grant/{{actionId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "{{userId}}", "grant", "{{actionId}}"]
+        },
+        "description": "Grant a specific permission to user (create override with is_granted=true)"
+      }
+    },
+    {
+      "name": "5. Revoke Permission",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"note\": \"Thu hồi quyền do vi phạm quy định\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/revoke/{{actionId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "{{userId}}", "revoke", "{{actionId}}"]
+        },
+        "description": "Revoke a specific permission from user (create override with is_granted=false)"
+      }
+    },
+    {
+      "name": "6. Delete Override",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/override/{{actionId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "{{userId}}", "override", "{{actionId}}"]
+        },
+        "description": "Delete permission override (revert to role-based default)"
+      }
+    },
+    {
+      "name": "7. Apply Changes (MAIN API)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"changes\": [\n    {\n      \"actionId\": \"672e54a0f13c9f2e5c4a2222\",\n      \"desiredEffective\": true,\n      \"note\": \"Cấp quyền duyệt hoạt động\"\n    },\n    {\n      \"actionId\": \"672e54a0f13c9f2e5c4a3333\",\n      \"desiredEffective\": false,\n      \"note\": \"Thu hồi quyền xuất báo cáo\"\n    },\n    {\n      \"actionId\": \"672e54a0f13c9f2e5c4a4444\",\n      \"desiredEffective\": true,\n      \"note\": \"Cấp quyền duyệt minh chứng\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/apply-changes",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "{{userId}}", "apply-changes"]
+        },
+        "description": "Apply multiple permission changes at once - THIS IS THE PRIMARY API FOR SAVING"
+      }
+    },
+    {
+      "name": "8. Get Org Units",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/org-units",
+          "host": ["{{baseUrl}}"],
+          "path": ["org-units"]
+        },
+        "description": "Get all organizational units for staff role assignment dropdown"
+      }
+    },
+    {
+      "name": "9. Get Positions",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/positions",
+          "host": ["{{baseUrl}}"],
+          "path": ["positions"]
+        },
+        "description": "Get list of common staff positions for dropdown"
+      }
+    },
+    {
+      "name": "10. Add Role to User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"roleName\": \"staff\",\n  \"orgUnitId\": \"672e54a0f13c9f2e5c4a7777\",\n  \"position\": \"Chủ nhiệm\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/add-role",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "{{userId}}", "add-role"]
+        },
+        "description": "Add a role to user (e.g., add staff role to student). User will automatically get 29 BASIC staff permissions."
+      }
+    }
+  ]
+}
+
