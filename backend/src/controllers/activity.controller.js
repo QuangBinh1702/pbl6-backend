@@ -2257,7 +2257,13 @@ module.exports = {
       const registrationRecord = await ActivityRegistration.findOne({
         activity_id: activityId,
         student_id: studentProfileId
-      });
+      })
+        .populate('approved_by', '_id username email name')
+        .populate('cancelled_by', '_id username email name')
+        .populate({
+          path: 'status_history.changed_by',
+          select: '_id username email name'
+        });
       
       if (registrationRecord) {
         registration = registrationRecord.toObject();
