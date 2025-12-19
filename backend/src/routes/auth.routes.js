@@ -22,6 +22,11 @@ router.post('/create-bulk-users',
   uploadExcel.single('file'), // Hỗ trợ upload Excel file (optional)
   authController.createBulkUsers
 );
+router.post('/bulk-import-students', 
+  authMiddleware, 
+  checkPermission('user', 'CREATE'),
+  authController.bulkImportStudents
+);
 router.get('/profile', authMiddleware, authController.getProfile);
 router.get('/roles', authController.getAvailableRoles);
 router.post('/forgot-password', authController.forgotPassword);

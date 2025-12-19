@@ -1245,5 +1245,189 @@ module.exports = {
       console.error('Admin update password error:', err);
       res.status(500).json({ success: false, message: err.message });
     }
+  },
+
+  // Bulk import students from JSON
+  // Expects: { "students": [{ "studentCode": "...", "fullName": "...", "className": "...", "faculty": "..." }] }
+  async bulkImportStudents(req, res) {
+    try {
+      const { students } = req.body;
+
+      // Validate input
+      if (!students || !Array.isArray(students) || students.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Students array is required and must not be empty'
+        });
+      }
+
+      if (students.length > 1000) {
+        return res.status(400).json({
+          success: false,
+          message: 'Maximum 1000 students can be imported at once'
+        });
+      }
+
+      const successfulAccounts = [];
+      const failedAccounts = [];
+      const studentCodeSet = new Set();
+      const existingStudentCodes = await StudentProfile.find(
+        { student_number: { $in: students.map(s => s.studentCode) } },
+        'student_number'
+      );
+      const existingStudentCodeSet = new Set(existingStudentCodes.map(s => s.student_number));
+
+      // Process each student
+      for (let i = 0; i < students.length; i++) {
+        const { studentCode, fullName, className, faculty } = students[i];
+
+        try {
+          // Validation
+          if (!studentCode || !studentCode.toString().trim()) {
+            failedAccounts.push({
+              rowIndex: i + 1,
+              studentCode: 'N/A',
+              fullName: fullName || 'N/A',
+              reason: 'Student code is required'
+            });
+            continue;
+          }
+
+          if (!fullName || !fullName.toString().trim()) {
+            failedAccounts.push({
+              rowIndex: i + 1,
+              studentCode: studentCode.toString().trim(),
+              fullName: 'N/A',
+              reason: 'Full name is required'
+            });
+            continue;
+          }
+
+          const studentCodeTrimmed = studentCode.toString().trim();
+          const fullNameTrimmed = fullName.toString().trim();
+
+          // Check for duplicate in current batch
+          if (studentCodeSet.has(studentCodeTrimmed)) {
+            failedAccounts.push({
+              rowIndex: i + 1,
+              studentCode: studentCodeTrimmed,
+              fullName: fullNameTrimmed,
+              reason: 'Duplicate student code in batch'
+            });
+            continue;
+          }
+
+          // Check if student code already exists in database
+          if (existingStudentCodeSet.has(studentCodeTrimmed)) {
+            failedAccounts.push({
+              rowIndex: i + 1,
+              studentCode: studentCodeTrimmed,
+              fullName: fullNameTrimmed,
+              reason: 'Student code already exists in the system'
+            });
+            continue;
+          }
+
+          // Add to batch set
+          studentCodeSet.add(studentCodeTrimmed);
+
+          // Find class by name and faculty
+          let classId = null;
+          if (className && faculty) {
+            const classNameTrimmed = className.toString().trim();
+            const facultyTrimmed = faculty.toString().trim();
+
+            const foundFaculty = await Falcuty.findOne({
+              name: { $regex: new RegExp(facultyTrimmed, 'i') }
+            });
+
+            if (foundFaculty) {
+              const foundClass = await Class.findOne({
+                name: classNameTrimmed,
+                falcuty_id: foundFaculty._id
+              });
+
+              if (foundClass) {
+                classId = foundClass._id;
+              }
+            }
+          }
+
+          // Hash password (default: student code)
+          const hashedPassword = await bcrypt.hash(studentCodeTrimmed, 10);
+
+          // Create user
+          const user = await User.create({
+            username: studentCodeTrimmed,
+            password_hash: hashedPassword,
+            active: true,
+            isLocked: false
+          });
+
+          // Assign student role
+          const studentRole = await Role.findOne({ name: 'student' });
+          if (studentRole) {
+            await UserRole.create({
+              user_id: user._id,
+              role_id: studentRole._id
+            });
+          }
+
+          // Create student profile
+          const studentProfile = await StudentProfile.create({
+            user_id: user._id,
+            student_number: studentCodeTrimmed,
+            full_name: fullNameTrimmed,
+            class_id: classId || null
+          });
+
+          await studentProfile.populate({
+            path: 'class_id',
+            populate: [{ path: 'falcuty_id' }, { path: 'cohort_id' }]
+          });
+
+          successfulAccounts.push({
+            studentCode: studentCodeTrimmed,
+            fullName: fullNameTrimmed,
+            className: className ? className.toString().trim() : null,
+            faculty: faculty ? faculty.toString().trim() : null,
+            username: user.username,
+            password: studentCodeTrimmed, // Show default password for initial login
+            userId: user._id,
+            studentProfileId: studentProfile._id
+          });
+        } catch (err) {
+          console.error(`Error creating student at row ${i + 1}:`, err);
+          failedAccounts.push({
+            rowIndex: i + 1,
+            studentCode: students[i].studentCode?.toString().trim() || 'N/A',
+            fullName: students[i].fullName?.toString().trim() || 'N/A',
+            reason: err.message || 'Unknown error'
+          });
+        }
+      }
+
+      // Return response
+      res.status(201).json({
+        success: true,
+        message: `Created ${successfulAccounts.length} accounts${failedAccounts.length > 0 ? `, ${failedAccounts.length} failed` : ''}`,
+        data: {
+          summary: {
+            total: students.length,
+            successful: successfulAccounts.length,
+            failed: failedAccounts.length
+          },
+          successful: successfulAccounts,
+          failed: failedAccounts.length > 0 ? failedAccounts : []
+        }
+      });
+    } catch (err) {
+      console.error('Bulk import students error:', err);
+      res.status(500).json({
+        success: false,
+        message: 'Error processing bulk import',
+        error: err.message
+      });
+    }
   }
 };
