@@ -138,13 +138,67 @@ module.exports = {
       await evidence.save();
       await evidence.populate('student_id');
 
-      // Send notification to staff/admin when new evidence is submitted
+      // Send notification to staff of the same faculty when new evidence is submitted
       try {
         const Notification = require('../models/notification.model');
-        const studentInfo = evidence.student_id;
+        const StaffProfile = require('../models/staff_profile.model');
         
+        // Validate student exists and get their class/faculty
+        const student = await StudentProfile.findById(student_id)
+          .populate({ path: 'class_id', select: 'falcuty_id' });
+        
+        if (!student) {
+          console.error(`Student profile not found for student_id: ${student_id}`);
+          return res.status(400).json({ success: false, message: 'Student not found' });
+        }
+
+        // Get faculty_id from student's class
+        const facultyId = student.class_id?.falcuty_id;
+        if (!facultyId) {
+          console.error(`Faculty not found for student ${student_id}`);
+          // Continue without sending notification if faculty not found
+          res.status(201).json({ 
+            success: true, 
+            data: evidence,
+            warning: 'Notification not sent: Faculty information not found'
+          });
+          return;
+        }
+
+        // Find all staff members of the same faculty
+        const staffMembers = await StaffProfile.find({ faculty_id: facultyId })
+          .select('user_id')
+          .lean();
+
+        if (staffMembers.length === 0) {
+          console.warn(`No staff members found for faculty: ${facultyId}`);
+          res.status(201).json({ 
+            success: true, 
+            data: evidence,
+            warning: 'Notification not sent: No staff members in this faculty'
+          });
+          return;
+        }
+
+        // Get all user IDs from staff profiles
+        const userIds = staffMembers
+          .map(s => s.user_id)
+          .filter(uid => uid !== null && uid !== undefined);
+
+        if (userIds.length === 0) {
+          console.warn(`No valid user IDs found for staff in faculty: ${facultyId}`);
+          res.status(201).json({ 
+            success: true, 
+            data: evidence,
+            warning: 'Notification not sent: No valid user accounts for staff'
+          });
+          return;
+        }
+
+        // Create notification for all staff of the same faculty
+        const studentInfo = evidence.student_id;
         const notificationTitle = `Minh chứng mới cần duyệt`;
-        const notificationContent = `Sinh viên ${studentInfo.full_name || studentInfo.student_number} đã nộp minh chứng: "${title}"`;
+        const notificationContent = `Sinh viên ${studentInfo.full_name || studentInfo.student_number} (lớp: ${student.class_id?.name || 'N/A'}) đã nộp minh chứng: "${title}"`;
 
         await Notification.create({
           title: notificationTitle,
@@ -152,18 +206,22 @@ module.exports = {
           published_date: new Date(),
           notification_type: 'activity',
           icon_type: 'document',
-          target_audience: 'staff',
-          target_user_ids: [],
+          target_audience: 'specific',
+          target_user_ids: userIds,
           created_by: req.user?.id || null
         });
 
-        console.log(`Notification created for staff/admin about new evidence submission`);
+        console.log(`Notification created for ${userIds.length} staff members in faculty ${facultyId} about new evidence submission`);
+        res.status(201).json({ success: true, data: evidence });
       } catch (notifErr) {
         console.error('Error creating evidence submission notification:', notifErr);
         // Don't fail the submission if notification fails
+        res.status(201).json({ 
+          success: true, 
+          data: evidence,
+          warning: 'Evidence submitted but notification failed: ' + notifErr.message
+        });
       }
-
-      res.status(201).json({ success: true, data: evidence });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });
     }
@@ -217,34 +275,62 @@ module.exports = {
       // Send notification to student when evidence is approved
       try {
         const Notification = require('../models/notification.model');
-        const StudentProfile = require('../models/student_profile.model');
         
+        // Get student profile to find user_id
         const studentProfile = await StudentProfile.findById(evidence.student_id._id)
           .select('user_id');
 
-        if (studentProfile && studentProfile.user_id) {
-          const notificationTitle = `Minh chứng "${evidence.title}" đã được phê duyệt`;
-          const notificationContent = `Minh chứng "${evidence.title}" của bạn đã được phê duyệt. Bạn nhận được ${updateData.faculty_point || evidence.faculty_point || 0} điểm.`;
-
-          await Notification.create({
-            title: notificationTitle,
-            content: notificationContent,
-            published_date: new Date(),
-            notification_type: 'score_update',
-            icon_type: 'check_circle',
-            target_audience: 'specific',
-            target_user_ids: [studentProfile.user_id],
-            created_by: req.user?.id || null
+        // Validate student profile exists and has user_id
+        if (!studentProfile) {
+          console.error(`Student profile not found for student_id: ${evidence.student_id._id}`);
+          res.json({ 
+            success: true, 
+            data: updatedEvidence,
+            warning: 'Evidence approved but notification not sent: Student profile not found'
           });
-
-          console.log(`Notification created for student about approved evidence`);
+          return;
         }
+
+        if (!studentProfile.user_id) {
+          console.error(`User ID not found for student: ${evidence.student_id._id}`);
+          res.json({ 
+            success: true, 
+            data: updatedEvidence,
+            warning: 'Evidence approved but notification not sent: User account not found'
+          });
+          return;
+        }
+
+        // Calculate total points
+        const totalPoints = updateData.faculty_point !== undefined 
+          ? updateData.faculty_point 
+          : (evidence.faculty_point || 0);
+
+        const notificationTitle = `Minh chứng "${evidence.title}" đã được phê duyệt`;
+        const notificationContent = `Minh chứng "${evidence.title}" của bạn đã được phê duyệt. Bạn nhận được ${totalPoints} điểm.`;
+
+        await Notification.create({
+          title: notificationTitle,
+          content: notificationContent,
+          published_date: new Date(),
+          notification_type: 'score_update',
+          icon_type: 'check_circle',
+          target_audience: 'specific',
+          target_user_ids: [studentProfile.user_id],
+          created_by: req.user?.id || null
+        });
+
+        console.log(`Notification created for student ${studentProfile.user_id} about approved evidence`);
+        res.json({ success: true, data: updatedEvidence });
       } catch (notifErr) {
         console.error('Error creating evidence approval notification:', notifErr);
         // Don't fail the approval if notification fails
+        res.json({ 
+          success: true, 
+          data: updatedEvidence,
+          warning: 'Evidence approved but notification failed: ' + notifErr.message
+        });
       }
-
-      res.json({ success: true, data: updatedEvidence });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });
     }
@@ -270,35 +356,60 @@ module.exports = {
       // Send notification to student when evidence is rejected
       try {
         const Notification = require('../models/notification.model');
-        const StudentProfile = require('../models/student_profile.model');
         
+        // Get student profile to find user_id
         const studentProfile = await StudentProfile.findById(evidence.student_id._id)
           .select('user_id');
 
-        if (studentProfile && studentProfile.user_id) {
-          const rejectReason = req.body.reason || 'Minh chứng không đủ điều kiện';
-          const notificationTitle = `Minh chứng "${evidence.title}" bị từ chối`;
-          const notificationContent = `Minh chứng "${evidence.title}" của bạn bị từ chối. Lý do: ${rejectReason}`;
-
-          await Notification.create({
-            title: notificationTitle,
-            content: notificationContent,
-            published_date: new Date(),
-            notification_type: 'activity',
-            icon_type: 'cancel',
-            target_audience: 'specific',
-            target_user_ids: [studentProfile.user_id],
-            created_by: req.user?.id || null
+        // Validate student profile exists and has user_id
+        if (!studentProfile) {
+          console.error(`Student profile not found for student_id: ${evidence.student_id._id}`);
+          res.json({ 
+            success: true, 
+            data: updatedEvidence,
+            warning: 'Evidence rejected but notification not sent: Student profile not found'
           });
-
-          console.log(`Notification created for student about rejected evidence`);
+          return;
         }
+
+        if (!studentProfile.user_id) {
+          console.error(`User ID not found for student: ${evidence.student_id._id}`);
+          res.json({ 
+            success: true, 
+            data: updatedEvidence,
+            warning: 'Evidence rejected but notification not sent: User account not found'
+          });
+          return;
+        }
+
+        // Get rejection reason from request body
+        const rejectReason = req.body.reason || 'Minh chứng không đủ điều kiện';
+        
+        const notificationTitle = `Minh chứng "${evidence.title}" bị từ chối`;
+        const notificationContent = `Minh chứng "${evidence.title}" của bạn bị từ chối. Lý do: ${rejectReason}`;
+
+        await Notification.create({
+          title: notificationTitle,
+          content: notificationContent,
+          published_date: new Date(),
+          notification_type: 'activity',
+          icon_type: 'cancel',
+          target_audience: 'specific',
+          target_user_ids: [studentProfile.user_id],
+          created_by: req.user?.id || null
+        });
+
+        console.log(`Notification created for student ${studentProfile.user_id} about rejected evidence`);
+        res.json({ success: true, data: updatedEvidence });
       } catch (notifErr) {
         console.error('Error creating evidence rejection notification:', notifErr);
         // Don't fail the rejection if notification fails
+        res.json({ 
+          success: true, 
+          data: updatedEvidence,
+          warning: 'Evidence rejected but notification failed: ' + notifErr.message
+        });
       }
-
-      res.json({ success: true, data: updatedEvidence });
     } catch (err) {
       res.status(400).json({ success: false, message: err.message });
     }
