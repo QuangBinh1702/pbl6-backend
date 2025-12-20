@@ -164,13 +164,14 @@ const AdminPermissionPanel = () => {
 
       const response = await applyPermissionChanges(matrix.userId, changesArray);
       
-      // Response structure: { success: true, data: { success: true, changes: [...], updatedMatrix: {...} } }
-      // Hoặc: { success: true, changes: [...], updatedMatrix: {...} }
+      // Response structure from backend: { success: true, data: { success: true, changes: [...], updatedMatrix: {...}, summary: {...} } }
+      // applyPermissionChanges returns response.data, so response = { success: true, data: {...} }
       const responseData = response.data || response;
-      const updatedMatrix = responseData.updatedMatrix;
+      const updatedMatrix = responseData.updatedMatrix || responseData.data?.updatedMatrix;
       const changesResults = responseData.changes || responseData.data?.changes || [];
-      const summary = responseData.summary;
+      const summary = responseData.summary || responseData.data?.summary;
       
+      // Check if response is successful and has updatedMatrix
       if (response.success && updatedMatrix) {
         // Check if any changes failed
         const failedChanges = changesResults.filter(r => !r.success);
@@ -205,10 +206,23 @@ const AdminPermissionPanel = () => {
           setTimeout(() => setSuccessMessage(''), 3000);
         }
       } else {
-        setError(response.message || responseData.message || 'Lỗi khi lưu thay đổi');
+        // Log detailed error for debugging
+        console.error('❌ Save failed - Response:', response);
+        console.error('❌ ResponseData:', responseData);
+        console.error('❌ UpdatedMatrix:', updatedMatrix);
+        setError(response.message || responseData?.message || 'Lỗi khi lưu thay đổi');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi khi lưu thay đổi');
+      console.error('❌ Error saving permissions:', err);
+      console.error('❌ Error response:', err.response);
+      console.error('❌ Error data:', err.response?.data);
+      
+      // Extract error message
+      const errorMessage = err.response?.data?.message || 
+                          err.message || 
+                          'Lỗi khi lưu thay đổi';
+      
+      setError(errorMessage);
     } finally {
       setIsSaving(false);
     }

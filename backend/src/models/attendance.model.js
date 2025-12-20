@@ -125,67 +125,9 @@ const attendanceSchema = new mongoose.Schema({
   feedback_verified_at: Date
 }, { timestamps: false });
 
-// Auto-update pvcd_record when attendance is saved
-attendanceSchema.post('save', async function(doc) {
-  try {
-    // Skip if no student_id or points
-    if (!doc.student_id || !doc.points) {
-      return;
-    }
-
-    // Lazy load to avoid circular dependencies
-    const PvcdRecord = require('./pvcd_record.model');
-
-    // Get year (calendar year) from scanned_at
-    const year = new Date(doc.scanned_at).getFullYear();
-
-    // Validate year is a valid 4-digit number
-    if (isNaN(year) || year < 1900 || year > 2100) {
-      throw new Error(`Invalid year: ${year}`);
-    }
-
-    // Calculate total points for this student in this year
-    const attendances = await this.constructor.find({
-      student_id: doc.student_id,
-      points: { $exists: true, $ne: null }
-    }).lean();
-
-    let totalPoints = 0;
-    attendances.forEach(att => {
-      const attYear = new Date(att.scanned_at).getFullYear();
-      if (attYear === year) {
-        totalPoints += parseFloat(att.points) || 0;
-      }
-    });
-
-    // Ensure total_point >= 0 (no upper limit)
-    totalPoints = Math.max(totalPoints, 0);
-
-    // Validate student_id exists
-    const StudentProfile = require('./student_profile.model');
-    const student = await StudentProfile.findById(doc.student_id);
-    if (!student) {
-      throw new Error(`Student not found: ${doc.student_id}`);
-    }
-
-    // Update or create pvcd_record with numeric year
-    await PvcdRecord.findOneAndUpdate(
-      {
-        student_id: doc.student_id,
-        year: year  // ✅ Use numeric year, not Date
-      },
-      {
-        student_id: doc.student_id,
-        year: year,  // ✅ Use numeric year, not Date
-        total_point: totalPoints
-      },
-      { upsert: true, new: true, runValidators: true }
-    );
-  } catch (err) {
-    console.error('Error updating pvcd_record:', err.message);
-    // Don't throw - we don't want to fail the attendance save
-  }
-});
+// ❌ DISABLED: total_point now calculated by Evidence post-save hook
+// This ensures consistency: year = Evidence.submitted_at year, and only uses faculty_point from approved evidences
+// attendanceSchema.post('save', async function(doc) { ... });
 
 // ← PHASE 2: Performance indexes for approval workflow
 attendanceSchema.index({ student_id: 1 });

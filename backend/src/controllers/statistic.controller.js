@@ -547,5 +547,142 @@ module.exports = {
         message: err.message
       });
     }
+  },
+
+  // 🆕 Get PVCD breakdown: attendance points + evidence points + list of both
+  async getPvcdBreakdown(req, res) {
+    try {
+      const { student_id, year } = req.query;
+
+      // Validate input
+      if (!student_id || !mongoose.Types.ObjectId.isValid(student_id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid student_id'
+        });
+      }
+
+      const yearNum = parseInt(year) || new Date().getFullYear();
+      if (isNaN(yearNum) || yearNum < 1900 || yearNum > 2100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid year format'
+        });
+      }
+
+      // Import Attendance model
+      const Attendance = require('../models/attendance.model');
+
+      // 1️⃣ Get all attendances for this student in this year
+      const attendances = await Attendance.find({
+        student_id: student_id,
+        scanned_at: {
+          $gte: new Date(`${yearNum}-01-01`),
+          $lt: new Date(`${yearNum + 1}-01-01`)
+        }
+      })
+        .populate({
+          path: 'activity_id',
+          select: 'name start_time type'
+        })
+        .lean();
+
+      // Sum attendance points
+      // Use 'points' field (FINAL TOTAL POINTS per activity)
+      // NOT points_earned (which is just the latest scan score)
+      let attendancePoints = 0;
+      const attendanceList = attendances.map(att => {
+        const points = parseFloat(att.points) || 0;
+        attendancePoints += points;
+        return {
+          _id: att._id,
+          type: 'attendance',
+          title: att.activity_id?.name || 'Unknown Activity',
+          points: points,
+          date: att.scanned_at,
+          activity_id: att.activity_id?._id
+        };
+      });
+
+      // 2️⃣ Get all approved evidences for this student in this year
+      const evidences = await Evidence.find({
+        student_id: student_id,
+        status: 'approved',
+        submitted_at: {
+          $gte: new Date(`${yearNum}-01-01`),
+          $lt: new Date(`${yearNum + 1}-01-01`)
+        }
+      })
+        .select('title faculty_point submitted_at _id')
+        .lean();
+
+      // Sum evidence points
+      let evidencePoints = 0;
+      const evidenceList = evidences.map(ev => {
+        evidencePoints += parseFloat(ev.faculty_point) || 0;
+        return {
+          _id: ev._id,
+          type: 'evidence',
+          title: ev.title || 'Untitled Evidence',
+          points: parseFloat(ev.faculty_point) || 0,
+          date: ev.submitted_at
+        };
+      });
+
+      // 3️⃣ Get PVCD record for verification
+      const pvcdRecord = await PvcdRecord.findOne({
+        student_id: student_id,
+        year: yearNum
+      }).lean();
+
+      // 4️⃣ Combine and sort by date
+      const combined = [...attendanceList, ...evidenceList].sort((a, b) => 
+        new Date(b.date) - new Date(a.date)
+      );
+
+      // Calculate totals
+      const totalPoints = attendancePoints + evidencePoints;
+
+      // Return response
+      res.json({
+        success: true,
+        data: {
+          student_id,
+          year: yearNum,
+          summary: {
+            total_point: totalPoints,
+            attendance_points: attendancePoints,
+            evidence_points: evidencePoints,
+            attendance_count: attendances.length,
+            evidence_count: evidences.length,
+            pvcd_record_total: pvcdRecord?.total_point || 0
+          },
+          breakdown: {
+            attendance_points: attendancePoints,
+            evidence_points: evidencePoints,
+            total: totalPoints
+          },
+          sources: {
+            attendance: {
+              count: attendances.length,
+              total_points: attendancePoints,
+              items: attendanceList
+            },
+            evidence: {
+              count: evidences.length,
+              total_points: evidencePoints,
+              items: evidenceList
+            }
+          },
+          combined_list: combined  // ✅ Combined list sorted by date for frontend
+        }
+      });
+    } catch (err) {
+      console.error('Error in getPvcdBreakdown:', err);
+      res.status(500).json({
+        success: false,
+        message: err.message
+      });
+    }
   }
 };

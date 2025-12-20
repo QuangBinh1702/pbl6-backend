@@ -50,43 +50,9 @@ pvcdRecordSchema.pre('save', function(next) {
   next();
 });
 
-// Calculate total_point from attendance points
-pvcdRecordSchema.pre('save', async function(next) {
-  try {
-    // Skip if student_id is not set
-    if (!this.student_id) {
-      return next();
-    }
-
-    // Lazy load to avoid circular dependencies
-    const Attendance = require('./attendance.model');
-    
-    // Get all attendance records for this student, only if attendance has points
-    const attendances = await Attendance.find({ 
-      student_id: this.student_id,
-      points: { $exists: true, $ne: null }
-    })
-      .populate('activity_id')
-      .lean();
-    
-    // Filter attendance by year and sum points
-    let totalPoints = 0;
-    attendances.forEach(att => {
-      if (att.activity_id && att.activity_id.start_time && att.points) {
-        const activityYear = new Date(att.activity_id.start_time).getFullYear();
-        if (activityYear === this.year) {
-          totalPoints += parseFloat(att.points) || 0;
-        }
-      }
-    });
-    
-    // Ensure total_point >= 0 (no upper limit)
-    this.total_point = Math.max(totalPoints, 0);
-    next();
-  } catch (err) {
-    next(err);
-  }
-});
+// ❌ DISABLED: total_point now calculated by Evidence post-save hook
+// This ensures consistency: year = Evidence.submitted_at year, and only uses faculty_point from approved evidences
+// pvcdRecordSchema.pre('save', async function(next) { ... });
 
 // Index for faster queries
 pvcdRecordSchema.index({ student_id: 1 });
