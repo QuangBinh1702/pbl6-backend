@@ -459,6 +459,7 @@ module.exports = {
             act.points = points;
             act.final_points = points;  // 🆕 Final points (highest)
             act.attendance_id = att._id;
+            act.scanned_at = att.scanned_at;  // 🆕 Attendance scan time
             act.total_scans = 1;  // 🆕 Count of scans
             activitiesMap.set(key, act);
           } else {
@@ -468,6 +469,7 @@ module.exports = {
               existing.points = points;
               existing.final_points = points;
               existing.attendance_id = att._id;
+              existing.scanned_at = att.scanned_at;
             }
             existing.total_scans += 1;  // Increment scan count
           }

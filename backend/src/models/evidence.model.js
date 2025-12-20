@@ -135,4 +135,65 @@ evidenceSchema.post('save', async function(doc) {
   }
 });
 
+// 🆕 AUTO-UPDATE PVCD when evidence is deleted
+evidenceSchema.post('findOneAndDelete', async function(doc) {
+  try {
+    if (!doc || !doc.student_id) return;
+
+    const PvcdRecord = require('./pvcd_record.model');
+    const Attendance = require('./attendance.model');
+
+    // Get year from submitted_at
+    const year = new Date(doc.submitted_at).getFullYear();
+
+    // Recalculate PVCD record after deletion
+    // Get all attendances for this student in this year
+    const attendances = await Attendance.find({
+      student_id: doc.student_id,
+      scanned_at: {
+        $gte: new Date(`${year}-01-01`),
+        $lt: new Date(`${year + 1}-01-01`)
+      }
+    }).lean();
+
+    // Sum attendance points
+    let attendancePoints = 0;
+    attendances.forEach(att => {
+      attendancePoints += parseFloat(att.points) || 0;
+    });
+
+    // Get all approved evidences for this student in this year
+    const approvedEvidences = await this.constructor.find({
+      student_id: doc.student_id,
+      status: 'approved',
+      submitted_at: {
+        $gte: new Date(`${year}-01-01`),
+        $lt: new Date(`${year + 1}-01-01`)
+      }
+    }).lean();
+
+    // Sum evidence points
+    let evidencePoints = 0;
+    approvedEvidences.forEach(ev => {
+      evidencePoints += parseFloat(ev.faculty_point) || 0;
+    });
+
+    // Update PVCD record
+    const totalPoints = attendancePoints + evidencePoints;
+    await PvcdRecord.findOneAndUpdate(
+      { student_id: doc.student_id, year: year },
+      {
+        student_id: doc.student_id,
+        year: year,
+        total_point: totalPoints
+      },
+      { upsert: true, new: true, runValidators: true }
+    );
+
+    console.log(`[PVCD Auto-Update] Deleted evidence for student ${doc.student_id}: total_point recalculated to ${totalPoints}`);
+  } catch (err) {
+    console.error('Error updating pvcd_record after evidence deletion:', err.message);
+  }
+});
+
 module.exports = mongoose.model('Evidence', evidenceSchema, 'evidence');

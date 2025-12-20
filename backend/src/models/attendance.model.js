@@ -141,4 +141,61 @@ attendanceSchema.index({ scanned_at: -1 });
 attendanceSchema.index({ student_id: 1, activity_id: 1 });  // ← Count scans for student
 attendanceSchema.index({ student_id: 1, qr_code_id: 1 });  // ← Detect duplicates
 
+// 🆕 AUTO-UPDATE PVCD when attendance is deleted
+attendanceSchema.post('findOneAndDelete', async function(doc) {
+  try {
+    if (!doc || !doc.student_id) return;
+
+    const PvcdRecord = require('./pvcd_record.model');
+    const year = new Date(doc.scanned_at).getFullYear();
+
+    // Recalculate PVCD record after deletion
+    const attendances = await this.constructor.find({
+      student_id: doc.student_id,
+      scanned_at: {
+        $gte: new Date(`${year}-01-01`),
+        $lt: new Date(`${year + 1}-01-01`)
+      }
+    }).lean();
+
+    // Sum remaining attendance points
+    let attendancePoints = 0;
+    attendances.forEach(att => {
+      attendancePoints += parseFloat(att.points) || 0;
+    });
+
+    // Get approved evidences for this year
+    const Evidence = require('./evidence.model');
+    const approvedEvidences = await Evidence.find({
+      student_id: doc.student_id,
+      status: 'approved',
+      submitted_at: {
+        $gte: new Date(`${year}-01-01`),
+        $lt: new Date(`${year + 1}-01-01`)
+      }
+    }).lean();
+
+    let evidencePoints = 0;
+    approvedEvidences.forEach(ev => {
+      evidencePoints += parseFloat(ev.faculty_point) || 0;
+    });
+
+    // Update PVCD record
+    const totalPoints = attendancePoints + evidencePoints;
+    await PvcdRecord.findOneAndUpdate(
+      { student_id: doc.student_id, year: year },
+      { 
+        student_id: doc.student_id, 
+        year: year, 
+        total_point: totalPoints 
+      },
+      { upsert: true, new: true }
+    );
+
+    console.log(`[PVCD Auto-Update] Deleted attendance for student ${doc.student_id}: total_point recalculated to ${totalPoints}`);
+  } catch (err) {
+    console.error('Error updating pvcd_record after attendance deletion:', err.message);
+  }
+});
+
 module.exports = mongoose.model('Attendance', attendanceSchema, 'attendance');
