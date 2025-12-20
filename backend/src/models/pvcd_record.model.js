@@ -24,12 +24,11 @@ const pvcdRecordSchema = new mongoose.Schema({
     type: Number, 
     default: 0,
     min: 0,
-    max: 100,
     validate: {
       validator: function(value) {
-        return value >= 0 && value <= 100;
+        return value >= 0;
       },
-      message: 'Total point must be between 0 and 100'
+      message: 'Total point must be >= 0'
     }
   }
 }, { timestamps: false });
@@ -81,8 +80,8 @@ pvcdRecordSchema.pre('save', async function(next) {
       }
     });
     
-    // Ensure total_point doesn't exceed 100 and is a valid number
-    this.total_point = Math.min(Math.max(totalPoints, 0), 100);
+    // Ensure total_point >= 0 (no upper limit)
+    this.total_point = Math.max(totalPoints, 0);
     next();
   } catch (err) {
     next(err);

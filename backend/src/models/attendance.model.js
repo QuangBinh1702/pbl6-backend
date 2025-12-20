@@ -158,8 +158,8 @@ attendanceSchema.post('save', async function(doc) {
       }
     });
 
-    // Cap at 100
-    totalPoints = Math.min(Math.max(totalPoints, 0), 100);
+    // Ensure total_point >= 0 (no upper limit)
+    totalPoints = Math.max(totalPoints, 0);
 
     // Validate student_id exists
     const StudentProfile = require('./student_profile.model');

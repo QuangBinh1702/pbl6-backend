@@ -1257,14 +1257,14 @@ module.exports = {
       if (!students || !Array.isArray(students) || students.length === 0) {
         return res.status(400).json({
           success: false,
-          message: 'Students array is required and must not be empty'
+          message: 'Mảng sinh viên là bắt buộc và không được để trống'
         });
       }
 
       if (students.length > 1000) {
         return res.status(400).json({
           success: false,
-          message: 'Maximum 1000 students can be imported at once'
+          message: 'Tối đa 1000 sinh viên có thể được import cùng lúc'
         });
       }
 
@@ -1288,7 +1288,7 @@ module.exports = {
               rowIndex: i + 1,
               studentCode: 'N/A',
               fullName: fullName || 'N/A',
-              reason: 'Student code is required'
+              reason: 'Mã sinh viên là bắt buộc'
             });
             continue;
           }
@@ -1298,7 +1298,7 @@ module.exports = {
               rowIndex: i + 1,
               studentCode: studentCode.toString().trim(),
               fullName: 'N/A',
-              reason: 'Full name is required'
+              reason: 'Họ và tên là bắt buộc'
             });
             continue;
           }
@@ -1312,7 +1312,7 @@ module.exports = {
               rowIndex: i + 1,
               studentCode: studentCodeTrimmed,
               fullName: fullNameTrimmed,
-              reason: 'Duplicate student code in batch'
+              reason: 'Mã sinh viên trùng lặp trong batch'
             });
             continue;
           }
@@ -1323,7 +1323,7 @@ module.exports = {
               rowIndex: i + 1,
               studentCode: studentCodeTrimmed,
               fullName: fullNameTrimmed,
-              reason: 'Student code already exists in the system'
+              reason: 'Mã sinh viên đã tồn tại trong hệ thống'
             });
             continue;
           }
@@ -1331,26 +1331,90 @@ module.exports = {
           // Add to batch set
           studentCodeSet.add(studentCodeTrimmed);
 
-          // Find class by name and faculty
+          // Validate and find class by name and faculty
           let classId = null;
-          if (className && faculty) {
+          let normalizedClassName = null;
+          let normalizedFacultyName = null;
+          
+          if (className || faculty) {
+            // Nếu có className hoặc faculty thì phải có cả hai
+            if (!className || !faculty) {
+              failedAccounts.push({
+                rowIndex: i + 1,
+                studentCode: studentCodeTrimmed,
+                fullName: fullNameTrimmed,
+                reason: 'Khoa và lớp phải được nhập cùng nhau'
+              });
+              continue;
+            }
+
             const classNameTrimmed = className.toString().trim();
             const facultyTrimmed = faculty.toString().trim();
 
-            const foundFaculty = await Falcuty.findOne({
-              name: { $regex: new RegExp(facultyTrimmed, 'i') }
+            // Kiểm tra sau khi trim không được rỗng
+            if (!classNameTrimmed || !facultyTrimmed) {
+              failedAccounts.push({
+                rowIndex: i + 1,
+                studentCode: studentCodeTrimmed,
+                fullName: fullNameTrimmed,
+                reason: 'Khoa và lớp không được để trống'
+              });
+              continue;
+            }
+
+            // Chuẩn hóa khoảng trắng (thay nhiều khoảng trắng thành 1) - theo format database
+            normalizedFacultyName = facultyTrimmed.replace(/\s+/g, ' ').trim();
+            normalizedClassName = classNameTrimmed.replace(/\s+/g, ' ').trim();
+
+            // Tìm khoa: thử exact match trước (theo format database), nếu không có thì dùng case-insensitive
+            let foundFaculty = await Falcuty.findOne({
+              name: normalizedFacultyName
             });
 
-            if (foundFaculty) {
-              const foundClass = await Class.findOne({
-                name: classNameTrimmed,
+            // Nếu không tìm thấy exact match, thử case-insensitive
+            if (!foundFaculty) {
+              const escapedFacultyName = normalizedFacultyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              foundFaculty = await Falcuty.findOne({
+                name: { $regex: new RegExp(`^${escapedFacultyName}$`, 'i') }
+              });
+            }
+
+            if (!foundFaculty) {
+              failedAccounts.push({
+                rowIndex: i + 1,
+                studentCode: studentCodeTrimmed,
+                fullName: fullNameTrimmed,
+                reason: `Khoa "${normalizedFacultyName}" không hợp lệ`
+              });
+              continue;
+            }
+
+            // Tìm lớp trong khoa đó: thử exact match trước, nếu không có thì dùng case-insensitive
+            let foundClass = await Class.findOne({
+              name: normalizedClassName,
+              falcuty_id: foundFaculty._id
+            });
+
+            // Nếu không tìm thấy exact match, thử case-insensitive
+            if (!foundClass) {
+              const escapedClassName = normalizedClassName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              foundClass = await Class.findOne({
+                name: { $regex: new RegExp(`^${escapedClassName}$`, 'i') },
                 falcuty_id: foundFaculty._id
               });
-
-              if (foundClass) {
-                classId = foundClass._id;
-              }
             }
+
+            if (!foundClass) {
+              failedAccounts.push({
+                rowIndex: i + 1,
+                studentCode: studentCodeTrimmed,
+                fullName: fullNameTrimmed,
+                reason: `Lớp "${normalizedClassName}" không hợp lệ trong khoa "${normalizedFacultyName}"`
+              });
+              continue;
+            }
+
+            classId = foundClass._id;
           }
 
           // Hash password (default: student code)
@@ -1389,8 +1453,8 @@ module.exports = {
           successfulAccounts.push({
             studentCode: studentCodeTrimmed,
             fullName: fullNameTrimmed,
-            className: className ? className.toString().trim() : null,
-            faculty: faculty ? faculty.toString().trim() : null,
+            className: normalizedClassName || (className ? className.toString().trim() : null),
+            faculty: normalizedFacultyName || (faculty ? faculty.toString().trim() : null),
             username: user.username,
             password: studentCodeTrimmed, // Show default password for initial login
             userId: user._id,
@@ -1402,7 +1466,7 @@ module.exports = {
             rowIndex: i + 1,
             studentCode: students[i].studentCode?.toString().trim() || 'N/A',
             fullName: students[i].fullName?.toString().trim() || 'N/A',
-            reason: err.message || 'Unknown error'
+            reason: err.message || 'Lỗi không xác định'
           });
         }
       }
@@ -1410,7 +1474,7 @@ module.exports = {
       // Return response
       res.status(201).json({
         success: true,
-        message: `Created ${successfulAccounts.length} accounts${failedAccounts.length > 0 ? `, ${failedAccounts.length} failed` : ''}`,
+        message: `Đã tạo ${successfulAccounts.length} tài khoản${failedAccounts.length > 0 ? `, ${failedAccounts.length} thất bại` : ''}`,
         data: {
           summary: {
             total: students.length,
@@ -1425,7 +1489,7 @@ module.exports = {
       console.error('Bulk import students error:', err);
       res.status(500).json({
         success: false,
-        message: 'Error processing bulk import',
+        message: 'Lỗi xử lý import hàng loạt',
         error: err.message
       });
     }
