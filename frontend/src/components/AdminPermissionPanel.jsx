@@ -24,6 +24,7 @@ const AdminPermissionPanel = () => {
   const [addingRole, setAddingRole] = useState(false);
   const [expandedResources, setExpandedResources] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRole, setSelectedRole] = useState(null); // Track selected role for filtering
 
   useEffect(() => {
     loadOrgUnits();
@@ -68,6 +69,10 @@ const AdminPermissionPanel = () => {
       const response = await lookupUserByUsername(username);
       if (response.success) {
         setMatrix(response.data);
+        // Auto-select first role if available
+        if (response.data.roles && response.data.roles.length > 0) {
+          setSelectedRole(response.data.roles[0].role_name);
+        }
       } else {
         setError(response.message || 'Không tìm thấy người dùng');
       }
@@ -95,6 +100,8 @@ const AdminPermissionPanel = () => {
       const response = await addRoleToUser(matrix.userId, 'staff', selectedOrgUnit, selectedPosition);
       if (response.success) {
         setMatrix(response.data.updatedMatrix);
+        // Auto-select staff role after adding
+        setSelectedRole('staff');
         setShowAddRoleModal(false);
         setSelectedOrgUnit('');
         setSelectedPosition('');
@@ -180,6 +187,16 @@ const AdminPermissionPanel = () => {
           setMatrix(updatedMatrix);
           setChanges(new Map()); // Clear pending changes
           
+          // Ensure selectedRole still exists after reload, otherwise select first role
+          if (selectedRole && updatedMatrix.permissionsByRole && !updatedMatrix.permissionsByRole[selectedRole]) {
+            if (updatedMatrix.roles && updatedMatrix.roles.length > 0) {
+              setSelectedRole(updatedMatrix.roles[0].role_name);
+            }
+          } else if (!selectedRole && updatedMatrix.roles && updatedMatrix.roles.length > 0) {
+            // If no role selected, select first one
+            setSelectedRole(updatedMatrix.roles[0].role_name);
+          }
+          
           // Verify: Checkbox sẽ hiển thị đúng từ updatedMatrix
           console.log(`✅ Permissions đã được reload từ database`);
           console.log(`📊 Summary:`, summary);
@@ -218,7 +235,8 @@ const AdminPermissionPanel = () => {
     if (matrix?.permissionsByRole) {
       Object.values(matrix.permissionsByRole).forEach(roleData => {
         roleData.permissions.forEach(p => {
-          allResources[p.resource] = expand;
+          const resourceKey = p.permission_name || p.resource || 'other';
+          allResources[resourceKey] = expand;
         });
       });
     }
@@ -228,11 +246,12 @@ const AdminPermissionPanel = () => {
   const groupPermissionsByResource = (permissions) => {
     const grouped = {};
     permissions.forEach(permission => {
-      const resource = permission.resource || 'other';
-      if (!grouped[resource]) {
-        grouped[resource] = [];
+      // Use permission_name (Vietnamese) if available, otherwise fallback to resource
+      const resourceKey = permission.permission_name || permission.resource || 'other';
+      if (!grouped[resourceKey]) {
+        grouped[resourceKey] = [];
       }
-      grouped[resource].push(permission);
+      grouped[resourceKey].push(permission);
     });
     return grouped;
   };
@@ -439,7 +458,13 @@ const AdminPermissionPanel = () => {
               <div className="roles-display">
                 {matrix.roles && matrix.roles.map((role) => (
                   <label key={role.user_role_id} className="role-radio">
-                    <input type="radio" name="role" defaultChecked readOnly />
+                    <input 
+                      type="radio" 
+                      name="role" 
+                      value={role.role_name}
+                      checked={selectedRole === role.role_name}
+                      onChange={(e) => setSelectedRole(e.target.value)}
+                    />
                     <span style={{ color: getRoleColor(role.role_name) }}>
                       {role.role_name}
                     </span>
@@ -521,22 +546,33 @@ const AdminPermissionPanel = () => {
             </div>
           )}
 
-          {/* Permissions by Role */}
+          {/* Permissions by Role - Only show selected role */}
           <div className="permissions-by-role">
-            {matrix.permissionsByRole &&
-              Object.entries(matrix.permissionsByRole).map(([roleName, roleData]) => {
-                const filteredPermissions = filterPermissions(roleData.permissions);
-                const groupedByResource = groupPermissionsByResource(filteredPermissions);
-                const resourceNames = Object.keys(groupedByResource).sort();
+            {matrix.permissionsByRole && selectedRole && matrix.permissionsByRole[selectedRole] && (() => {
+              const roleData = matrix.permissionsByRole[selectedRole];
+              
+              // Filter permissions by role: student only shows student permissions, staff keeps all (unchanged)
+              let roleFilteredPermissions = roleData.permissions;
+              if (selectedRole === 'student') {
+                // Student: only show student-level permissions
+                roleFilteredPermissions = roleData.permissions.filter(p => 
+                  p.permission_level === 'student'
+                );
+              }
+              // Staff and Admin: show all permissions (keep unchanged)
+              
+              const filteredPermissions = filterPermissions(roleFilteredPermissions);
+              const groupedByResource = groupPermissionsByResource(filteredPermissions);
+              const resourceNames = Object.keys(groupedByResource).sort();
 
-                return (
-                  <div key={roleName} className="role-section">
-                    <div className="role-header" style={{ borderColor: getRoleColor(roleName) }}>
-                      <h3>Quyền của role <strong>{roleName}</strong></h3>
-                      <span className="permission-count">
-                        {roleData.summary.effectiveCount}/{roleData.summary.totalActions}
-                      </span>
-                    </div>
+              return (
+                <div key={selectedRole} className="role-section">
+                  <div className="role-header" style={{ borderColor: getRoleColor(selectedRole) }}>
+                    <h3>Quyền của role <strong>{selectedRole}</strong></h3>
+                    <span className="permission-count">
+                      {roleData.summary.effectiveCount}/{roleData.summary.totalActions}
+                    </span>
+                  </div>
 
                     <div className="permissions-by-resource">
                       {resourceNames.map((resourceName) => {
@@ -575,7 +611,7 @@ const AdminPermissionPanel = () => {
                     </div>
                   </div>
                 );
-              })}
+              })()}
           </div>
 
           {/* Save Changes */}

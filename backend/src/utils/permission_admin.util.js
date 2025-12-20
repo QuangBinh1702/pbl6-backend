@@ -60,8 +60,9 @@ function getPermissionLevel(resource, actionCode) {
  */
 async function buildUserPermissionMatrix(userId, orgUnitId = null) {
   try {
-    // 1) Load all active actions
+    // 1) Load all active actions with permission info (for Vietnamese name)
     const allActions = await Action.find({ is_active: true })
+      .populate('permission_id', 'name description')
       .sort({ resource: 1, action_code: 1 });
 
     if (!allActions || allActions.length === 0) {
@@ -138,6 +139,7 @@ async function buildUserPermissionMatrix(userId, orgUnitId = null) {
           action_code: action.action_code,
           action_name: action.action_name,
           description: action.description,
+          permission_name: action.permission_id?.name || action.resource, // Vietnamese name from Permission model
           permission_level: getPermissionLevel(action.resource, action.action_code), // Pass both resource and action_code
           viaRoles,
           overrideType,       // 'grant' | 'revoke' | null
