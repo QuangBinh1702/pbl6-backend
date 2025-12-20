@@ -110,13 +110,29 @@ const AdminPermissionPanel = () => {
     }
   };
 
-  const handlePermissionToggle = (actionId, currentEffective) => {
+  const handlePermissionToggle = (actionId, currentEffective, originalEffective) => {
     const newChanges = new Map(changes);
-    if (newChanges.has(actionId)) {
+    
+    // Calculate current desired state (with pending changes)
+    const hasPendingChange = newChanges.has(actionId);
+    const currentDesiredState = hasPendingChange 
+      ? newChanges.get(actionId) 
+      : currentEffective;
+    
+    // Toggle to opposite state
+    const newDesiredState = !currentDesiredState;
+    
+    // Check if new state matches original (no change needed)
+    if (newDesiredState === originalEffective) {
+      // Revert to original → Remove from changes
       newChanges.delete(actionId);
+      console.log(`📝 Permission toggle: ${actionId} → Revert to original (${originalEffective})`);
     } else {
-      newChanges.set(actionId, !currentEffective);
+      // Add or update change
+      newChanges.set(actionId, newDesiredState);
+      console.log(`📝 Permission toggle: ${actionId} → ${newDesiredState} (pending, chưa lưu DB)`);
     }
+    
     setChanges(newChanges);
   };
 
@@ -140,13 +156,39 @@ const AdminPermissionPanel = () => {
       }));
 
       const response = await applyPermissionChanges(matrix.userId, changesArray);
-      if (response.success) {
-        setMatrix(response.data.updatedMatrix);
-        setChanges(new Map());
-        setSuccessMessage(`✓ Lưu thành công ${changes.size} thay đổi`);
-        setTimeout(() => setSuccessMessage(''), 3000);
+      
+      // Response structure: { success: true, data: { success: true, changes: [...], updatedMatrix: {...} } }
+      // Hoặc: { success: true, changes: [...], updatedMatrix: {...} }
+      const responseData = response.data || response;
+      const updatedMatrix = responseData.updatedMatrix;
+      const changesResults = responseData.changes || responseData.data?.changes || [];
+      const summary = responseData.summary;
+      
+      if (response.success && updatedMatrix) {
+        // Check if any changes failed
+        const failedChanges = changesResults.filter(r => !r.success);
+        const successCount = changesResults.filter(r => r.success).length;
+        
+        if (failedChanges.length > 0) {
+          console.error(`❌ ${failedChanges.length} changes failed:`, failedChanges);
+          setError(`Lưu không thành công: ${failedChanges.length}/${changes.size} thay đổi thất bại. Chi tiết: ${failedChanges.map(f => f.message).join(', ')}`);
+        } else {
+          console.log(`✅ Đã lưu ${successCount} thay đổi vào database`);
+          console.log(`🔄 Reloading permissions từ server...`);
+          
+          // Update matrix với data mới từ server (đã lưu vào DB)
+          setMatrix(updatedMatrix);
+          setChanges(new Map()); // Clear pending changes
+          
+          // Verify: Checkbox sẽ hiển thị đúng từ updatedMatrix
+          console.log(`✅ Permissions đã được reload từ database`);
+          console.log(`📊 Summary:`, summary);
+          
+          setSuccessMessage(`✓ Lưu thành công ${successCount} thay đổi`);
+          setTimeout(() => setSuccessMessage(''), 3000);
+        }
       } else {
-        setError(response.message);
+        setError(response.message || responseData.message || 'Lỗi khi lưu thay đổi');
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Lỗi khi lưu thay đổi');
@@ -256,6 +298,9 @@ const AdminPermissionPanel = () => {
     const desiredEffective = hasUnsavedChange
       ? changes.get(permission.action_id)
       : permission.effective;
+    
+    // Original effective state (from DB, before any pending changes)
+    const originalEffective = permission.effective;
 
     const canToggle = canTogglePermission(permission);
     const disabledReason = getDisabledReason(permission);
@@ -309,7 +354,7 @@ const AdminPermissionPanel = () => {
           <input
             type="checkbox"
             checked={desiredEffective}
-            onChange={() => canToggle && handlePermissionToggle(permission.action_id, permission.effective)}
+            onChange={() => canToggle && handlePermissionToggle(permission.action_id, desiredEffective, originalEffective)}
             disabled={!canToggle}
           />
           <div className="permission-info">

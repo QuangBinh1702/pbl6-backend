@@ -317,11 +317,23 @@ async function grantPermissionToUser(userId, actionId, grantedByUserId, note = n
         existingOverride.granted_by = grantedByUserId;
         existingOverride.note = note;
         await existingOverride.save();
+        
+        // Verify save was successful
+        const savedOverride = await UserActionOverride.findById(existingOverride._id);
+        if (!savedOverride || savedOverride.is_granted !== true) {
+          throw new Error('Failed to update override in database');
+        }
+        
+        console.log(`✅ Updated override in DB:`, {
+          _id: savedOverride._id,
+          is_granted: savedOverride.is_granted
+        });
+        
         return {
           success: true,
           message: 'Permission granted to user',
           actionTaken: 'OVERRIDE_CHANGED',
-          override: existingOverride
+          override: savedOverride
         };
       }
     }
@@ -337,12 +349,25 @@ async function grantPermissionToUser(userId, actionId, grantedByUserId, note = n
     });
 
     await newOverride.save();
+    
+    // Verify save was successful
+    const savedOverride = await UserActionOverride.findById(newOverride._id);
+    if (!savedOverride) {
+      throw new Error('Failed to save override to database');
+    }
+    
+    console.log(`✅ Created override in DB:`, {
+      _id: savedOverride._id,
+      user_id: savedOverride.user_id,
+      action_id: savedOverride.action_id,
+      is_granted: savedOverride.is_granted
+    });
 
     return {
       success: true,
       message: 'Permission granted to user',
       actionTaken: 'CREATED_OVERRIDE',
-      override: newOverride
+      override: savedOverride
     };
   } catch (error) {
     console.error('grantPermissionToUser error:', error);
@@ -475,36 +500,58 @@ async function applyPermissionChanges(userId, changes, grantedByUserId) {
       try {
         // Get current state
         const matrix = await buildUserPermissionMatrix(userId);
-        const currentPermission = matrix.permissions.find(p => String(p.action_id) === String(actionId));
+        
+        // Find permission in all roles (permissionsByRole structure)
+        let currentPermission = null;
+        if (matrix.permissionsByRole) {
+          for (const roleName in matrix.permissionsByRole) {
+            const roleData = matrix.permissionsByRole[roleName];
+            if (roleData.permissions) {
+              const perm = roleData.permissions.find(p => String(p.action_id) === String(actionId));
+              if (perm) {
+                currentPermission = perm;
+                break; // Found, stop searching
+              }
+            }
+          }
+        }
 
         if (!currentPermission) {
           results.push({
             actionId,
             success: false,
-            message: 'Action not found'
+            message: 'Action not found in user permissions'
           });
           continue;
         }
 
+        // Get current effective state (final result after override)
+        const currentEffective = currentPermission.effective;
         const currentViaRoles = currentPermission.viaRoles;
+        const hasOverride = currentPermission.overrideType !== null;
 
-        if (desiredEffective === currentViaRoles && !currentPermission.overrideType) {
-          // No change needed
+        // Check if change is needed
+        if (desiredEffective === currentEffective) {
+          // No change needed - already in desired state
           results.push({
             actionId,
             success: true,
-            message: 'No change needed',
-            actionTaken: 'NONE'
+            message: 'No change needed - already in desired state',
+            actionTaken: 'NONE',
+            currentEffective,
+            desiredEffective
           });
           continue;
         }
 
-        if (desiredEffective === currentViaRoles && currentPermission.overrideType) {
-          // Delete override to fall back to roles
+        // If desired state matches role-based state, delete override
+        if (desiredEffective === currentViaRoles && hasOverride) {
+          // Delete override to fall back to role-based permission
           const deleteResult = await deletePermissionOverride(userId, actionId);
           results.push({
             actionId,
-            ...deleteResult
+            ...deleteResult,
+            actionTaken: 'DELETED_OVERRIDE'
           });
           continue;
         }
@@ -512,6 +559,12 @@ async function applyPermissionChanges(userId, changes, grantedByUserId) {
         if (desiredEffective) {
           // Grant
           const grantResult = await grantPermissionToUser(userId, actionId, grantedByUserId, note);
+          console.log(`✅ Grant permission: ${actionId}`, grantResult);
+          
+          if (!grantResult.success) {
+            console.error(`❌ Failed to grant permission: ${actionId}`, grantResult);
+          }
+          
           results.push({
             actionId,
             ...grantResult
@@ -519,27 +572,53 @@ async function applyPermissionChanges(userId, changes, grantedByUserId) {
         } else {
           // Revoke
           const revokeResult = await revokePermissionFromUser(userId, actionId, grantedByUserId, note);
+          console.log(`✅ Revoke permission: ${actionId}`, revokeResult);
+          
+          if (!revokeResult.success) {
+            console.error(`❌ Failed to revoke permission: ${actionId}`, revokeResult);
+          }
+          
           results.push({
             actionId,
             ...revokeResult
           });
         }
       } catch (err) {
+        console.error(`❌ Error processing change for ${actionId}:`, err);
         results.push({
           actionId,
           success: false,
-          message: err.message
+          message: err.message,
+          error: err.stack
         });
       }
     }
 
-    // Return updated matrix
+    // Check if any changes failed
+    const failedChanges = results.filter(r => !r.success);
+    if (failedChanges.length > 0) {
+      console.warn(`⚠️ ${failedChanges.length} changes failed:`, failedChanges);
+    }
+
+    // Return updated matrix (reload from DB to verify)
     const updatedMatrix = await buildUserPermissionMatrix(userId);
+    
+    console.log(`📊 Updated matrix - Effective permissions:`, 
+      updatedMatrix.permissionsByRole?.staff?.permissions
+        .filter(p => p.effective)
+        .map(p => `${p.resource}:${p.action_code}`)
+        .slice(0, 10)
+    );
 
     return {
       success: true,
       changes: results,
-      updatedMatrix
+      updatedMatrix,
+      summary: {
+        total: results.length,
+        success: results.filter(r => r.success).length,
+        failed: failedChanges.length
+      }
     };
   } catch (error) {
     console.error('applyPermissionChanges error:', error);
