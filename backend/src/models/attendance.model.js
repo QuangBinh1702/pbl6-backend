@@ -136,9 +136,13 @@ attendanceSchema.post('save', async function(doc) {
     // Lazy load to avoid circular dependencies
     const PvcdRecord = require('./pvcd_record.model');
 
-    // Get year from scanned_at
+    // Get year (calendar year) from scanned_at
     const year = new Date(doc.scanned_at).getFullYear();
-    const yearDate = new Date(`${year}-01-01`);
+
+    // Validate year is a valid 4-digit number
+    if (isNaN(year) || year < 1900 || year > 2100) {
+      throw new Error(`Invalid year: ${year}`);
+    }
 
     // Calculate total points for this student in this year
     const attendances = await this.constructor.find({
@@ -148,26 +152,34 @@ attendanceSchema.post('save', async function(doc) {
 
     let totalPoints = 0;
     attendances.forEach(att => {
-      if (new Date(att.scanned_at).getFullYear() === year) {
-        totalPoints += att.points || 0;
+      const attYear = new Date(att.scanned_at).getFullYear();
+      if (attYear === year) {
+        totalPoints += parseFloat(att.points) || 0;
       }
     });
 
     // Cap at 100
-    totalPoints = Math.min(totalPoints, 100);
+    totalPoints = Math.min(Math.max(totalPoints, 0), 100);
 
-    // Update or create pvcd_record
+    // Validate student_id exists
+    const StudentProfile = require('./student_profile.model');
+    const student = await StudentProfile.findById(doc.student_id);
+    if (!student) {
+      throw new Error(`Student not found: ${doc.student_id}`);
+    }
+
+    // Update or create pvcd_record with numeric year
     await PvcdRecord.findOneAndUpdate(
       {
         student_id: doc.student_id,
-        year: yearDate
+        year: year  // ✅ Use numeric year, not Date
       },
       {
         student_id: doc.student_id,
-        year: yearDate,
+        year: year,  // ✅ Use numeric year, not Date
         total_point: totalPoints
       },
-      { upsert: true, new: true }
+      { upsert: true, new: true, runValidators: true }
     );
   } catch (err) {
     console.error('Error updating pvcd_record:', err.message);

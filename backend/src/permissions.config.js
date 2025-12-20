@@ -216,7 +216,7 @@ module.exports = {
     'report:view_overview',
     
     // Class - Xem lớp
-    'class:read',
+    // 'class:read',
     // Lớp trưởng có thêm: class:attendance, class:report (cần middleware checkClassMonitor)
     
     // PVCD Record - Xem điểm rèn luyện của mình
@@ -232,7 +232,9 @@ module.exports = {
     'student_profile:read', 'student_profile:update',
     
     // Xem thông tin tổ chức
-    'cohort:read', 'faculty:read', 'field:read',
+    // 'cohort:read',
+    // 'faculty:read', 
+    'field:read',
     
     // Post - Đọc bài đăng
     'post:read',

@@ -77,8 +77,23 @@ module.exports = {
     try {
       const payload = { ...req.body };
       if (payload.studentId && !payload.student_id) payload.student_id = payload.studentId;
-      // Normalize year to number if sent as string
-      if (payload.year != null) payload.year = parseInt(payload.year, 10);
+      
+      // ✅ Validate and normalize year to number
+      if (payload.year != null) {
+        const yearValue = parseInt(payload.year, 10);
+        if (isNaN(yearValue) || yearValue < 1900 || yearValue > 2100) {
+          return res.status(400).json({ 
+            success: false,
+            message: 'Year must be a 4-digit number between 1900 and 2100' 
+          });
+        }
+        payload.year = yearValue;
+      } else {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Year is required' 
+        });
+      }
 
       // Remove total_point from payload - it will be calculated automatically
       delete payload.total_point;
@@ -127,6 +142,13 @@ module.exports = {
       });
       res.status(201).json(record);
     } catch (err) {
+      // Handle unique constraint violation
+      if (err.code === 11000) {
+        return res.status(409).json({ 
+          success: false,
+          message: `A PVCD record already exists for this student in year ${req.body.year}` 
+        });
+      }
       res.status(400).json({ message: err.message });
     }
   },
@@ -135,7 +157,18 @@ module.exports = {
     try {
       const payload = { ...req.body };
       if (payload.studentId && !payload.student_id) payload.student_id = payload.studentId;
-      if (payload.year != null) payload.year = parseInt(payload.year, 10);
+      
+      // ✅ Validate and normalize year to number
+      if (payload.year != null) {
+        const yearValue = parseInt(payload.year, 10);
+        if (isNaN(yearValue) || yearValue < 1900 || yearValue > 2100) {
+          return res.status(400).json({ 
+            success: false,
+            message: 'Year must be a 4-digit number between 1900 and 2100' 
+          });
+        }
+        payload.year = yearValue;
+      }
 
       // Remove total_point from payload - it will be calculated automatically
       delete payload.total_point;
@@ -197,6 +230,13 @@ module.exports = {
       }
       res.json(record);
     } catch (err) {
+      // Handle unique constraint violation
+      if (err.code === 11000) {
+        return res.status(409).json({ 
+          success: false,
+          message: `A PVCD record already exists for this student in year ${req.body.year}` 
+        });
+      }
       res.status(400).json({ message: err.message });
     }
   },

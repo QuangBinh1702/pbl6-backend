@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
 import ChatPage from './pages/ChatPage';
 import AdminPermissionPage from './pages/AdminPermissionPage';
+import BulkImportStudents from './pages/BulkImportStudents';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -107,6 +108,7 @@ function App() {
       <div className="App">
         <Routes>
           <Route path="/admin/permissions" element={<AdminPermissionPage />} />
+          <Route path="/bulk-import-students" element={<BulkImportStudents />} />
           <Route path="/" element={<ChatPage />} />
         </Routes>
         <button
@@ -145,9 +147,17 @@ function App() {
           <Link to="/admin/permissions" style={{
             color: 'white',
             textDecoration: 'none',
+            marginRight: '1rem',
             fontSize: '0.9rem'
           }}>
             🔐 Quản lý Quyền
+          </Link>
+          <Link to="/bulk-import-students" style={{
+            color: 'white',
+            textDecoration: 'none',
+            fontSize: '0.9rem'
+          }}>
+            📤 Import Sinh Viên
           </Link>
         </div>
       </div>
