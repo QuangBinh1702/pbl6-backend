@@ -557,13 +557,67 @@
             // Disable submit button and show loading
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
+            submitBtn.textContent = '📍 Đang lấy vị trí GPS...';
             document.getElementById('loading').style.display = 'block';
+
+            // 🆕 GEOFENCE: BẮT BUỘC lấy location TRƯỚC KHI submit
+            let scanLocation = null;
+            try {
+                // Hiển thị thông báo info (dùng successMsg với style khác)
+                const infoEl = document.getElementById('successMsg');
+                infoEl.style.background = '#dbeafe';
+                infoEl.style.borderColor = '#3b82f6';
+                infoEl.style.color = '#1e40af';
+                infoEl.textContent = '📍 Đang lấy vị trí GPS của bạn... Vui lòng cho phép truy cập vị trí.';
+                infoEl.style.display = 'block';
+                
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(
+                        resolve,
+                        reject,
+                        { 
+                            enableHighAccuracy: true, // High accuracy để check geofence chính xác
+                            timeout: 15000, // 15 giây
+                            maximumAge: 0 // Không dùng cache, lấy vị trí mới nhất
+                        }
+                    );
+                });
+                
+                scanLocation = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy
+                };
+                console.log('📍 Location obtained:', scanLocation);
+                clearMessages();
+            } catch (error) {
+                // Error codes: 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
+                let errorMsg = '❌ Không thể lấy vị trí. ';
+                if (error.code === 1) {
+                    errorMsg += 'Vui lòng bật quyền truy cập vị trí trong trình duyệt và thử lại.';
+                } else if (error.code === 2) {
+                    errorMsg += 'Vui lòng kiểm tra GPS/Internet và thử lại.';
+                } else if (error.code === 3) {
+                    errorMsg += 'Timeout lấy vị trí. Vui lòng thử lại hoặc di chuyển ra ngoài trời.';
+                } else {
+                    errorMsg += error.message || 'Vui lòng thử lại.';
+                }
+                
+                showError(errorMsg);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Nộp Điểm Danh';
+                document.getElementById('loading').style.display = 'none';
+                return;
+            }
+
+            submitBtn.textContent = '⏳ Đang gửi...';
 
             console.log('Submitting attendance...', {
                 activity_id: document.getElementById('activity_id').value,
                 session_id: document.getElementById('session_id').value,
                 student_name: studentName,
-                student_id: studentId
+                student_id: studentId,
+                scan_location: scanLocation
             });
 
             try {
@@ -575,7 +629,9 @@
                         student_name: studentName,
                         class: classId,
                         faculty: faculty
-                    }
+                    },
+                    // 🆕 GEOFENCE: Include scan location
+                    scan_location: scanLocation
                 };
 
                 // 🆕 NO TOKEN REQUIRED: Public endpoint - validates by MSSV and registration
@@ -617,6 +673,7 @@
                 showError('Lỗi: ' + error.message);
             } finally {
                 submitBtn.disabled = false;
+                submitBtn.textContent = 'Nộp Điểm Danh';
                 document.getElementById('loading').style.display = 'none';
             }
         }

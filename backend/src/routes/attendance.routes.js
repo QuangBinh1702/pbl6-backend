@@ -75,6 +75,13 @@ router.post('/validate-qr',
   attendanceController.validateQRCode
 );
 
+// 🆕 PHASE 2.5: Scan QR Code V2 - With geofence check (requires auth)
+router.post('/scan-qr-v2',
+  auth,
+  checkPermission('attendance', 'SCAN'),
+  attendanceController.scanQRCodeV2
+);
+
 // Lấy danh sách phản hồi chờ duyệt theo khoa - before /:id
 router.get('/faculty/:facultyId/pending-feedbacks',
   auth,

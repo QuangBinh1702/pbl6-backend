@@ -628,6 +628,7 @@ module.exports = {
   // Hệ thống QR mới sử dụng submitAttendance thay thế
 
   // ===== PHASE 2.5: scanQRCodeV2 - New on-demand QR scanning (replaces old scanQRCode) =====
+  // Note: Geofence check is done in submitAttendanceForm, not here
   async scanQRCodeV2(req, res) {
     try {
       const { qrData } = req.body;
@@ -714,6 +715,9 @@ module.exports = {
           message: `Bạn đã quét QR này rồi (${qrName})`
         });
       }
+
+      // Note: Geofence check is done in submitAttendanceForm, not here
+      // This endpoint just validates QR and creates a temporary attendance record
 
       // ===== Create temporary attendance record =====
       // This is just to record the QR scan
