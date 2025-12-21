@@ -587,21 +587,42 @@ module.exports = {
         })
         .lean();
 
-      // Sum attendance points
-      // Use 'points' field (FINAL TOTAL POINTS per activity)
-      // NOT points_earned (which is just the latest scan score)
-      let attendancePoints = 0;
-      const attendanceList = attendances.map(att => {
+      // ✅ GROUP by activity_id and take MAX points per activity
+      // Reason: Multiple QR scans for same activity = multiple attendance records
+      // But we only count the HIGHEST score from all scans of that activity
+      const activityMap = {};
+      attendances.forEach(att => {
+        const actId = att.activity_id?._id?.toString();
         const points = parseFloat(att.points) || 0;
-        attendancePoints += points;
-        return {
-          _id: att._id,
-          type: 'attendance',
-          title: att.activity_id?.name || 'Unknown Activity',
-          points: points,
-          date: att.scanned_at,
-          activity_id: att.activity_id?._id
-        };
+        
+        // Create or update activity entry with MAX points
+        if (!activityMap[actId]) {
+          activityMap[actId] = {
+            _id: att._id,
+            type: 'attendance',
+            title: att.activity_id?.name || 'Unknown Activity',
+            points: points,
+            date: att.scanned_at,
+            activity_id: att.activity_id?._id,
+            scan_count: 1
+          };
+        } else if (points > activityMap[actId].points) {
+          // Update if this scan has higher points
+          activityMap[actId].points = points;
+          activityMap[actId]._id = att._id;
+          activityMap[actId].date = att.scanned_at;
+          activityMap[actId].scan_count += 1;
+        } else {
+          // Just increment scan count if not highest
+          activityMap[actId].scan_count += 1;
+        }
+      });
+
+      // Convert to array and sum points
+      let attendancePoints = 0;
+      const attendanceList = Object.values(activityMap).map(act => {
+        attendancePoints += act.points;
+        return act;
       });
 
       // 2️⃣ Get all approved evidences for this student in this year

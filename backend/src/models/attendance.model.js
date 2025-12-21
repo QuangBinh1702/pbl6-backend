@@ -158,10 +158,22 @@ attendanceSchema.post('findOneAndDelete', async function(doc) {
       }
     }).lean();
 
-    // Sum remaining attendance points
-    let attendancePoints = 0;
+    // ✅ GROUP by activity_id and take MAX points per activity
+    const activityPointsMap = {};
     attendances.forEach(att => {
-      attendancePoints += parseFloat(att.points) || 0;
+      const actId = att.activity_id.toString();
+      const points = parseFloat(att.points) || 0;
+      
+      // Keep the MAX points for this activity
+      if (!activityPointsMap[actId] || points > activityPointsMap[actId]) {
+        activityPointsMap[actId] = points;
+      }
+    });
+
+    // Sum the MAX points from each activity
+    let attendancePoints = 0;
+    Object.values(activityPointsMap).forEach(maxPoints => {
+      attendancePoints += maxPoints;
     });
 
     // Get approved evidences for this year

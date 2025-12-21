@@ -1,0 +1,71 @@
+# DANH SÁCH 30 CÂU HỎI TEST VỀ PDF
+# File: 3337 QD BH Quy dinh tham gia ket noi va phuc vu cong dong cua SV dai hoc he CQ Truong DHBK-DHDN
+
+## 📋 QUY ĐỊNH CHUNG (Trang 1-3)
+1. Quy định về tham gia kết nối và phục vụ cộng đồng được ban hành bởi ai?
+2. Quy định này có số quyết định là gì?
+3. Quy định này áp dụng cho đối tượng nào?
+4. Phạm vi điều chỉnh của quy định này là gì?
+
+## 🎯 MỤC ĐÍCH VÀ NGUYÊN TẮC (Trang 3-4)
+5. Mục đích của hoạt động kết nối và phục vụ cộng đồng là gì?
+6. Yêu cầu và nguyên tắc thực hiện kết nối và phục vụ cộng đồng như thế nào?
+7. Hoạt động cộng đồng phải tuân thủ những gì?
+
+## 📚 NỘI DUNG HOẠT ĐỘNG (Trang 5-7)
+8. Nội dung hoạt động cộng đồng bao gồm những lĩnh vực nào?
+9. Hoạt động về đào tạo và đảm bảo chất lượng giáo dục là gì?
+10. Hoạt động về môi trường và phát triển bền vững bao gồm những gì?
+11. Hoạt động công tác xã hội là gì?
+12. Có những hoạt động nào về hỗ trợ thiên tai dịch bệnh không?
+
+## 🏢 TỔ CHỨC VÀ QUẢN LÝ (Trang 7-8)
+13. Ai chịu trách nhiệm tổ chức hoạt động cộng đồng?
+14. Phòng Công tác Sinh viên có vai trò gì trong hoạt động cộng đồng?
+15. Các khoa và tổ chức đoàn thể có thể triển khai hoạt động như thế nào?
+16. Các hoạt động phải được thông báo như thế nào?
+
+## 📊 ĐIỂM SỐ VÀ ĐÁNH GIÁ (Trang 8-9)
+17. Sinh viên hệ đào tạo 5 năm cần tích lũy tối thiểu bao nhiêu điểm HDCD?
+18. Sinh viên hệ đào tạo 4 năm cần tích lũy tối thiểu bao nhiêu điểm HDCD?
+19. Sinh viên học vượt tiến độ thì điểm tích lũy HDCD tối thiểu được tính như thế nào?
+20. Cách tính điểm quy đổi HDCD như thế nào?
+21. Ai có trách nhiệm đánh giá và ghi nhận kết quả tham gia HDCD?
+22. Thời gian đánh giá kết quả tham gia HDCD được thực hiện như thế nào?
+
+## ⚖️ QUYỀN LỢI VÀ TRÁCH NHIỆM (Trang 10+)
+23. Sinh viên có quyền lợi gì khi tham gia hoạt động cộng đồng?
+24. Trách nhiệm của sinh viên khi tham gia hoạt động cộng đồng là gì?
+25. Sinh viên vi phạm khi tham gia HDCD sẽ bị xử lý như thế nào?
+26. Đơn vị chủ trì tổ chức hoạt động có trách nhiệm gì?
+
+## 📄 CÂU HỎI CỤ THỂ VỀ PDF
+27. Quy định này được ban hành theo quyết định số bao nhiêu?
+28. Trường Đại học Bách khoa thuộc Đại học nào?
+29. Có những hình thức khen thưởng nào cho sinh viên tham gia?
+30. Sinh viên có được cấp giấy chứng nhận khi tham gia không?
+
+---
+
+## 🚀 CÁCH SỬ DỤNG
+
+### Test tất cả câu hỏi:
+```bash
+cd backend
+node scripts/test-rag-with-pdf-questions.js
+```
+
+### Test một câu hỏi cụ thể:
+```bash
+cd backend
+node -e "require('dotenv').config(); const mongoose = require('mongoose'); const ragService = require('./src/services/rag.service'); (async () => { await mongoose.connect(process.env.MONGODB_URI, { dbName: process.env.MONGODB_NAME || 'pbl6' }); const result = await ragService.retrieve('Sinh viên hệ 5 năm cần bao nhiêu điểm HDCD?', { tenantId: 'default', roles: [] }); console.log('Confidence:', result.confidence.toFixed(3)); console.log('Top doc:', result.documents[0]?.title); console.log('Answer:', result.answer.substring(0, 300)); await mongoose.connection.close(); })();"
+```
+
+### Test qua API:
+```bash
+curl -X POST http://localhost:5000/api/chatbot/ask \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"question": "Sinh viên hệ 5 năm cần bao nhiêu điểm HDCD?"}'
+```
+

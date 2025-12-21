@@ -83,11 +83,24 @@ evidenceSchema.post('save', async function(doc) {
       }
     }).lean();
 
-    // Sum points (FINAL TOTAL POINTS per activity, not points_earned which is just latest scan)
-    let attendancePoints = 0;
+    // ✅ GROUP by activity_id and take MAX points per activity
+    // Reason: Multiple QR scans for same activity = multiple attendance records
+    // But we only count the HIGHEST score from all scans of that activity
+    const activityPointsMap = {};
     attendances.forEach(att => {
-      // Use 'points' field which is the FINAL/TOTAL points for the activity
-      attendancePoints += parseFloat(att.points) || 0;
+      const actId = att.activity_id.toString();
+      const points = parseFloat(att.points) || 0;
+      
+      // Keep the MAX points for this activity
+      if (!activityPointsMap[actId] || points > activityPointsMap[actId]) {
+        activityPointsMap[actId] = points;
+      }
+    });
+
+    // Sum the MAX points from each activity
+    let attendancePoints = 0;
+    Object.values(activityPointsMap).forEach(maxPoints => {
+      attendancePoints += maxPoints;
     });
 
     // 2️⃣ Get all approved evidences for this student in this year (by submitted_at)
@@ -156,10 +169,22 @@ evidenceSchema.post('findOneAndDelete', async function(doc) {
       }
     }).lean();
 
-    // Sum attendance points
-    let attendancePoints = 0;
+    // ✅ GROUP by activity_id and take MAX points per activity
+    const activityPointsMap = {};
     attendances.forEach(att => {
-      attendancePoints += parseFloat(att.points) || 0;
+      const actId = att.activity_id.toString();
+      const points = parseFloat(att.points) || 0;
+      
+      // Keep the MAX points for this activity
+      if (!activityPointsMap[actId] || points > activityPointsMap[actId]) {
+        activityPointsMap[actId] = points;
+      }
+    });
+
+    // Sum the MAX points from each activity
+    let attendancePoints = 0;
+    Object.values(activityPointsMap).forEach(maxPoints => {
+      attendancePoints += maxPoints;
     });
 
     // Get all approved evidences for this student in this year
