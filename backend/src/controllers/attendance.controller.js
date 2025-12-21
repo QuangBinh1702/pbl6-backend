@@ -1470,7 +1470,7 @@ module.exports = {
       await activity.save();
       
       // Log với location info (nếu có)
-      if (qrRecord.location) {
+      if (qrRecord.location && qrRecord.location.latitude != null && qrRecord.location.longitude != null) {
         console.log(`✅ QR created at [${qrRecord.location.latitude.toFixed(4)}, ${qrRecord.location.longitude.toFixed(4)}]. Activity "${activity.title}" now has ${activity.total_qr_created} QRs`);
       } else {
         console.log(`✅ QR created (no location/geofence). Activity "${activity.title}" now has ${activity.total_qr_created} QRs`);
@@ -1478,7 +1478,7 @@ module.exports = {
 
       res.status(201).json({
         success: true,
-        message: qrRecord.location 
+        message: (qrRecord.location && qrRecord.location.latitude != null && qrRecord.location.longitude != null)
           ? `✅ QR tạo thành công tại vị trí [${qrRecord.location.latitude.toFixed(4)}, ${qrRecord.location.longitude.toFixed(4)}]`
           : `✅ QR tạo thành công (không có geofence - quét được ở bất kỳ đâu)`,
         data: {
@@ -1489,12 +1489,15 @@ module.exports = {
           expires_at: qrRecord.expires_at,
           scans_count: 0,
           // 🆕 GEOFENCE: Return location info (optional)
-          location: qrRecord.location ? {
+          // Nếu không có location → geofence_radius_m cũng không cần (vì geofence cần location)
+          location: (qrRecord.location && qrRecord.location.latitude != null && qrRecord.location.longitude != null) ? {
             latitude: qrRecord.location.latitude,
             longitude: qrRecord.location.longitude,
-            accuracy_m: qrRecord.location.accuracy_m
+            accuracy_m: qrRecord.location.accuracy_m || null
           } : null,
-          geofence_radius_m: qrRecord.geofence_radius_m || null,
+          geofence_radius_m: (qrRecord.location && qrRecord.location.latitude != null && qrRecord.location.longitude != null && qrRecord.geofence_radius_m != null && qrRecord.geofence_radius_m !== undefined) 
+            ? qrRecord.geofence_radius_m 
+            : null,
           // 🆕 DYNAMIC QR SCORING: Return total QR count
           total_qr_created: activity.total_qr_created
         }
