@@ -13,6 +13,22 @@ const QRCode = require('qrcode');
 // ⚠️ REMOVED: attendanceCalculator không còn dùng (hệ thống sessions đã bị xóa)
 const XLSX = require('xlsx');  // ← For Excel export
 
+// Utility function: Calculate distance between two GPS points (Haversine formula)
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371000; // Earth radius in meters
+  const toRad = Math.PI / 180;
+  
+  const dLat = (lat2 - lat1) * toRad;
+  const dLon = (lon2 - lon1) * toRad;
+  
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLon / 2) ** 2;
+  
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  
+  return R * c; // Distance in meters
+};
+
 module.exports = {
   async getAllAttendances(req, res) {
     try {
@@ -720,7 +736,7 @@ module.exports = {
       let geofenceResult = { passed: true };
       
       if (qrRecord && qrRecord.location && scan_location && scan_location.latitude && scan_location.longitude) {
-        const distance = this.calculateDistance(
+        const distance = calculateDistance(
           qrRecord.location.latitude,
           qrRecord.location.longitude,
           scan_location.latitude,
@@ -828,22 +844,6 @@ module.exports = {
   // ===== PHASE 2: APPROVAL WORKFLOW =====
 
   // 1. Submit Attendance (Student submission for approval)
-  // 🆕 Utility function: Calculate distance between two GPS points (Haversine formula)
-  calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371000; // Earth radius in meters
-    const toRad = Math.PI / 180;
-    
-    const dLat = (lat2 - lat1) * toRad;
-    const dLon = (lon2 - lon1) * toRad;
-    
-    const a = Math.sin(dLat / 2) ** 2 +
-      Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLon / 2) ** 2;
-    
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    
-    return R * c; // Distance in meters
-  },
-
   async submitAttendance(req, res) {
     try {
       const { activity_id, session_id, student_info, scan_location } = req.body;
@@ -945,7 +945,7 @@ module.exports = {
             // ✅ CHỈ TÍNH KHOẢNG CÁCH NẾU QR CÓ LOCATION
             // Nếu QR không có location → không tính distance, chỉ lưu scan_location
             if (qrRecord.location && qrRecord.location.latitude && qrRecord.location.longitude) {
-              const distance = this.calculateDistance(
+              const distance = calculateDistance(
                 qrRecord.location.latitude,
                 qrRecord.location.longitude,
                 scan_location.latitude,
