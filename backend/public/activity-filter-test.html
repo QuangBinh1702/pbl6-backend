@@ -292,23 +292,6 @@
         margin-bottom: 10px;
       }
 
-      .json-view {
-        background: #f5f5f5;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        padding: 15px;
-        margin-top: 20px;
-        overflow-x: auto;
-        max-height: 400px;
-        overflow-y: auto;
-      }
-
-      .json-view pre {
-        margin: 0;
-        font-family: "Courier New", monospace;
-        font-size: 0.85em;
-        color: #333;
-      }
 
       @media (max-width: 768px) {
         .form-row {
@@ -439,10 +422,6 @@
               </thead>
               <tbody></tbody>
             </table>
-          </div>
-
-          <div class="json-view">
-            <pre id="json-all">[]</pre>
           </div>
         </div>
 
@@ -589,10 +568,6 @@
               <tbody></tbody>
             </table>
           </div>
-
-          <div class="json-view">
-            <pre id="json-student">[]</pre>
-          </div>
         </div>
 
         <div class="empty-state" id="empty-student" style="display: none">
@@ -705,6 +680,13 @@
           }
 
           const data = await response.json();
+          console.log("[Search All Activities] Response:", data);
+          
+          // Check if response has error
+          if (!data.success && data.message) {
+            throw new Error(data.message);
+          }
+          
           displayResultsAll(data);
         } catch (error) {
           console.error("Error:", error);
@@ -766,10 +748,18 @@
           const response = await fetch(url, options);
 
           if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
           }
 
           const data = await response.json();
+          console.log("[Search Student Activities] Response:", data);
+          
+          // Check if response has error
+          if (!data.success && data.message) {
+            throw new Error(data.message);
+          }
+          
           displayResultsStudent(data);
         } catch (error) {
           console.error("Error:", error);
@@ -793,31 +783,41 @@
 
       function formatDate(dateString) {
         if (!dateString) return "-";
-        const date = new Date(dateString);
-        return date.toLocaleDateString("vi-VN", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
+        try {
+          const date = new Date(dateString);
+          if (isNaN(date.getTime())) return "-";
+          return date.toLocaleDateString("vi-VN", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        } catch (e) {
+          return "-";
+        }
+      }
+
+      function escapeHtml(text) {
+        if (!text) return "-";
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
       }
 
       function displayResultsAll(data) {
-        const results = data.data || [];
-        const count = data.count || 0;
+        // Handle both response formats: { success: true, data: [...], count: ... } or direct array
+        const results = data.data || data || [];
+        const count = data.count !== undefined ? data.count : results.length;
 
-        if (count === 0) {
+        if (count === 0 || results.length === 0) {
           document.getElementById("empty-all").style.display = "block";
+          document.getElementById("results-all").style.display = "none";
           return;
         }
 
         document.getElementById("count-all").textContent = `${count} kết quả`;
-        document.getElementById("json-all").textContent = JSON.stringify(
-          results,
-          null,
-          2
-        );
+        document.getElementById("empty-all").style.display = "none";
 
         const tbody = document.querySelector("#table-all tbody");
         tbody.innerHTML = "";
@@ -829,19 +829,19 @@
 
           const row = document.createElement("tr");
           row.innerHTML = `
-                    <td><strong>${activity.title || "-"}</strong></td>
-                    <td>${
+                    <td><strong>${escapeHtml(activity.title || "-")}</strong></td>
+                    <td>${escapeHtml(
                       activity.field_id?.name || activity.field_id || "-"
-                    }</td>
-                    <td>${
+                    )}</td>
+                    <td>${escapeHtml(
                       activity.org_unit_id?.name || activity.org_unit_id || "-"
-                    }</td>
+                    )}</td>
                     <td><span class="status-badge ${getStatusClass(
                       activity.status
-                    )}">${activity.status}</span></td>
+                    )}">${escapeHtml(activity.status || "-")}</span></td>
                     <td>${postBadge}</td>
                     <td>${formatDate(activity.start_time)}</td>
-                    <td>${activity.location || "-"}</td>
+                    <td>${escapeHtml(activity.location || "-")}</td>
                 `;
           tbody.appendChild(row);
         });
@@ -850,22 +850,20 @@
       }
 
       function displayResultsStudent(data) {
-        const results = data.data || [];
-        const count = data.count || 0;
+        // Handle both response formats: { success: true, data: [...], count: ... } or direct array
+        const results = data.data || data || [];
+        const count = data.count !== undefined ? data.count : results.length;
 
-        if (count === 0) {
+        if (count === 0 || results.length === 0) {
           document.getElementById("empty-student").style.display = "block";
+          document.getElementById("results-student").style.display = "none";
           return;
         }
 
         document.getElementById(
           "count-student"
         ).textContent = `${count} kết quả`;
-        document.getElementById("json-student").textContent = JSON.stringify(
-          results,
-          null,
-          2
-        );
+        document.getElementById("empty-student").style.display = "none";
 
         const tbody = document.querySelector("#table-student tbody");
         tbody.innerHTML = "";
@@ -879,19 +877,19 @@
 
           const row = document.createElement("tr");
           row.innerHTML = `
-                    <td><strong>${activity.title || "-"}</strong></td>
-                    <td>${
+                    <td><strong>${escapeHtml(activity.title || "-")}</strong></td>
+                    <td>${escapeHtml(
                       activity.field_id?.name || activity.field_id || "-"
-                    }</td>
-                    <td>${
+                    )}</td>
+                    <td>${escapeHtml(
                       activity.org_unit_id?.name || activity.org_unit_id || "-"
-                    }</td>
+                    )}</td>
                     <td><span class="status-badge ${getStatusClass(
                       activity.status
-                    )}">${activity.status}</span></td>
+                    )}">${escapeHtml(activity.status || "-")}</span></td>
                     <td>${postBadge}</td>
-                    <td style="text-align: center;">${registered}</td>
-                    <td style="text-align: center;">${attended}</td>
+                    <td style="text-align: center; font-size: 1.2em;">${registered}</td>
+                    <td style="text-align: center; font-size: 1.2em;">${attended}</td>
                     <td>${formatDate(activity.start_time)}</td>
                 `;
           tbody.appendChild(row);

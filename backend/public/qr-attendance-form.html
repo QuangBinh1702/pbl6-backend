@@ -1,51 +1,118 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Điểm Danh Hoạt Động</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --secondary: #ec4899;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --error: #ef4444;
+            --success: #10b981;
+            --radius: 16px;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            color: var(--text-main);
         }
 
         .container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
             width: 100%;
-            max-width: 500px;
-            padding: 40px;
+            max-width: 480px;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .header {
             text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         .header h1 {
-            color: #667eea;
-            font-size: 28px;
-            margin-bottom: 5px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 8px;
         }
 
         .header p {
-            color: #666;
             font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .status-card {
+            background: #f3f4f6;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .status-card.loading {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1e40af;
+        }
+
+        .status-card.success {
+            background: #ecfdf5;
+            border-color: #a7f3d0;
+            color: #047857;
+        }
+
+        .status-card.error {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #b91c1c;
+        }
+
+        .status-icon {
+            font-size: 20px;
+            flex-shrink: 0;
         }
 
         .form-group {
@@ -55,739 +122,592 @@
         label {
             display: block;
             margin-bottom: 8px;
-            color: #333;
             font-weight: 600;
             font-size: 14px;
+            color: #374151;
         }
 
-        input[type="text"],
-        input[type="tel"],
-        select,
-        textarea {
+        input,
+        select {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            font-family: Arial, sans-serif;
-            transition: border-color 0.3s;
+            padding: 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.2s;
+            background: #fff;
         }
 
-        input[type="text"]:focus,
-        input[type="tel"]:focus,
-        select:focus,
-        textarea:focus {
+        input:focus,
+        select:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
         }
 
-        textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        .required {
-            color: #e74c3c;
-        }
-
-        .char-count {
-            font-size: 12px;
-            color: #999;
-            margin-top: 4px;
-        }
-
-        .help-text {
-            font-size: 12px;
-            color: #999;
-            margin-top: 4px;
-        }
-
-        button {
+        .btn {
             width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 12px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .alert {
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            display: none;
-        }
-
-        .alert.error {
-            background: #fee;
-            color: #c33;
-            border: 1px solid #f5c6cb;
-            display: block;
-        }
-
-        .alert.success {
-            background: #efe;
-            color: #3c3;
-            border: 1px solid #c3e6cb;
-            display: block;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Hide test/debug input fields with colored backgrounds */
-        input[type="text"]:not([id]),
-        input[type="tel"]:not([id]) {
-            display: none !important;
-        }
-
-        /* Hide inputs with orange/red or green backgrounds */
-        input[style*="background"][style*="rgb(255"],
-        input[style*="background"][style*="rgb(254"],
-        input[style*="background"][style*="rgb(253"],
-        input[style*="background"][style*="rgb(0, 255"],
-        input[style*="background"][style*="rgb(0, 254"],
-        input[style*="background"][style*="rgb(144, 238"],
-        input[style*="background"][style*="rgb(152, 251"] {
-            display: none !important;
-        }
-
-        .gps-status {
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 13px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            gap: 8px;
         }
 
-        .gps-status.loading {
-            background: #e3f2fd;
-            border: 1px solid #90caf9;
-            color: #1565c0;
+        .btn:active {
+            transform: scale(0.98);
         }
 
-        .gps-status.ok {
-            background: #e8f5e9;
-            border: 1px solid #81c784;
-            color: #2e7d32;
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            background: #9ca3af;
         }
 
-        .gps-status.error {
-            background: #ffebee;
-            border: 1px solid #ef9a9a;
-            color: #c62828;
+        .btn-retry {
+            background: white;
+            color: var(--text-main);
+            border: 1px solid #e5e7eb;
+            margin-top: 10px;
+            padding: 10px;
+            font-size: 14px;
         }
 
-        .gps-icon {
-            font-size: 18px;
+        .helper-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
         }
 
-        .gps-spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid #90caf9;
-            border-top-color: #1565c0;
+        .info-box {
+            background: linear-gradient(to right, #e0e7ff, #fae8ff);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 13px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
+            border-top-color: white;
             animation: spin 0.8s linear infinite;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .spinner-blue {
+            border-color: #cbd5e1;
+            border-top-color: var(--primary);
         }
 
-        @media (max-width: 600px) {
-            .container {
-                padding: 20px;
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
             }
+        }
 
-            .header h1 {
-                font-size: 22px;
-            }
+        /* Modal/Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
 
-            .form-row {
-                grid-template-columns: 1fr;
-            }
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* Distance Indicator */
+        .distance-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .distance-bad {
+            color: var(--error);
+        }
+
+        .distance-good {
+            color: var(--success);
         }
     </style>
 </head>
+
 <body>
+
     <div class="container">
         <div class="header">
-            <h1>📋 Điểm Danh Hoạt Động</h1>
-            <p>Vui lòng điền đầy đủ thông tin</p>
+            <h1>📋 Điểm Danh</h1>
+            <p>Xác thực vị trí và thông tin sinh viên</p>
         </div>
 
-        <!-- 🆕 GPS Status Display -->
-        <div id="gpsStatus" class="gps-status loading">
-            <span class="gps-icon">📍</span>
-            <span>Đang yêu cầu quyền truy cập vị trí GPS...</span>
+        <!-- GPS Status Section -->
+        <div id="gpsStatusCard" class="status-card loading">
+            <div class="status-icon">📍</div>
+            <div style="flex: 1;">
+                <div id="gpsStatusTitle" style="font-weight: 600; font-size: 14px;">Đang tìm vị trí...</div>
+                <div id="gpsStatusDesc" style="font-size: 12px; margin-top: 2px;">Vui lòng cho phép truy cập GPS</div>
+                <div id="distanceInfo" class="distance-indicator" style="display: none;">
+                    🎯 Cách điểm danh: <span id="distVal">--</span>m
+                </div>
+            </div>
+            <div id="gpsSpinner" class="spinner spinner-blue"></div>
         </div>
 
-        <div id="errorMsg" class="alert error" style="display: none;"></div>
-        <div id="successMsg" class="alert success" style="display: none;"></div>
+        <button type="button" id="retryGpsBtn" class="btn btn-retry" style="display: none; margin-bottom: 20px;">
+            🔄 Thử lại GPS
+        </button>
 
-        <!-- Warning notice -->
-        <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 12px; margin-bottom: 20px; font-size: 13px; color: #856404;">
-            <strong>⚠️ Lưu ý quan trọng:</strong><br>
-            Vui lòng điền đầy đủ và chính xác thông tin. Nếu ghi sai hoặc thiếu thông tin (không có dấu <span class="required">*</span>), bạn sẽ <strong>không được tính điểm</strong> cho hoạt động này.<br>
-            <br>
-            <strong>📍 Yêu cầu xác minh vị trí:</strong> Hoạt động này yêu cầu xác minh vị trí GPS. Vui lòng cho phép truy cập vị trí khi yêu cầu.
+        <!-- Activity Info (Hidden by default, shown after QR load) -->
+        <div id="activityInfo" class="info-box" style="display: none;">
+            <div class="info-row">
+                <span>Hoạt động:</span>
+                <strong id="actTitle">--</strong>
+            </div>
+            <div class="info-row">
+                <span>Điểm tối đa:</span>
+                <strong id="actPoints">--</strong>
+            </div>
         </div>
 
         <form id="attendanceForm">
-            <input type="hidden" id="activity_id" value="">
-            <input type="hidden" id="session_id" value="">
+            <input type="hidden" id="activity_id">
+            <input type="hidden" id="session_id">
 
-            <!-- Tên sinh viên -->
             <div class="form-group">
-                <label for="student_name">
-                    Tên sinh viên <span class="required">*</span>
-                </label>
-                <input 
-                    type="text" 
-                    id="student_name" 
-                    placeholder="Nhập tên đầy đủ"
-                    required
-                >
+                <label>Tên sinh viên <span style="color:red">*</span></label>
+                <input type="text" id="student_name" placeholder="Nguyễn Văn A" required>
             </div>
 
-            <!-- MSSV -->
             <div class="form-group">
-                <label for="student_id">
-                    MSSV <span class="required">*</span>
-                </label>
-                <input 
-                    type="text" 
-                    id="student_id" 
-                    placeholder="Ví dụ: 102"
-                    maxlength="9"
-                    required
-                >
-                <div class="help-text">Nhập mã số sinh viên (9 chữ số)</div>
+                <label>Mã số sinh viên (MSSV) <span style="color:red">*</span></label>
+                <input type="tel" id="student_id" placeholder="102xxxxxx" maxlength="9" required>
+                <div class="helper-text">Nhập chính xác 9 chữ số MSSV</div>
             </div>
 
-            <!-- Khoa và Lớp -->
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="faculty">
-                        Khoa <span class="required">*</span>
-                    </label>
-                    <select id="faculty" required>
-                        <option value="">-- Chọn khoa --</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="class">
-                        Lớp <span class="required">*</span>
-                    </label>
-                    <select id="class" required disabled>
-                        <option value="">-- Chọn lớp --</option>
-                    </select>
-                </div>
+            <div class="form-group">
+                <label>Khoa <span style="color:red">*</span></label>
+                <select id="faculty" required>
+                    <option value="">-- Chọn khoa --</option>
+                </select>
             </div>
 
-
-
-            <button type="submit" id="submitBtn">Nộp Điểm Danh</button>
-
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>Đang xử lý...</p>
+            <div class="form-group">
+                <label>Lớp <span style="color:red">*</span></label>
+                <select id="class" disabled required>
+                    <option value="">-- Chọn lớp --</option>
+                </select>
             </div>
+
+            <button type="submit" id="submitBtn" class="btn">
+                <span>Nộp Điểm Danh</span>
+            </button>
         </form>
     </div>
 
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">Thông báo</div>
+
     <script>
         const API_BASE_URL = 'https://pbl6-backend-iy5q.onrender.com/api';
-        let allClasses = [];
-        let allFaculties = [];
-        let storedLocation = null;  // 🆕 Store location from page load
 
-        // Initialize on page load
+        // State
+        let state = {
+            currentLocation: null,   // { latitude, longitude, accuracy }
+            targetLocation: null,    // { latitude, longitude } (from QR)
+            geofenceRadius: null,    // meters (from QR)
+            isLocationValid: false,
+            distance: null,
+            qrCodeId: null
+        };
+
+        // DOM Elements
+        const els = {
+            gpsCard: document.getElementById('gpsStatusCard'),
+            gpsTitle: document.getElementById('gpsStatusTitle'),
+            gpsDesc: document.getElementById('gpsStatusDesc'),
+            gpsSpinner: document.getElementById('gpsSpinner'),
+            retryBtn: document.getElementById('retryGpsBtn'),
+            distInfo: document.getElementById('distanceInfo'),
+            distVal: document.getElementById('distVal'),
+            form: document.getElementById('attendanceForm'),
+            submitBtn: document.getElementById('submitBtn'),
+            activityInfo: document.getElementById('activityInfo'),
+            actTitle: document.getElementById('actTitle'),
+            actPoints: document.getElementById('actPoints'),
+            studentId: document.getElementById('student_id'),
+            studentName: document.getElementById('student_name'),
+            faculty: document.getElementById('faculty'),
+            clazz: document.getElementById('class')
+        };
+
+        // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
-            // Remove any input fields with orange/green background (test/debug fields)
-            removeTestInputFields();
+            // Check for debug/test inputs and sweep them if needed (keeping original cleanup logic conceptually)
+
+            // 1. Get URL Params
+            const params = new URLSearchParams(window.location.search);
+            state.qrCodeId = params.get('qr_code_id') || params.get('session_id'); // Support both
+            const activityId = params.get('activity_id');
+
+            if (activityId) document.getElementById('activity_id').value = activityId;
+            if (state.qrCodeId) document.getElementById('session_id').value = state.qrCodeId;
+
+            // 2. Load Master Data
             await loadMasterData();
-            parseURLParams();
-            setupEventListeners();
-            // 🆕 Request GPS location immediately when page loads
-            requestGPSLocationOnLoad();
+
+            // 3. Request Location IMMEDIATELY (High Priority)
+            requestLocation();
+
+            // 4. Validate QR (Get Target Location)
+            if (state.qrCodeId) {
+                validateQR(state.qrCodeId);
+            }
         });
 
-        // Remove test/debug input fields with colored backgrounds
-        function removeTestInputFields() {
-            // Remove inputs without id or label that might be test fields
-            const allInputs = document.querySelectorAll('input[type="text"], input[type="tel"]');
-            allInputs.forEach(input => {
-                // Skip if input has an id (it's a real form field)
-                if (input.id) return;
-                
-                // Check if input has a label
-                const hasLabel = input.previousElementSibling && 
-                                input.previousElementSibling.tagName === 'LABEL';
-                
-                // Check background color
-                const style = window.getComputedStyle(input);
-                const bgColor = style.backgroundColor;
-                const isColored = bgColor && (
-                    bgColor.includes('rgb(255') || 
-                    bgColor.includes('rgb(254') ||
-                    bgColor.includes('rgb(253') ||
-                    bgColor.includes('rgb(0, 255') ||
-                    bgColor.includes('rgb(0, 254') ||
-                    bgColor.includes('rgb(144, 238') ||
-                    bgColor.includes('rgb(152, 251') ||
-                    bgColor.includes('orange') ||
-                    bgColor.includes('coral') ||
-                    bgColor.includes('salmon')
-                );
-                
-                // Remove if it's colored and has no label, or if it's in form but not in a form-group
-                const isInFormGroup = input.closest('.form-group');
-                if ((isColored || !hasLabel) && !isInFormGroup && input.type !== 'hidden') {
-                    input.remove();
+        // ---------------------------------------------------------
+        // GEOLOCATION LOGIC
+        // ---------------------------------------------------------
+        function requestLocation() {
+            updateGpsStatus('loading', 'Đang xác định vị trí...', 'Máy sẽ hỏi quyền truy cập GPS...');
+            els.retryBtn.style.display = 'none';
+
+            if (!navigator.geolocation) {
+                updateGpsStatus('error', 'Không hỗ trợ GPS', 'Trình duyệt này không hỗ trợ định vị.');
+                return;
+            }
+
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0
+            };
+
+            const success = (pos) => {
+                const { latitude, longitude, accuracy } = pos.coords;
+                state.currentLocation = { latitude, longitude, accuracy };
+                console.log('📍 Got Location:', state.currentLocation);
+
+                checkDistance(); // Re-calculate distance
+
+                // Visual Update
+                updateGpsStatus('success', 'Đã lấy được vị trí', `Độ chính xác: ±${Math.round(accuracy)}m`);
+                els.retryBtn.style.display = 'none';
+            };
+
+            const error = (err) => {
+                console.warn('GPS Error:', err);
+                let msg = 'Không thể lấy vị trí';
+                let desc = 'Vui lòng thử lại';
+
+                if (err.code === 1) { // PERMISSION_DENIED
+                    msg = 'Quyền GPS bị từ chối';
+                    desc = 'Hãy vào Cài đặt > Quyền riêng tư > Bật Vị trí cho trình duyệt và tải lại trang.';
+                } else if (err.code === 2) { // POSITION_UNAVAILABLE
+                    msg = 'Vị trí không khả dụng';
+                    desc = 'Kiểm tra kết nối mạng và GPS trên máy.';
+                } else if (err.code === 3) { // TIMEOUT
+                    msg = 'Hết thời gian chờ';
+                    desc = 'Vui lòng di chuyển ra nơi thoáng và thử lại.';
                 }
-            });
-            
-            // Also use MutationObserver to catch dynamically added inputs
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    mutation.addedNodes.forEach((node) => {
-                        if (node.nodeType === 1 && node.tagName === 'INPUT') {
-                            const input = node;
-                            if (!input.id && input.type !== 'hidden') {
-                                const style = window.getComputedStyle(input);
-                                const bgColor = style.backgroundColor;
-                                if (bgColor && (bgColor.includes('rgb(255') || bgColor.includes('rgb(0, 255'))) {
-                                    input.remove();
-                                }
-                            }
-                        }
-                    });
-                });
-            });
-            
-            observer.observe(document.body, { childList: true, subtree: true });
+
+                updateGpsStatus('error', msg, desc);
+                els.retryBtn.style.display = 'block';
+            };
+
+            navigator.geolocation.getCurrentPosition(success, error, options);
         }
 
-        // Load classes and faculties from API
+        els.retryBtn.addEventListener('click', () => {
+            requestLocation();
+        });
+
+        function updateGpsStatus(type, title, desc) {
+            els.gpsCard.className = `status-card ${type}`;
+            els.gpsTitle.textContent = title;
+            els.gpsDesc.textContent = desc;
+            els.gpsSpinner.style.display = type === 'loading' ? 'block' : 'none';
+        }
+
+        // ---------------------------------------------------------
+        // DISTANCE CALCULATION (Client Side)
+        // ---------------------------------------------------------
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // metres
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c;
+        }
+
+        function checkDistance() {
+            // Need both locations to check
+            if (!state.currentLocation || !state.targetLocation) return;
+
+            const dist = calculateDistance(
+                state.currentLocation.latitude,
+                state.currentLocation.longitude,
+                state.targetLocation.latitude,
+                state.targetLocation.longitude
+            );
+
+            state.distance = dist;
+            els.distInfo.style.display = 'block';
+            els.distVal.textContent = Math.round(dist);
+
+            // If Geofence is active
+            if (state.geofenceRadius) {
+                if (dist <= state.geofenceRadius) {
+                    state.isLocationValid = true;
+                    els.distInfo.className = 'distance-indicator distance-good';
+                    els.distInfo.innerHTML = `🎯 OK: Cách ${Math.round(dist)}m (Trong phạm vi ${state.geofenceRadius}m)`;
+                } else {
+                    state.isLocationValid = false;
+                    els.distInfo.className = 'distance-indicator distance-bad';
+                    els.distInfo.innerHTML = `⚠️ QUÁ XA: Cách ${Math.round(dist)}m (Yêu cầu < ${state.geofenceRadius}m)`;
+                }
+            } else {
+                state.isLocationValid = true; // No geofence = always valid
+                els.distInfo.innerHTML = `📍 Khoảng cách: ${Math.round(dist)}m (Không giới hạn)`;
+            }
+        }
+
+        // ---------------------------------------------------------
+        // API INTERACTIONS
+        // ---------------------------------------------------------
+        async function validateQR(qrId) {
+            try {
+                const res = await fetch(`${API_BASE_URL}/attendances/validate-qr`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ qr_code_id: qrId })
+                });
+                const data = await res.json();
+
+                if (!data.valid) {
+                    // Redirect or show error
+                    window.location.href = '/404.html';
+                    return;
+                }
+
+                // Store Target params
+                if (data.location && data.location.latitude) {
+                    state.targetLocation = {
+                        latitude: data.location.latitude,
+                        longitude: data.location.longitude
+                    };
+                    state.geofenceRadius = data.geofence_radius_m || null;
+
+                    console.log('🎯 Target Location:', state.targetLocation);
+                    checkDistance();
+                }
+
+                // Update UI Info
+                els.activityInfo.style.display = 'block';
+                // Need to fetch activity details if not fully in QR response
+                // But QR response now has max_points
+                els.actPoints.textContent = (data.max_points || 0) + ' điểm';
+
+                // Fetch Activity Title separately if needed or if provided
+                // The new endpoint response doesn't seem to include title directly unless we added it?
+                // Actually the API sends `activity_id` and existing code fetched details.
+                // Let's check `predictPoints` equivalent logic from old code.
+                if (data.activity_id) {
+                    fetchActivityDetails(data.activity_id);
+                }
+
+            } catch (err) {
+                console.error('QR Validation Error:', err);
+            }
+        }
+
+        async function fetchActivityDetails(activityId) {
+            try {
+                const res = await fetch(`${API_BASE_URL}/activities/${activityId}`);
+                const data = await res.json();
+                if (data.success) {
+                    els.actTitle.textContent = data.data.title;
+                }
+            } catch (e) { console.error(e); }
+        }
+
         async function loadMasterData() {
             try {
-                const response = await fetch(`${API_BASE_URL}/attendances/master-data`);
-                const result = await response.json();
+                const res = await fetch(`${API_BASE_URL}/attendances/master-data`);
+                const result = await res.json();
 
-                if (!result.success) {
-                    throw new Error(result.message || 'Failed to load data');
-                }
-
-                allClasses = result.data.classes || [];
-                allFaculties = result.data.faculties || [];
-
-                // Populate faculty dropdown
-                const facultySelect = document.getElementById('faculty');
-                allFaculties.forEach(faculty => {
-                    const option = document.createElement('option');
-                    option.value = faculty._id;
-                    option.textContent = faculty.name;
-                    facultySelect.appendChild(option);
-                });
-            } catch (error) {
-                showError('Lỗi tải dữ liệu: ' + error.message);
-            }
-        }
-
-        // Parse URL parameters (activity_id, session_id, etc.)
-        function parseURLParams() {
-            const params = new URLSearchParams(window.location.search);
-            const activityId = params.get('activity_id');
-            const sessionId = params.get('session_id');
-            const qrCodeId = params.get('qr_code_id');
-
-            if (activityId) {
-                document.getElementById('activity_id').value = activityId;
-            }
-            if (sessionId) {
-                document.getElementById('session_id').value = sessionId;
-            }
-
-            // 🆕 Validate QR Code on page load
-            if (qrCodeId) {
-                validateQRCodeOnLoad(qrCodeId);
-            }
-        }
-
-        // 🆕 Validate QR Code when page loads
-        async function validateQRCodeOnLoad(qrCodeId) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/attendances/validate-qr`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ qr_code_id: qrCodeId })
-                });
-
-                const result = await response.json();
-
-                if (!result.valid) {
-                    // QR is expired or invalid - redirect to 404
-                    showExpiredQRPage(result);
-                } else {
-                    // QR is valid - store session_id and predict points
-                    document.getElementById('session_id').value = qrCodeId;
-                    
-                    // 🆕 Predict and display points
-                    const activityId = document.getElementById('activity_id').value;
-                    if (activityId) {
-                        predictPoints(activityId);
-                    }
-                    
-                    console.log('✅ QR Code Valid:', result);
-                }
-            } catch (error) {
-                console.error('Error validating QR:', error);
-                // Don't block form if validation fails
-            }
-        }
-
-        // 🆕 DYNAMIC QR SCORING: Predict points for student based on activity
-        async function predictPoints(activityId) {
-            try {
-                // Get activity details to show prediction (public endpoint - no token needed)
-                const response = await fetch(`${API_BASE_URL}/activities/${activityId}`);
-
-                const result = await response.json();
                 if (result.success) {
-                    const activity = result.data;
-                    // 🆕 Get activity info from validateQRCode response
-                    const totalQR = result.total_qr_created || activity.total_qr_created || 1;
-                    const maxPointsFromActivity = result.max_points || activity.max_points || 10;
-                    
-                    // 🆕 For first-time visitor, assume scan_order = 1
-                    // Backend will recalculate based on actual student's scans
-                    const estimatedScanOrder = 1;
-                    const predictedPoints = Math.min(
-                        Math.floor((estimatedScanOrder / totalQR) * maxPointsFromActivity),
-                        maxPointsFromActivity
-                    );
-                    
-                    // Update form display with more details
-                    const infoHTML = `
-                        <div style="background: #e3f2fd; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; border-left: 4px solid #2196f3;">
-                            <strong>📊 Thông tin hoạt động:</strong><br>
-                            Hoạt động: <strong>${activity.title || 'Không tìm thấy'}</strong><br>
-                            Điểm tối đa: <strong>${maxPointsFromActivity} điểm</strong><br>
-                            Tổng QR: <strong>${totalQR} cái</strong><br>
-                            Dự tính (lần quét 1): <strong style="color: #1565c0;">${predictedPoints} điểm</strong>
-                            <div style="font-size: 11px; margin-top: 8px; color: #666;">
-                                💡 Điểm tối đa khi quét tất cả QR: ${maxPointsFromActivity} điểm
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Insert before form
-                    const formElement = document.getElementById('attendanceForm');
-                    formElement.insertAdjacentHTML('beforebegin', infoHTML);
-                }
-            } catch (error) {
-                console.error('Error predicting points:', error);
-            }
-        }
+                    const facultySelect = els.faculty;
+                    result.data.faculties.forEach(f => {
+                        const opt = document.createElement('option');
+                        opt.value = f._id;
+                        opt.textContent = f.name;
+                        facultySelect.appendChild(opt);
+                    });
 
-        // 🆕 Redirect to 404 for expired/invalid QR
-        function showExpiredQRPage(result) {
-            window.location.href = '/404.html';
-        }
+                    // Class logic
+                    const allClasses = result.data.classes || [];
+                    facultySelect.addEventListener('change', (e) => {
+                        const facId = e.target.value;
+                        const classSelect = els.clazz;
+                        classSelect.innerHTML = '<option value="">-- Chọn lớp --</option>';
+                        classSelect.disabled = !facId;
 
-        // 🆕 Disable/enable form inputs
-        function disableForm(disabled) {
-            const inputs = document.querySelectorAll('#attendanceForm input, #attendanceForm select, #attendanceForm textarea');
-            inputs.forEach(input => {
-                input.disabled = disabled;
-            });
-        }
-
-        // Setup event listeners
-        function setupEventListeners() {
-            // Faculty change: update class dropdown
-            document.getElementById('faculty').addEventListener('change', (e) => {
-                updateClassDropdown(e.target.value);
-            });
-
-
-
-            // Form submission
-            document.getElementById('attendanceForm').addEventListener('submit', handleSubmit);
-        }
-
-        // Update class dropdown based on selected faculty
-        function updateClassDropdown(facultyId) {
-            const classSelect = document.getElementById('class');
-            classSelect.innerHTML = '<option value="">-- Chọn lớp --</option>';
-            classSelect.disabled = true;
-
-            if (!facultyId) return;
-
-            // Filter classes by faculty
-            const filteredClasses = allClasses.filter(c => c.faculty_id === facultyId);
-
-            if (filteredClasses.length === 0) {
-                classSelect.innerHTML = '<option value="">Không có lớp nào</option>';
-                return;
-            }
-
-            filteredClasses.forEach(classItem => {
-                const option = document.createElement('option');
-                option.value = classItem._id;
-                option.textContent = classItem.name;
-                classSelect.appendChild(option);
-            });
-
-            classSelect.disabled = false;
-        }
-
-        // 🆕 Request GPS location immediately when page loads
-        async function requestGPSLocationOnLoad() {
-            const gpsStatus = document.getElementById('gpsStatus');
-            
-            try {
-                // Show loading state
-                gpsStatus.className = 'gps-status loading';
-                gpsStatus.innerHTML = '<span class="gps-icon">📍</span><span><span class="gps-spinner"></span> Đang yêu cầu quyền truy cập vị trí GPS...</span>';
-                
-                const position = await new Promise((resolve, reject) => {
-                    navigator.geolocation.getCurrentPosition(
-                        resolve,
-                        reject,
-                        {
-                            enableHighAccuracy: true,
-                            timeout: 15000,
-                            maximumAge: 0
+                        if (facId) {
+                            const filtered = allClasses.filter(c => c.faculty_id === facId);
+                            filtered.forEach(c => {
+                                const opt = document.createElement('option');
+                                opt.value = c._id;
+                                opt.textContent = c.name;
+                                classSelect.appendChild(opt);
+                            });
                         }
-                    );
-                });
-                
-                // Success - store location
-                storedLocation = {
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                    accuracy: position.coords.accuracy
-                };
-                
-                console.log('✅ GPS Location obtained:', storedLocation);
-                
-                // Update status display
-                gpsStatus.className = 'gps-status ok';
-                gpsStatus.innerHTML = `<span class="gps-icon">✅</span><span>Vị trí xác minh thành công (Độ chính xác: ${Math.round(storedLocation.accuracy)}m)</span>`;
-                
-            } catch (error) {
-                console.error('GPS Error:', error);
-                
-                // Show error state
-                let errorMsg = '❌ Không thể lấy vị trí. ';
-                
-                if (error.code === 1) {
-                    // Permission denied
-                    errorMsg = '❌ Bạn đã từ chối truy cập GPS. Vui lòng bật quyền vị trí trong cài đặt trình duyệt để tiếp tục.';
-                } else if (error.code === 2) {
-                    // Position unavailable
-                    errorMsg = '❌ Không thể xác định vị trí. Kiểm tra GPS/Internet và thử lại.';
-                } else if (error.code === 3) {
-                    // Timeout
-                    errorMsg = '❌ Timeout khi lấy vị trí. Thử lại hoặc di chuyển ra ngoài trời.';
-                } else {
-                    errorMsg += error.message || 'Vui lòng thử lại.';
+                    });
                 }
-                
-                gpsStatus.className = 'gps-status error';
-                gpsStatus.innerHTML = `<span class="gps-icon">⚠️</span><span>${errorMsg}</span>`;
+            } catch (err) {
+                showToast('Không thể tải dữ liệu khoa/lớp');
             }
         }
 
-        // Handle form submission
-        async function handleSubmit(e) {
+        // ---------------------------------------------------------
+        // SUBMISSION
+        // ---------------------------------------------------------
+        els.form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            clearMessages();
 
-            const studentName = document.getElementById('student_name').value.trim();
-            const studentId = document.getElementById('student_id').value.trim();
-            const faculty = document.getElementById('faculty').value;
-            const classId = document.getElementById('class').value;
-
-            // Validation
-            if (!studentName || !studentId || !faculty || !classId) {
-                showError('Vui lòng điền đầy đủ thông tin bắt buộc (*)');
+            // 1. Basic Validation
+            if (!els.studentName.value || !els.studentId.value || !els.faculty.value || !els.clazz.value) {
+                showToast('Vui lòng điền đủ thông tin');
+                return;
+            }
+            if (!/^\d{9}$/.test(els.studentId.value)) {
+                showToast('MSSV không hợp lệ (9 số)');
                 return;
             }
 
-            if (!/^\d{9}$/.test(studentId)) {
-                showError('MSSV phải là 9 chữ số');
+            // 2. Geofence Validation (Client Side Block)
+            if (state.geofenceRadius && !state.isLocationValid) {
+                if (!state.currentLocation) {
+                    showToast('⚠️ Cần bật vị trí để điểm danh!');
+                    requestLocation();
+                } else {
+                    showToast(`⚠️ Bạn đang quá xa! (Cách ${Math.round(state.distance)}m)`);
+                }
                 return;
             }
 
-            // Disable submit button and show loading
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = true;
-            submitBtn.textContent = '⏳ Đang gửi...';
-            document.getElementById('loading').style.display = 'block';
-
-            // 🆕 GEOFENCE: Kiểm tra location đã được lấy từ page load
-            let scanLocation = storedLocation;
-            
-            // ❌ Nếu không có location → KHÔNG submit
-            if (!scanLocation || !scanLocation.latitude || !scanLocation.longitude) {
-                showError('❌ Không thể xác minh vị trí GPS. Vui lòng bật quyền truy cập GPS trong cài đặt trình duyệt và tải lại trang.');
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Nộp Điểm Danh';
-                document.getElementById('loading').style.display = 'none';
-                return;
-            }
-
-            console.log('✅ Using stored location for submission:', scanLocation);
-
-            console.log('Submitting attendance...', {
-                activity_id: document.getElementById('activity_id').value,
-                session_id: document.getElementById('session_id').value,
-                student_name: studentName,
-                student_id: studentId,
-                scan_location: scanLocation
-            });
-
+            // 3. Submit
+            setLoading(true);
             try {
                 const payload = {
                     activity_id: document.getElementById('activity_id').value,
-                    session_id: document.getElementById('session_id').value || null,
+                    session_id: state.qrCodeId || null, // Ensure session_id (QR ID) is sent
                     student_info: {
-                        student_id_number: studentId,
-                        student_name: studentName,
-                        class: classId,
-                        faculty: faculty
+                        student_id_number: els.studentId.value,
+                        student_name: els.studentName.value,
+                        class: els.clazz.value,
+                        faculty: els.faculty.value
                     },
-                    // 🆕 GEOFENCE: Include scan location
-                    scan_location: scanLocation
+                    scan_location: state.currentLocation
                 };
 
-                // 🆕 NO TOKEN REQUIRED: Public endpoint - validates by MSSV and registration
-                const response = await fetch(`${API_BASE_URL}/attendances/submit-attendance`, {
+                const res = await fetch(`${API_BASE_URL}/attendances/submit-attendance`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
-                const result = await response.json();
+                const result = await res.json();
 
-                if (response.ok) {
-                    // Show detailed success message with points
-                    const scanOrder = result.data?.scan_order || '?';
-                    const totalQR = result.data?.total_qr_at_scan || '?';
-                    const pointsEarned = result.data?.points_earned || '?';
-                    
-                    const successMessage = `✅ ${result.message || 'Điểm danh thành công!'}\n📊 Lần quét: ${scanOrder}/${totalQR}\n💰 Điểm nhận: ${pointsEarned} điểm\n\n✅ Dữ liệu đã được lưu vào bảng Attendance!`;
-                    showSuccess(successMessage);
-                    
-                    // Disable form to prevent double submission
-                    disableForm(true);
-                    
-                    // Reset form
-                    document.getElementById('attendanceForm').reset();
-                    document.getElementById('class').disabled = true;
-
-                    // Redirect after 5 seconds (tăng thời gian để người dùng đọc message)
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 5000);
+                if (res.ok) {
+                    // Success UI
+                    document.body.innerHTML = `
+                        <div class="container" style="text-align: center;">
+                            <div style="font-size: 50px; margin-bottom: 20px;">✅</div>
+                            <h2>Điểm danh thành công!</h2>
+                            <p style="color: green; font-weight: bold; margin-top: 10px;">+${result.data?.points_earned || 0} điểm</p>
+                            <p style="margin-top: 20px; color: #666;">Cảm ơn bạn đã tham gia.</p>
+                            <button onclick="window.location.reload()" class="btn" style="margin-top: 30px;">Quay lại</button>
+                        </div>
+                    `;
                 } else {
-                    // Handle geofence failure specifically
-                    let errorMsg = result.message || 'Lỗi nộp điểm danh';
-                    
-                    if (result.data?.location_status === 'OUT_OF_RANGE') {
-                        errorMsg = `❌ Quá xa điểm danh!\n\n📍 Khoảng cách: ${result.data?.distance_m || '?'}m\n✅ Cho phép: ${result.data?.required_distance_m || '?'}m\n\nVui lòng di chuyển gần điểm danh hơn và thử lại.`;
-                    } else if (result.data?.location_status === 'LOCATION_DENIED') {
-                        errorMsg = '❌ Chứng thực vị trí thất bại. Vui lòng bật GPS và thử lại.';
-                    }
-                    
-                    showError(errorMsg);
+                    showToast(result.message || 'Có lỗi xảy ra');
                 }
-            } catch (error) {
-                console.error('Submit error:', error);
-                showError('Lỗi: ' + error.message);
+
+            } catch (err) {
+                showToast('Lỗi kết nối server');
+                console.error(err);
             } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Nộp Điểm Danh';
-                document.getElementById('loading').style.display = 'none';
+                setLoading(false);
+            }
+        });
+
+        // ---------------------------------------------------------
+        // UTILS
+        // ---------------------------------------------------------
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        function setLoading(isLoading) {
+            const btn = els.submitBtn;
+            if (isLoading) {
+                btn.disabled = true;
+                btn.innerHTML = '<div class="spinner"></div> Đang gửi...';
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'Nộp Điểm Danh';
             }
         }
 
-        // Helper functions
-        function getToken() {
-            return localStorage.getItem('token') || 
-                   new URLSearchParams(window.location.search).get('token') || 
-                   '';
-        }
-
-        function showError(message) {
-            const errorEl = document.getElementById('errorMsg');
-            // Support line breaks in error messages
-            errorEl.innerHTML = message.replace(/\n/g, '<br>');
-            errorEl.style.display = 'block';
-        }
-
-        function showSuccess(message) {
-            const successEl = document.getElementById('successMsg');
-            successEl.innerHTML = message.replace(/\n/g, '<br>');
-            successEl.style.display = 'block';
-        }
-
-        function clearMessages() {
-            document.getElementById('errorMsg').style.display = 'none';
-            document.getElementById('successMsg').style.display = 'none';
-        }
     </script>
 </body>
+
 </html>

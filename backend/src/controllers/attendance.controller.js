@@ -1691,6 +1691,9 @@ module.exports = {
         created_at: qrRecord.created_at,
         expires_at: qrRecord.expires_at,
         scans_count: qrRecord.scans_count,
+        // 🆕 GEOFENCE: Return location data for client-side check
+        location: qrRecord.location,
+        geofence_radius_m: qrRecord.geofence_radius_m,
         // 🆕 DYNAMIC QR SCORING: Include activity details for frontend prediction
         activity_id: qrRecord.activity_id,
         total_qr_created: activityData ? activityData.total_qr_created : 0,

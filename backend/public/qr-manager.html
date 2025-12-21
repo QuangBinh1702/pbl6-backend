@@ -513,32 +513,56 @@
             }
         }
 
-         // 🆕 GEOFENCE: Capture location for QR creation
-         async function captureLocationForQR() {
-             // Disable buttons and show loading
-             const buttons = document.querySelectorAll('.button-group button');
-             const getLocationBtn = Array.from(buttons).find(btn => btn.textContent.includes('Lấy GPS'));
-             const retryBtn = document.getElementById('retryLocationBtn');
-             const generateBtn = Array.from(buttons).find(btn => btn.textContent.includes('Tạo QR'));
-             
-             if (getLocationBtn) getLocationBtn.disabled = true;
-             if (retryBtn) retryBtn.disabled = true;
-             if (generateBtn) generateBtn.disabled = true;
-             
-             document.getElementById('locationStatus').textContent = '⏳ Đang lấy vị trí... (Vui lòng đợi, có thể mất 10-20 giây)';
-             document.getElementById('locationStatus').style.color = '#3b82f6';
-             document.getElementById('locationInfo').style.background = '#eff6ff';
-             document.getElementById('locationInfo').style.borderColor = '#93c5fd';
-             showMessage('generateMessage', '⏳ Đang lấy vị trí GPS... Vui lòng đợi và đảm bảo bạn đã cho phép truy cập vị trí.', 'info');
-             
-             // Kiểm tra xem geolocation có available không
-             if (!navigator.geolocation) {
-                 throw new Error('Geolocation không được hỗ trợ trên trình duyệt này');
-             }
+        // 🆕 GEOFENCE: Capture location for QR creation
+        async function captureLocationForQR() {
+             console.log('📍 captureLocationForQR() called');
              
              try {
+                 // Disable buttons and show loading
+                 const buttons = document.querySelectorAll('.button-group button');
+                 const getLocationBtn = Array.from(buttons).find(btn => btn.textContent.includes('Lấy GPS'));
+                 const retryBtn = document.getElementById('retryLocationBtn');
+                 const generateBtn = Array.from(buttons).find(btn => btn.textContent.includes('Tạo QR'));
+                 
+                 if (getLocationBtn) getLocationBtn.disabled = true;
+                 if (retryBtn) retryBtn.disabled = true;
+                 if (generateBtn) generateBtn.disabled = true;
+                 
+                 const statusEl = document.getElementById('locationStatus');
+                 const infoEl = document.getElementById('locationInfo');
+                 
+                 if (statusEl) {
+                     statusEl.textContent = '⏳ Đang lấy vị trí... (Vui lòng đợi, có thể mất 10-20 giây)';
+                     statusEl.style.color = '#3b82f6';
+                 }
+                 if (infoEl) {
+                     infoEl.style.background = '#eff6ff';
+                     infoEl.style.borderColor = '#93c5fd';
+                 }
+                 showMessage('generateMessage', '⏳ Đang lấy vị trí GPS... Vui lòng đợi và đảm bảo bạn đã cho phép truy cập vị trí.', 'info');
+             
+                 // Kiểm tra xem geolocation có available không
+                 console.log('🔍 Checking navigator.geolocation:', typeof navigator.geolocation);
+                 if (!navigator.geolocation) {
+                     console.error('❌ navigator.geolocation is not available');
+                     throw new Error('Geolocation không được hỗ trợ trên trình duyệt này');
+                 }
+                 
+                 // Kiểm tra protocol (HTTPS required for some browsers)
+                 const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                 console.log('🔒 Protocol check:', {
+                     protocol: window.location.protocol,
+                     hostname: window.location.hostname,
+                     isSecure: isSecure
+                 });
+                 
+                 if (!isSecure && window.location.protocol !== 'http:') {
+                     console.warn('⚠️ Geolocation may require HTTPS in some browsers');
+                 }
+                 
                  // Kiểm tra user có chọn high accuracy mode không
                  const highAccuracyMode = document.getElementById('highAccuracyMode').checked;
+                 console.log('🎯 High accuracy mode:', highAccuracyMode);
                  
                  // Cấu hình dựa trên mode
                  const geoOptions = highAccuracyMode 
@@ -549,14 +573,37 @@
                      }
                      : {
                          enableHighAccuracy: false, // Normal accuracy - nhanh hơn, ít timeout
-                         timeout: 8000, // 8 giây - đủ cho normal accuracy
+                         timeout: 10000, // Tăng từ 8s lên 10s để tránh timeout quá nhanh
                          maximumAge: 600000 // Cho phép dùng cache trong 10 phút (nhanh hơn nhiều)
                      };
                  
+                 console.log('⚙️ Geolocation options:', geoOptions);
+                 console.log('⏳ Requesting GPS position...');
+                 
                  const position = await new Promise((resolve, reject) => {
+                     const startTime = Date.now();
+                     
                      navigator.geolocation.getCurrentPosition(
-                         resolve,
-                         reject,
+                         (pos) => {
+                             const elapsed = Date.now() - startTime;
+                             console.log(`✅ GPS position received (took ${elapsed}ms):`, {
+                                 latitude: pos.coords.latitude,
+                                 longitude: pos.coords.longitude,
+                                 accuracy: pos.coords.accuracy
+                             });
+                             resolve(pos);
+                         },
+                         (err) => {
+                             const elapsed = Date.now() - startTime;
+                             console.error(`❌ GPS error (took ${elapsed}ms):`, {
+                                 code: err.code,
+                                 message: err.message,
+                                 PERMISSION_DENIED: err.PERMISSION_DENIED,
+                                 POSITION_UNAVAILABLE: err.POSITION_UNAVAILABLE,
+                                 TIMEOUT: err.TIMEOUT
+                             });
+                             reject(err);
+                         },
                          geoOptions
                      );
                  });
@@ -566,6 +613,8 @@
                      longitude: position.coords.longitude,
                      accuracy: position.coords.accuracy
                  };
+                 
+                 console.log('✅ Location captured and stored:', capturedLocation);
 
                  const accuracyMeters = Math.round(capturedLocation.accuracy);
                  
@@ -611,136 +660,179 @@
                  if (retryBtn) retryBtn.disabled = false;
                  if (generateBtn) generateBtn.disabled = false;
                  
-                 // Error codes: 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
-                 if (error.code === 1) {
-                     showMessage('generateMessage', '❌ User denied Geolocation. Vui lòng bật quyền truy cập vị trí trong trình duyệt và thử lại.', 'error');
-                     document.getElementById('locationStatus').textContent = '❌ Bị từ chối quyền truy cập vị trí';
-                     document.getElementById('locationStatus').style.color = '#dc2626';
-                     document.getElementById('locationInfo').style.background = '#fef2f2';
-                     document.getElementById('locationInfo').style.borderColor = '#fca5a5';
-                 } else if (error.code === 2) {
-                     showMessage('generateMessage', '❌ Không thể lấy vị trí. Vui lòng kiểm tra GPS/Internet và thử lại.', 'error');
-                     document.getElementById('locationStatus').textContent = '❌ Không thể lấy vị trí';
-                     document.getElementById('locationStatus').style.color = '#dc2626';
-                 } else if (error.code === 3) {
-                     showMessage('generateMessage', '❌ Timeout lấy vị trí. Vui lòng thử lại (có thể cần di chuyển ra ngoài trời)', 'error');
-                     document.getElementById('locationStatus').textContent = '❌ Timeout - Vui lòng thử lại';
-                     document.getElementById('locationStatus').style.color = '#dc2626';
-                 } else {
-                     showMessage('generateMessage', `❌ Lỗi: ${error.message || 'Không thể lấy vị trí'}`, 'error');
-                     document.getElementById('locationStatus').textContent = '❌ Lỗi lấy vị trí';
-                     document.getElementById('locationStatus').style.color = '#dc2626';
-                 }
-                 document.getElementById('accuracyTips').style.display = 'block';
-                 document.getElementById('retryLocationBtn').style.display = 'inline-block';
-             }
-         }
-
-         // ===== GENERATE NEW QR =====
-         /**
-          * 📋 THAM SỐ CẦN GỬI TỪ FRONTEND (POST /api/attendances/generate-qr):
-          * 
-          * Request Body:
-          * {
-          *   activity_id: string (REQUIRED) 
-          *   qr_name: string (OPTIONAL) 
-          *   duration_minutes: number (OPTIONAL) 
-          *   location: { (REQUIRED OBJECT)
-          *     latitude: number (REQUIRED) 
-          *     longitude: number (REQUIRED) 
-          *     accuracy: number (OPTIONAL) 
-          *     geofence_radius_m: number (REQUIRED) 
-          *   }
-          * }
-          * 
-          * Headers:
-          * - Authorization: Bearer <token> (REQUIRED)
-          * - Content-Type: application/json
-          * 
-          * Response:
-          * {
-          *   success: boolean,
-          *   message: string,
-          *   data: {
-          *     qr_id: string,
-          *     qr_name: string,
-          *     qr_code: string (Base64 image),
-          *     created_at: Date,
-          *     expires_at: Date | null,
-          *     scans_count: number,
-          *     location: { latitude, longitude, accuracy_m },
-          *     geofence_radius_m: number,
-          *     total_qr_created: number
-          *   }
-          * }
-          */
-         async function generateNewQR() {
-             const activityId = document.getElementById('activitySelect').value;
-             if (!activityId) {
-                 showMessage('generateMessage', 'Please select activity first', 'error');
-                 return;
-             }
-
-             // 🆕 GEOFENCE: Check if location is captured
-             if (!capturedLocation) {
-                 showMessage('generateMessage', '❌ Vui lòng bấm "📍 Lấy GPS Hiện Tại" trước', 'error');
-                 return;
-             }
-
-             // 🆕 GEOFENCE: Get radius from input (optional)
-             const radiusInput = document.getElementById('geofenceRadius').value.trim();
-             
-             // Nếu có điền radius → validate phải là số dương
-             if (radiusInput && (isNaN(radiusInput) || parseFloat(radiusInput) <= 0)) {
-                 showMessage('generateMessage', '❌ Geofence radius phải là số dương', 'error');
-                 return;
-             }
-
-             const qrName = document.getElementById('qrName').value.trim();
-             const duration = document.getElementById('duration').value;
-             const geofenceRadius = radiusInput ? parseFloat(radiusInput) : null;
-
-             try {
-                 const token = getToken();
-                 const res = await fetch(`${API_BASE}/attendances/generate-qr`, {
-                     method: 'POST',
-                     headers: {
-                         'Authorization': `Bearer ${token}`,
-                         'Content-Type': 'application/json'
-                     },
-                     body: JSON.stringify({
-                         activity_id: activityId,
-                         qr_name: qrName || `QR #${new Date().toLocaleTimeString()}`,
-                         duration_minutes: duration ? parseInt(duration) : null,
-                         // 🆕 GEOFENCE: Send location with radius
-                         location: {
-                             ...capturedLocation,
-                             geofence_radius_m: geofenceRadius
-                         }
-                     })
+                 // Log error for debugging
+                 console.error('❌ GPS Error caught:', {
+                     code: error.code,
+                     message: error.message,
+                     name: error.name,
+                     stack: error.stack
                  });
-
-                 if (!res.ok) {
-                     const err = await res.json();
-                     throw new Error(err.message || 'Failed to generate QR');
-                 }
-
-                 showMessage('generateMessage', '✅ QR Generated!', 'success');
-                 document.getElementById('qrName').value = '';
-                 document.getElementById('duration').value = '';
-                 document.getElementById('geofenceRadius').value = '';
-                 capturedLocation = null;
-                 document.getElementById('locationStatus').textContent = 'Chưa lấy vị trí';
-                 document.getElementById('locationStatus').style.color = '#666';
-                 document.getElementById('locationCoords').textContent = '';
-                 document.getElementById('accuracyTips').style.display = 'none';
-                 document.getElementById('retryLocationBtn').style.display = 'none';
                  
-                 setTimeout(() => loadActivity(), 1000);
-             } catch (err) {
-                 showMessage('generateMessage', `❌ ${err.message}`, 'error');
+                 // Error codes: 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
+                 // Use constants from GeolocationPositionError if available
+                 const PERMISSION_DENIED = 1;
+                 const POSITION_UNAVAILABLE = 2;
+                 const TIMEOUT = 3;
+                 
+                 if (error.code === PERMISSION_DENIED || error.code === 1) {
+                     console.error('❌ Error Code 1: PERMISSION_DENIED - User denied location access');
+                     showMessage('generateMessage', '❌ User denied Geolocation. Vui lòng bật quyền truy cập vị trí trong trình duyệt và thử lại.', 'error');
+                     const statusEl = document.getElementById('locationStatus');
+                     const infoEl = document.getElementById('locationInfo');
+                     if (statusEl) {
+                         statusEl.textContent = '❌ Bị từ chối quyền truy cập vị trí';
+                         statusEl.style.color = '#dc2626';
+                     }
+                     if (infoEl) {
+                         infoEl.style.background = '#fef2f2';
+                         infoEl.style.borderColor = '#fca5a5';
+                     }
+                 } else if (error.code === POSITION_UNAVAILABLE || error.code === 2) {
+                     console.error('❌ Error Code 2: POSITION_UNAVAILABLE - GPS not available');
+                     showMessage('generateMessage', '❌ Không thể lấy vị trí. Vui lòng kiểm tra GPS/Internet và thử lại.', 'error');
+                     const statusEl = document.getElementById('locationStatus');
+                     if (statusEl) {
+                         statusEl.textContent = '❌ Không thể lấy vị trí';
+                         statusEl.style.color = '#dc2626';
+                     }
+                 } else if (error.code === TIMEOUT || error.code === 3) {
+                     console.error('❌ Error Code 3: TIMEOUT - Request took too long');
+                     showMessage('generateMessage', '❌ Timeout lấy vị trí. Vui lòng thử lại (có thể cần di chuyển ra ngoài trời)', 'error');
+                     const statusEl = document.getElementById('locationStatus');
+                     if (statusEl) {
+                         statusEl.textContent = '❌ Timeout - Vui lòng thử lại';
+                         statusEl.style.color = '#dc2626';
+                     }
+                 } else {
+                     // Handle other errors (including "Geolocation không được hỗ trợ")
+                     const errorMsg = error.message || 'Không thể lấy vị trí';
+                     console.error('❌ Unknown error:', errorMsg);
+                     showMessage('generateMessage', `❌ Lỗi: ${errorMsg}`, 'error');
+                     const statusEl = document.getElementById('locationStatus');
+                     const infoEl = document.getElementById('locationInfo');
+                     if (statusEl) {
+                         statusEl.textContent = `❌ ${errorMsg}`;
+                         statusEl.style.color = '#dc2626';
+                     }
+                     if (infoEl) {
+                         infoEl.style.background = '#fef2f2';
+                         infoEl.style.borderColor = '#fca5a5';
+                     }
+                 }
+                 
+                 // Show retry button and tips
+                 const tipsEl = document.getElementById('accuracyTips');
+                 const retryEl = document.getElementById('retryLocationBtn');
+                 if (tipsEl) tipsEl.style.display = 'block';
+                 if (retryEl) retryEl.style.display = 'inline-block';
              }
          }
+
+        // ===== GENERATE NEW QR =====
+        /**
+         * 📋 THAM SỐ CẦN GỬI TỪ FRONTEND (POST /api/attendances/generate-qr):
+         * 
+         * Request Body:
+         * {
+         *   activity_id: string (REQUIRED) 
+         *   qr_name: string (OPTIONAL) 
+         *   duration_minutes: number (OPTIONAL) 
+         *   location: { (REQUIRED OBJECT)
+         *     latitude: number (REQUIRED) 
+         *     longitude: number (REQUIRED) 
+         *     accuracy: number (OPTIONAL) 
+         *     geofence_radius_m: number (REQUIRED) 
+         *   }
+         * }
+         * 
+         * Headers:
+         * - Authorization: Bearer <token> (REQUIRED)
+         * - Content-Type: application/json
+         * 
+         * Response:
+         * {
+         *   success: boolean,
+         *   message: string,
+         *   data: {
+         *     qr_id: string,
+         *     qr_name: string,
+         *     qr_code: string (Base64 image),
+         *     created_at: Date,
+         *     expires_at: Date | null,
+         *     scans_count: number,
+         *     location: { latitude, longitude, accuracy_m },
+         *     geofence_radius_m: number,
+         *     total_qr_created: number
+         *   }
+         * }
+         */
+        async function generateNewQR() {
+            const activityId = document.getElementById('activitySelect').value;
+            if (!activityId) {
+                showMessage('generateMessage', 'Please select activity first', 'error');
+                return;
+            }
+
+            // 🆕 GEOFENCE: Check if location is captured
+            if (!capturedLocation) {
+                showMessage('generateMessage', '❌ Vui lòng bấm "📍 Lấy GPS Hiện Tại" trước', 'error');
+                return;
+            }
+
+            // 🆕 GEOFENCE: Get radius from input (optional)
+            const radiusInput = document.getElementById('geofenceRadius').value.trim();
+            
+            // Nếu có điền radius → validate phải là số dương
+            if (radiusInput && (isNaN(radiusInput) || parseFloat(radiusInput) <= 0)) {
+                showMessage('generateMessage', '❌ Geofence radius phải là số dương', 'error');
+                return;
+            }
+
+            const qrName = document.getElementById('qrName').value.trim();
+            const duration = document.getElementById('duration').value;
+            const geofenceRadius = radiusInput ? parseFloat(radiusInput) : null;
+
+            try {
+                const token = getToken();
+                const res = await fetch(`${API_BASE}/attendances/generate-qr`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        activity_id: activityId,
+                        qr_name: qrName || `QR #${new Date().toLocaleTimeString()}`,
+                        duration_minutes: duration ? parseInt(duration) : null,
+                        // 🆕 GEOFENCE: Send location with radius
+                        location: {
+                            ...capturedLocation,
+                            geofence_radius_m: geofenceRadius
+                        }
+                    })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message || 'Failed to generate QR');
+                }
+
+                showMessage('generateMessage', '✅ QR Generated!', 'success');
+                document.getElementById('qrName').value = '';
+                document.getElementById('duration').value = '';
+                document.getElementById('geofenceRadius').value = '';
+                capturedLocation = null;
+                document.getElementById('locationStatus').textContent = 'Chưa lấy vị trí';
+                document.getElementById('locationStatus').style.color = '#666';
+                document.getElementById('locationCoords').textContent = '';
+                document.getElementById('accuracyTips').style.display = 'none';
+                document.getElementById('retryLocationBtn').style.display = 'none';
+                
+                setTimeout(() => loadActivity(), 1000);
+            } catch (err) {
+                showMessage('generateMessage', `❌ ${err.message}`, 'error');
+            }
+        }
 
         // ===== COPY QR DATA =====
         function copyQRData() {
@@ -795,8 +887,52 @@
             }
         }
 
+        // 🆕 Request GPS location on page load
+        async function requestGPSOnPageLoad(retryCount = 0) {
+            const MAX_RETRIES = 3;
+            console.log(`🔍 Requesting GPS location on qr-manager... (Attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
+            
+            if (!navigator.geolocation) {
+                console.warn('⚠️ Geolocation not supported');
+                return;
+            }
+            
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(
+                        resolve,
+                        reject,
+                        {
+                            enableHighAccuracy: false,
+                            timeout: 10000,
+                            maximumAge: 0  // Luôn lấy vị trí mới (không cache)
+                        }
+                    );
+                });
+                
+                console.log('✅ GPS Location obtained on page load:', {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: Math.round(position.coords.accuracy)
+                });
+            } catch (error) {
+                console.error(`❌ GPS Error (Attempt ${retryCount + 1}):`, error.code, error.message);
+                
+                // Auto-retry cho timeout hoặc unavailable
+                if ((error.code === 2 || error.code === 3) && retryCount < MAX_RETRIES) {
+                    console.log(`⏳ Retrying GPS in 2 seconds...`);
+                    setTimeout(() => requestGPSOnPageLoad(retryCount + 1), 2000);
+                } else if (error.code === 1) {
+                    console.warn('⚠️ User denied GPS permission. Will ask again when generating QR.');
+                }
+            }
+        }
+
         // Auto-load if token saved
         window.addEventListener('load', () => {
+            // 🆕 Request GPS on page load (non-blocking)
+            requestGPSOnPageLoad();
+            
             if (localStorage.getItem('qrManagerToken')) {
                 loadFromLocalStorage();
             }
