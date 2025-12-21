@@ -902,8 +902,10 @@ module.exports = {
 
       // 🆕 Validate QR Code if provided (BACKEND CHECK)
       const qrCodeId = session_id;  // session_id = qr_code_id in new system
+      let qrRecord = null;
+      
       if (qrCodeId) {
-        const qrRecord = await QRCodeModel.findById(qrCodeId);
+        qrRecord = await QRCodeModel.findById(qrCodeId);
         
         if (!qrRecord) {
           return res.status(400).json({ 
@@ -1101,8 +1103,8 @@ module.exports = {
           accuracy_m: scan_location.accuracy || null
         } : undefined,
         
-        distance_from_qr_m: qrRecord.scanLocationData?.distance || null,
-        within_geofence: qrRecord.scanLocationData?.withinGeofence !== false,
+        distance_from_qr_m: qrRecord?.scanLocationData?.distance || null,
+        within_geofence: qrRecord?.scanLocationData?.withinGeofence !== false,
         location_status: !scan_location ? 'NO_GPS' : 'OK'
       });
 
@@ -1144,11 +1146,10 @@ module.exports = {
           activity_id: activity_id,
           scanned_at: attendance.scanned_at,
           // 🆕 GEOFENCE: Return location verification info
-          location_data: qrRecord.scanLocationData ? {
+          location_data: qrRecord?.scanLocationData ? {
             distance_m: qrRecord.scanLocationData.distance,
             required_distance_m: qrRecord.geofence_radius_m || null,
-            within_geofence: qrRecord.scanLocationData.withinGeofence,
-            geofence_enabled: qrRecord.geofence_radius_m != null && qrRecord.geofence_radius_m !== undefined
+            passed: qrRecord.scanLocationData.withinGeofence
           } : null
         },
         warnings: classMismatch ? {
