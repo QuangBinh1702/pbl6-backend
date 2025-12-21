@@ -53,7 +53,8 @@ module.exports = {
 
       const data = staffProfiles.map(sp => ({
         ...sp,
-        org_unit_name: sp.org_unit_id?.name || '-',
+        // Nếu org_unit_id null nhưng có faculty_id, hiển thị tên khoa thay cho đơn vị
+        org_unit_name: sp.org_unit_id?.name || sp.faculty_id?.name || '-',
         faculty_name: sp.faculty_id?.name || '-',
         position: sp.position || '-'
       }));
