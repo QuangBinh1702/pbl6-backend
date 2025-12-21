@@ -1143,7 +1143,7 @@ module.exports = {
         if (unmetRequirements.length > 0) {
           return res.status(403).json({ 
             success: false, 
-            message: `Bạn không đủ điều kiện đăng ký hoạt động này. Yêu cầu: ${unmetRequirements.join(', ')}`,
+            message: `Bạn không đủ điều kiện đăng ký hoạt động này.`,
             requirements_not_met: unmetRequirements
           });
         }
