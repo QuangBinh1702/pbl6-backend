@@ -146,9 +146,21 @@ module.exports = {
 
   async updateAttendance(req, res) {
     try {
+      // 🔧 FIX: Sync points and points_earned fields
+      const updateData = { ...req.body };
+      
+      // If points is being updated, also update points_earned for consistency
+      if (updateData.points !== undefined && updateData.points_earned === undefined) {
+        updateData.points_earned = updateData.points;
+      }
+      // If points_earned is being updated, also update points for consistency
+      if (updateData.points_earned !== undefined && updateData.points === undefined) {
+        updateData.points = updateData.points_earned;
+      }
+      
       const attendance = await Attendance.findByIdAndUpdate(
         req.params.id,
-        req.body,
+        updateData,
         { new: true, runValidators: true }
       )
         .populate({
@@ -604,11 +616,17 @@ module.exports = {
           att => att.student_id?._id?.toString() === stats.student_id._id.toString()
         );
         
-        // Calculate max points (highest score from all scans)
-        const maxPoints = Math.max(
-          ...studentAttendances.map(att => att.points_earned || att.points || 0),
-          0
-        );
+        // 🔧 FIX: Find the attendance record with the highest points
+        let maxPoints = 0;
+        let maxPointsAttendanceId = stats.last_attendance_id;
+        
+        studentAttendances.forEach(att => {
+          const points = att.points_earned || att.points || 0;
+          if (points > maxPoints) {
+            maxPoints = points;
+            maxPointsAttendanceId = att._id;  // Track which attendance has max points
+          }
+        });
         
         // Calculate attendance rate based on QR scans
         const attendanceRate = totalQRCreated > 0 ? stats.attendance_count / totalQRCreated : 0;
@@ -616,7 +634,7 @@ module.exports = {
         // Base response object
         const responseData = {
           ...stats,
-          attendance_id: stats.last_attendance_id,  // 🆕 Add attendance_id (latest)
+          attendance_id: maxPointsAttendanceId,  // 🔧 FIX: ID of attendance with highest points
           points: maxPoints,  // 🆕 Final points = max points from all scans
           attendance_rate: Math.min(attendanceRate, 1.0)  // Cap at 1.0
         };
