@@ -291,8 +291,11 @@ module.exports = {
         // Sử dụng Cloudinary URL nếu có, nếu không dùng local URL
         const { getFileUrl } = require('../utils/cloudinary.util');
         updateData.staff_image = getFileUrl(req.file, req);
+      } else if (staff_image !== undefined || staffImage !== undefined) {
+        // Nếu không có file upload mới, giữ nguyên giá trị từ body (nếu có)
+        // Ưu tiên staff_image, nếu không có thì dùng staffImage (kể cả null hoặc empty string)
+        updateData.staff_image = staff_image !== undefined ? staff_image : staffImage;
       }
-      // Nếu không có file upload mới, giữ nguyên giá trị từ body (nếu có)
 
       const staffProfile = await StaffProfile.findByIdAndUpdate(
         req.params.id,
