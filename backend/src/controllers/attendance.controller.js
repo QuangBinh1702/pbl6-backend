@@ -767,9 +767,25 @@ module.exports = {
   // ===== PHASE 2: APPROVAL WORKFLOW =====
 
   // 1. Submit Attendance (Student submission for approval)
+  // 🆕 Utility function: Calculate distance between two GPS points (Haversine formula)
+  calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // Earth radius in meters
+    const toRad = Math.PI / 180;
+    
+    const dLat = (lat2 - lat1) * toRad;
+    const dLon = (lon2 - lon1) * toRad;
+    
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLon / 2) ** 2;
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    
+    return R * c; // Distance in meters
+  },
+
   async submitAttendance(req, res) {
     try {
-      const { activity_id, session_id, student_info } = req.body;
+      const { activity_id, session_id, student_info, scan_location } = req.body;
       // 🆕 NO AUTH REQUIRED: Public endpoint - validate by MSSV and registration
 
       // Validate required fields
@@ -850,19 +866,53 @@ module.exports = {
         }
 
         // 🆕 Check for duplicate: Student can't scan same QR twice
-        const duplicateAttendance = await Attendance.findOne({
-          student_id: studentId,
-          activity_id: activity_id,
-          qr_code_id: qrCodeId
-        });
-
-        if (duplicateAttendance) {
-          return res.status(400).json({
-            success: false,
-            message: 'Bạn đã quét QR này rồi'
+          const duplicateAttendance = await Attendance.findOne({
+            student_id: studentId,
+            activity_id: activity_id,
+            qr_code_id: qrCodeId
           });
+
+          if (duplicateAttendance) {
+            return res.status(400).json({
+              success: false,
+              message: 'Bạn đã quét QR này rồi'
+            });
+          }
+
+          // 🆕 GEOFENCE: Check if student is within geofence radius
+          if (scan_location && scan_location.latitude && scan_location.longitude) {
+            const distance = this.calculateDistance(
+              qrRecord.location.latitude,
+              qrRecord.location.longitude,
+              scan_location.latitude,
+              scan_location.longitude
+            );
+
+            const withinGeofence = distance <= qrRecord.geofence_radius_m;
+
+            if (!withinGeofence) {
+              return res.status(400).json({
+                success: false,
+                message: `❌ Quá xa điểm danh: ${Math.round(distance)}m (cho phép ${qrRecord.geofence_radius_m}m). Vui lòng di chuyển đến gần điểm danh hơn.`,
+                data: {
+                  distance_m: Math.round(distance),
+                  required_distance_m: qrRecord.geofence_radius_m
+                }
+              });
+            }
+
+            // Store location info in attendance
+            qrRecord.scanLocationData = {
+              distance: Math.round(distance),
+              withinGeofence: withinGeofence,
+              scanCoords: {
+                latitude: scan_location.latitude,
+                longitude: scan_location.longitude,
+                accuracy_m: scan_location.accuracy || null
+              }
+            };
+          }
         }
-      }
 
       // Validate class exists (from database)
       const classData = await Class.findById(student_info.class);
@@ -940,7 +990,18 @@ module.exports = {
         status: 'present',  // Mark as present (validated via QR + registration)
         scanned_at: new Date(),
         verified: true,
-        verified_by: userId  // Student who scanned
+        verified_by: userId,  // Student who scanned
+        
+        // 🆕 GEOFENCE: Store location data if provided
+        scan_location: scan_location ? {
+          latitude: scan_location.latitude,
+          longitude: scan_location.longitude,
+          accuracy_m: scan_location.accuracy || null
+        } : undefined,
+        
+        distance_from_qr_m: qrRecord.scanLocationData?.distance || null,
+        within_geofence: qrRecord.scanLocationData?.withinGeofence !== false,
+        location_status: !scan_location ? 'NO_GPS' : 'OK'
       });
 
       await attendance.save();
@@ -979,7 +1040,13 @@ module.exports = {
           points_earned: calculated_points,
           student_name: student_info.student_name,
           activity_id: activity_id,
-          scanned_at: attendance.scanned_at
+          scanned_at: attendance.scanned_at,
+          // 🆕 GEOFENCE: Return location verification info
+          location_data: qrRecord.scanLocationData ? {
+            distance_m: qrRecord.scanLocationData.distance,
+            required_distance_m: qrRecord.geofence_radius_m,
+            within_geofence: qrRecord.scanLocationData.withinGeofence
+          } : null
         },
         warnings: classMismatch ? {
           class_mismatch: true,
@@ -1263,11 +1330,19 @@ module.exports = {
   // 8. Generate On-Demand QR Code
   async generateQRCode(req, res) {
     try {
-      const { activity_id, qr_name, duration_minutes } = req.body;
+      const { activity_id, qr_name, duration_minutes, location } = req.body;
       const userId = req.user._id;
 
       if (!activity_id) {
         return res.status(400).json({ success: false, message: 'activity_id is required' });
+      }
+
+      // 🆕 GEOFENCE: Check location is provided
+      if (!location || !location.latitude || !location.longitude) {
+        return res.status(400).json({ 
+          success: false, 
+          message: '❌ Vị trí là bắt buộc. Bấm nút 🎯 Tạo QR tại vị trí này để lấy GPS' 
+        });
       }
 
       // Check activity exists
@@ -1285,10 +1360,12 @@ module.exports = {
         expiresAt = new Date(Date.now() + duration_minutes * 60 * 1000);
       }
 
-      // Create QR data (what gets encoded in the QR image)
+      // 🆕 GEOFENCE: Store location in QR data
       const qrData = {
         activityId: activity_id.toString(),
         qrId: qrId.toString(),
+        latitude: location.latitude,
+        longitude: location.longitude,
         createdAt: new Date().toISOString(),
         expiresAt: expiresAt ? expiresAt.toISOString() : null
       };
@@ -1300,7 +1377,7 @@ module.exports = {
       // Generate QR code image (Base64) - encode form URL
       const qrCodeImage = await QRCode.toDataURL(formUrl);
 
-      // Save to database
+      // 🆕 GEOFENCE: Save location with QR
       const qrRecord = new QRCodeModel({
         _id: qrId,
         activity_id: activity_id,
@@ -1311,7 +1388,16 @@ module.exports = {
         created_at: new Date(),
         expires_at: expiresAt,
         is_active: true,
-        scans_count: 0
+        scans_count: 0,
+        // 🆕 GEOFENCE: Store staff's location when creating QR
+        location: {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          checkpoint_name: qr_name || 'Điểm danh',
+          accuracy_m: location.accuracy || null,
+          created_at: new Date()
+        },
+        geofence_radius_m: location.geofence_radius_m || 80
       });
 
       await qrRecord.save();
@@ -1320,11 +1406,11 @@ module.exports = {
       activity.total_qr_created = (activity.total_qr_created || 0) + 1;
       await activity.save();
       
-      console.log(`✅ QR created. Activity "${activity.title}" now has ${activity.total_qr_created} QRs`);
+      console.log(`✅ QR created at [${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}]. Activity "${activity.title}" now has ${activity.total_qr_created} QRs`);
 
       res.status(201).json({
         success: true,
-        message: 'QR code generated successfully',
+        message: `✅ QR tạo thành công tại vị trí [${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}]`,
         data: {
           qr_id: qrRecord._id,
           qr_name: qrRecord.qr_name,
@@ -1332,6 +1418,13 @@ module.exports = {
           created_at: qrRecord.created_at,
           expires_at: qrRecord.expires_at,
           scans_count: 0,
+          // 🆕 GEOFENCE: Return location info
+          location: {
+            latitude: qrRecord.location.latitude,
+            longitude: qrRecord.location.longitude,
+            accuracy_m: qrRecord.location.accuracy_m
+          },
+          geofence_radius_m: qrRecord.geofence_radius_m,
           // 🆕 DYNAMIC QR SCORING: Return total QR count
           total_qr_created: activity.total_qr_created
         }

@@ -52,7 +52,27 @@ const qrCodeSchema = new mongoose.Schema({
     default: 0
   },
   
-  notes: String
+  notes: String,
+  
+  // 🆕 GEOFENCE TRACKING: Location where QR was created
+  location: {
+    latitude: Number,
+    longitude: Number,
+    checkpoint_name: String,
+    accuracy_m: Number,  // GPS accuracy in meters
+    created_at: Date
+  },
+  
+  // 🆕 GEOFENCE SETTING: Radius for geofence check (default 80m)
+  geofence_radius_m: {
+    type: Number,
+    default: 80,
+    min: 10,
+    max: 500
+  }
 });
+
+// 🆕 Index for geospatial queries (2dsphere for GeoJSON)
+qrCodeSchema.index({ 'location.latitude': 1, 'location.longitude': 1 });
 
 module.exports = mongoose.model('QRCode', qrCodeSchema, 'qr_codes');

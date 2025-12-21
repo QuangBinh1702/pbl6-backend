@@ -45,16 +45,42 @@ class LLMSynthesisService {
    * Synthesize with OpenAI GPT
    */
   async _synthesizeWithOpenAI(query, documents) {
-    const documentContext = documents
+    // Filter documents: phải có score >= 0.25 HOẶC có keyword score cao
+    const relevantDocs = documents.filter(doc => {
+      const score = doc.relevanceScore || 0;
+      const keywordScore = doc.keywordScore || 0;
+      return score >= 0.25 || keywordScore >= 0.2;
+    });
+
+    // Nếu không có document nào đủ liên quan, kiểm tra document tốt nhất
+    let docsToUse;
+    if (relevantDocs.length === 0) {
+      const bestDoc = documents[0];
+      const bestScore = bestDoc?.relevanceScore || 0;
+      const bestKeywordScore = bestDoc?.keywordScore || 0;
+      
+      // Chỉ dùng nếu có score hợp lý
+      if (bestScore >= 0.3 || bestKeywordScore >= 0.15) {
+        docsToUse = [bestDoc];
+      } else {
+        // Không có document nào đủ liên quan
+        return 'Xin lỗi, tôi không tìm thấy thông tin liên quan đến câu hỏi của bạn trong cơ sở dữ liệu.';
+      }
+    } else {
+      docsToUse = relevantDocs.slice(0, 2); // Chỉ lấy top 2
+    }
+
+    const documentContext = docsToUse
       .map((doc, i) => `[Document ${i + 1}] ${doc.title}: ${doc.content}`)
       .join('\n\n');
 
     const systemPrompt = `You are a helpful assistant that answers questions based ONLY on the provided documents. 
 Generate a clear, concise answer in the same language as the query.
-If the documents don't contain enough information, say so.
+If the documents don't contain enough information to answer the question, say "Tôi không tìm thấy thông tin liên quan đến câu hỏi này trong tài liệu."
+Only use information from the provided documents. Do not make up information.
 Always cite which document(s) you're referencing.`;
 
-    const userPrompt = `Question: ${query}\n\nDocuments:\n${documentContext}\n\nAnswer:`;
+    const userPrompt = `Question: ${query}\n\nDocuments:\n${documentContext}\n\nAnswer (chỉ dựa trên documents được cung cấp):`;
 
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
@@ -87,16 +113,42 @@ Always cite which document(s) you're referencing.`;
    * Synthesize with Claude
    */
   async _synthesizeWithClaude(query, documents) {
-    const documentContext = documents
+    // Filter documents: phải có score >= 0.25 HOẶC có keyword score cao
+    const relevantDocs = documents.filter(doc => {
+      const score = doc.relevanceScore || 0;
+      const keywordScore = doc.keywordScore || 0;
+      return score >= 0.25 || keywordScore >= 0.2;
+    });
+
+    // Nếu không có document nào đủ liên quan, kiểm tra document tốt nhất
+    let docsToUse;
+    if (relevantDocs.length === 0) {
+      const bestDoc = documents[0];
+      const bestScore = bestDoc?.relevanceScore || 0;
+      const bestKeywordScore = bestDoc?.keywordScore || 0;
+      
+      // Chỉ dùng nếu có score hợp lý
+      if (bestScore >= 0.3 || bestKeywordScore >= 0.15) {
+        docsToUse = [bestDoc];
+      } else {
+        // Không có document nào đủ liên quan
+        return 'Xin lỗi, tôi không tìm thấy thông tin liên quan đến câu hỏi của bạn trong cơ sở dữ liệu.';
+      }
+    } else {
+      docsToUse = relevantDocs.slice(0, 2); // Chỉ lấy top 2
+    }
+
+    const documentContext = docsToUse
       .map((doc, i) => `<document index="${i + 1}"><title>${doc.title}</title><content>${doc.content}</content></document>`)
       .join('\n\n');
 
     const systemPrompt = `You are a helpful assistant. Answer the question ONLY based on the provided documents.
 Generate a clear, concise answer in the same language as the query.
-If documents don't contain enough information, say so.
+If documents don't contain enough information to answer the question, say "Tôi không tìm thấy thông tin liên quan đến câu hỏi này trong tài liệu."
+Only use information from the provided documents. Do not make up information.
 Always cite which document(s) you're referencing.`;
 
-    const userPrompt = `Question: ${query}\n\nDocuments:\n${documentContext}\n\nAnswer:`;
+    const userPrompt = `Question: ${query}\n\nDocuments:\n${documentContext}\n\nAnswer (chỉ dựa trên documents được cung cấp):`;
 
     const response = await axios.post(
       'https://api.anthropic.com/v1/messages',
@@ -126,23 +178,50 @@ Always cite which document(s) you're referencing.`;
 
   /**
    * Concatenate documents (fallback when LLM is not available)
+   * Chỉ lấy documents có relevance score cao và chứa keywords từ câu hỏi
    */
   _concatenateDocuments(documents) {
     if (!documents || documents.length === 0) {
-      return '';
+      return 'Xin lỗi, tôi không tìm thấy thông tin liên quan đến câu hỏi của bạn trong cơ sở dữ liệu.';
     }
 
-    const contents = documents
-      .slice(0, CONFIG.MAX_RETRIEVED_DOCS || 10)
+    // Filter documents: phải có score >= 0.25 HOẶC có keyword score cao
+    const relevantDocs = documents.filter(doc => {
+      const score = doc.relevanceScore || 0;
+      const keywordScore = doc.keywordScore || 0;
+      
+      // Chỉ lấy documents có:
+      // - Relevance score >= 0.25, HOẶC
+      // - Keyword score >= 0.2 (có nhiều keywords khớp)
+      return score >= 0.25 || keywordScore >= 0.2;
+    });
+
+    if (relevantDocs.length === 0) {
+      // Kiểm tra document tốt nhất có đủ liên quan không
+      const bestDoc = documents[0];
+      const bestScore = bestDoc?.relevanceScore || 0;
+      const bestKeywordScore = bestDoc?.keywordScore || 0;
+      
+      // Chỉ trả về nếu có score hợp lý
+      if (bestScore >= 0.3 || bestKeywordScore >= 0.15) {
+        return `**${bestDoc.title}**\n${bestDoc.content}`;
+      }
+      
+      return 'Xin lỗi, tôi không tìm thấy thông tin liên quan đến câu hỏi của bạn trong cơ sở dữ liệu.';
+    }
+
+    // Chỉ lấy top 2 documents có relevance cao nhất (giảm từ 3 xuống 2)
+    const topDocs = relevantDocs
+      .slice(0, 2)
       .map(doc => `**${doc.title}**\n${doc.content}`)
       .join('\n\n---\n\n');
 
     const maxLen = CONFIG.MAX_RESPONSE_LENGTH || 2000;
-    if (contents.length > maxLen) {
-      return contents.substring(0, maxLen) + '...';
+    if (topDocs.length > maxLen) {
+      return topDocs.substring(0, maxLen) + '...';
     }
 
-    return contents;
+    return topDocs;
   }
 
   /**

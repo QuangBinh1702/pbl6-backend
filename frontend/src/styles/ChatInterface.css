@@ -115,6 +115,86 @@
   line-height: 1.5;
 }
 
+.question-context {
+  background: #f8f9fa;
+  padding: 0.8rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  border-left: 3px solid #667eea;
+}
+
+.question-label {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0 0 0.3rem 0;
+  font-weight: 600;
+}
+
+.question-text {
+  color: #333;
+  margin: 0;
+  font-style: italic;
+}
+
+.answer-content {
+  margin: 1rem 0;
+}
+
+.answer-label {
+  font-size: 0.9rem;
+  color: #667eea;
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.answer-text {
+  line-height: 1.8;
+  color: #333;
+}
+
+.answer-text p {
+  margin: 0.5rem 0;
+}
+
+.answer-text h1,
+.answer-text h2,
+.answer-text h3 {
+  margin: 1rem 0 0.5rem 0;
+  color: #333;
+  font-weight: 600;
+}
+
+.answer-text h1 {
+  font-size: 1.3rem;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 0.3rem;
+}
+
+.answer-text h2 {
+  font-size: 1.2rem;
+  color: #667eea;
+}
+
+.answer-text h3 {
+  font-size: 1.1rem;
+}
+
+.answer-text strong {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.answer-text .list-item {
+  margin: 0.3rem 0;
+  padding-left: 0.5rem;
+}
+
+.answer-text .list-number {
+  font-weight: 600;
+  color: #667eea;
+  margin-right: 0.3rem;
+}
+
 .message-meta {
   display: flex;
   gap: 1rem;

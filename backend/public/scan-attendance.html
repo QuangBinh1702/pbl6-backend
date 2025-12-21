@@ -301,7 +301,8 @@
             </div>
 
             <div class="button-group">
-                <button class="btn-success" onclick="submitForm()">✅ Gửi Điểm Danh</button>
+                <!-- 🆕 GEOFENCE: Change submit to capture location first -->
+                <button class="btn-success" onclick="captureLocationAndSubmit()">📍 Gửi Điểm Danh (Lấy GPS)</button>
                 <button class="btn-secondary" onclick="resetForm()">🔄 Quét Tiếp</button>
             </div>
 
@@ -471,71 +472,129 @@
             }
         }
 
-        // ===== SUBMIT FORM =====
-        async function submitForm() {
-            try {
-                const studentName = document.getElementById('studentName').value;
-                const mssv = document.getElementById('mssv').value;
-                const classId = document.getElementById('class').value;
-                const facultyId = document.getElementById('faculty').value;
-                const phone = document.getElementById('phone').value;
-                const notes = document.getElementById('notes').value;
+        // 🆕 GEOFENCE: Capture location before submitting form
+         async function captureLocationAndSubmit() {
+             try {
+                 const studentName = document.getElementById('studentName').value;
+                 const mssv = document.getElementById('mssv').value;
+                 const classId = document.getElementById('class').value;
+                 const facultyId = document.getElementById('faculty').value;
+                 const phone = document.getElementById('phone').value;
+                 const notes = document.getElementById('notes').value;
 
-                // Validation
-                if (!studentName || !mssv || !classId || !facultyId) {
-                    showMessage('formMessage', '❌ Vui lòng điền đủ thông tin bắt buộc (*)', 'error');
-                    return;
-                }
+                 // Validation
+                 if (!studentName || !mssv || !classId || !facultyId) {
+                     showMessage('formMessage', '❌ Vui lòng điền đủ thông tin bắt buộc (*)', 'error');
+                     return;
+                 }
 
-                if (!/^\d{5,6}$/.test(mssv)) {
-                    showMessage('formMessage', '❌ MSSV phải là 5-6 chữ số', 'error');
-                    return;
-                }
+                 if (!/^\d{5,6}$/.test(mssv)) {
+                     showMessage('formMessage', '❌ MSSV phải là 5-6 chữ số', 'error');
+                     return;
+                 }
 
-                if (phone && !/^(0|\+84)\d{9,10}$/.test(phone)) {
-                    showMessage('formMessage', '❌ Số điện thoại không hợp lệ', 'error');
-                    return;
-                }
+                 if (phone && !/^(0|\+84)\d{9,10}$/.test(phone)) {
+                     showMessage('formMessage', '❌ Số điện thoại không hợp lệ', 'error');
+                     return;
+                 }
 
-                const token = localStorage.getItem('testToken') || '';
+                 // 🆕 GEOFENCE: Get location
+                 showMessage('formMessage', '📍 Đang lấy vị trí của bạn...', 'info');
+                 
+                 const position = await new Promise((resolve, reject) => {
+                     navigator.geolocation.getCurrentPosition(
+                         resolve,
+                         reject,
+                         { 
+                             enableHighAccuracy: true, 
+                             timeout: 15000,
+                             maximumAge: 0
+                         }
+                     );
+                 });
 
-                // Submit attendance
-                const submitRes = await fetch(`${API_BASE}/attendances/submit-attendance`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        activity_id: currentActivityId,
-                        student_info: {
-                            student_id_number: mssv,
-                            student_name: studentName,
-                            class: classId,
-                            faculty: facultyId,
-                            phone: phone || null,
-                            notes: notes || null
-                        }
-                    })
-                });
+                 const scanLocation = {
+                     latitude: position.coords.latitude,
+                     longitude: position.coords.longitude,
+                     accuracy: position.coords.accuracy
+                 };
 
-                if (!submitRes.ok) {
-                    const error = await submitRes.json();
-                    throw new Error(error.message || 'Gửi thất bại');
-                }
+                 // Submit attendance with location
+                 await submitForm(scanLocation);
 
-                showMessage('formMessage', '✅ Gửi điểm danh thành công! Vui lòng chờ duyệt.', 'success');
+             } catch (error) {
+                 if (error.code === error.PERMISSION_DENIED) {
+                     showMessage('formMessage', '❌ Cần bật Permission vị trí. Vui lòng cấp quyền truy cập vị trí', 'error');
+                 } else if (error.code === error.TIMEOUT) {
+                     showMessage('formMessage', '❌ Timeout lấy vị trí. Vui lòng thử lại hoặc liên hệ nhân viên', 'error');
+                 } else {
+                     showMessage('formMessage', `❌ Lỗi: ${error.message}`, 'error');
+                 }
+                 console.error(error);
+             }
+         }
 
-                // Reset after 3 seconds
-                setTimeout(() => {
-                    resetForm();
-                }, 3000);
+         // ===== SUBMIT FORM =====
+         async function submitForm(scanLocation = null) {
+             try {
+                 const studentName = document.getElementById('studentName').value;
+                 const mssv = document.getElementById('mssv').value;
+                 const classId = document.getElementById('class').value;
+                 const facultyId = document.getElementById('faculty').value;
+                 const phone = document.getElementById('phone').value;
+                 const notes = document.getElementById('notes').value;
 
-            } catch (error) {
-                showMessage('formMessage', `❌ Lỗi: ${error.message}`, 'error');
-                console.error(error);
-            }
-        }
+                 const token = localStorage.getItem('testToken') || '';
+
+                 // Submit attendance
+                 const submitRes = await fetch(`${API_BASE}/attendances/submit-attendance`, {
+                     method: 'POST',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'Authorization': `Bearer ${token}`
+                     },
+                     body: JSON.stringify({
+                         activity_id: currentActivityId,
+                         session_id: currentQRId,
+                         student_info: {
+                             student_id_number: mssv,
+                             student_name: studentName,
+                             class: classId,
+                             faculty: facultyId,
+                             phone: phone || null,
+                             notes: notes || null
+                         },
+                         // 🆕 GEOFENCE: Include scan location
+                         scan_location: scanLocation
+                     })
+                 });
+
+                 if (!submitRes.ok) {
+                     const error = await submitRes.json();
+                     throw new Error(error.message || 'Gửi thất bại');
+                 }
+
+                 const result = await submitRes.json();
+                 
+                 // 🆕 Show location verification result if available
+                 let successMsg = '✅ Gửi điểm danh thành công! Vui lòng chờ duyệt.';
+                 if (result.data?.location_data) {
+                     const loc = result.data.location_data;
+                     successMsg += `\n📍 Khoảng cách: ${loc.distance_m}m (cho phép ${loc.required_distance_m}m)`;
+                 }
+                 
+                 showMessage('formMessage', successMsg, 'success');
+
+                 // Reset after 3 seconds
+                 setTimeout(() => {
+                     resetForm();
+                 }, 3000);
+
+             } catch (error) {
+                 showMessage('formMessage', `❌ Lỗi: ${error.message}`, 'error');
+                 console.error(error);
+             }
+         }
 
         function resetForm() {
             document.getElementById('studentName').value = '';

@@ -302,12 +302,22 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Duration (Minutes) - Leave blank for no expiry</label>
-                    <input type="number" id="duration" placeholder="60" min="1">
-                </div>
+                     <label>Duration (Minutes) - Leave blank for no expiry</label>
+                     <input type="number" id="duration" placeholder="60" min="1">
+                 </div>
 
-                <button class="btn-primary" onclick="generateNewQR()">🔄 Generate New QR</button>
-                <div id="generateMessage" class="message" style="margin-top: 15px;"></div>
+                 <!-- 🆕 GEOFENCE: Location Info Display -->
+                 <div class="form-group" id="locationInfo" style="background: #f0fdf4; padding: 10px; border-radius: 6px; border: 1px solid #86efac;">
+                     <label style="color: #166534; font-weight: 600;">📍 Vị trí Tạo QR</label>
+                     <p id="locationStatus" style="margin: 5px 0; color: #666; font-size: 0.9em;">Chưa lấy vị trí</p>
+                     <p id="locationCoords" style="margin: 5px 0; color: #666; font-size: 0.85em; font-family: monospace;"></p>
+                 </div>
+
+                 <div class="button-group">
+                     <button type="button" class="btn-success" onclick="captureLocationForQR()">📍 Lấy GPS Hiện Tại</button>
+                     <button type="button" class="btn-primary" onclick="generateNewQR()">🎯 Tạo QR tại vị trí này</button>
+                 </div>
+                 <div id="generateMessage" class="message" style="margin-top: 15px;"></div>
             </div>
 
             <!-- QR History -->
@@ -325,6 +335,9 @@
 
     <script>
         const API_BASE = 'http://localhost:5000/api';
+        
+        // 🆕 GEOFENCE: Store captured location
+        let capturedLocation = null;
 
         // ===== TOKEN MANAGEMENT =====
         function getToken() {
@@ -462,46 +475,96 @@
             }
         }
 
-        // ===== GENERATE NEW QR =====
-        async function generateNewQR() {
-            const activityId = document.getElementById('activitySelect').value;
-            if (!activityId) {
-                showMessage('generateMessage', 'Please select activity first', 'error');
-                return;
-            }
+        // 🆕 GEOFENCE: Capture location for QR creation
+         async function captureLocationForQR() {
+             try {
+                 const position = await new Promise((resolve, reject) => {
+                     navigator.geolocation.getCurrentPosition(
+                         resolve,
+                         reject,
+                         { 
+                             enableHighAccuracy: true, 
+                             timeout: 15000,
+                             maximumAge: 0
+                         }
+                     );
+                 });
 
-            const qrName = document.getElementById('qrName').value.trim();
-            const duration = document.getElementById('duration').value;
+                 capturedLocation = {
+                     latitude: position.coords.latitude,
+                     longitude: position.coords.longitude,
+                     accuracy: position.coords.accuracy
+                 };
 
-            try {
-                const token = getToken();
-                const res = await fetch(`${API_BASE}/attendances/generate-qr`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        activity_id: activityId,
-                        qr_name: qrName || `QR #${new Date().toLocaleTimeString()}`,
-                        duration_minutes: duration ? parseInt(duration) : null
-                    })
-                });
+                 // Update UI
+                 document.getElementById('locationStatus').textContent = `✅ Đã lấy vị trí (độ chính xác: ±${Math.round(capturedLocation.accuracy)}m)`;
+                 document.getElementById('locationCoords').textContent = `Lat: ${capturedLocation.latitude.toFixed(6)}, Lng: ${capturedLocation.longitude.toFixed(6)}`;
+                 document.getElementById('locationInfo').style.background = '#f0fdf4';
+                 document.getElementById('locationInfo').style.borderColor = '#86efac';
 
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.message || 'Failed to generate QR');
-                }
+                 showMessage('generateMessage', '✅ Đã lấy vị trí thành công! Bây giờ bấm "🎯 Tạo QR tại vị trí này"', 'success');
+             } catch (error) {
+                 if (error.code === error.PERMISSION_DENIED) {
+                     showMessage('generateMessage', '❌ Cần bật Permission vị trí để tạo QR', 'error');
+                 } else if (error.code === error.TIMEOUT) {
+                     showMessage('generateMessage', '❌ Timeout lấy vị trí. Vui lòng thử lại', 'error');
+                 } else {
+                     showMessage('generateMessage', `❌ Lỗi: ${error.message}`, 'error');
+                 }
+             }
+         }
 
-                showMessage('generateMessage', '✅ QR Generated!', 'success');
-                document.getElementById('qrName').value = '';
-                document.getElementById('duration').value = '';
-                
-                setTimeout(() => loadActivity(), 1000);
-            } catch (err) {
-                showMessage('generateMessage', `❌ ${err.message}`, 'error');
-            }
-        }
+         // ===== GENERATE NEW QR =====
+         async function generateNewQR() {
+             const activityId = document.getElementById('activitySelect').value;
+             if (!activityId) {
+                 showMessage('generateMessage', 'Please select activity first', 'error');
+                 return;
+             }
+
+             // 🆕 GEOFENCE: Check if location is captured
+             if (!capturedLocation) {
+                 showMessage('generateMessage', '❌ Vui lòng bấm "📍 Lấy GPS Hiện Tại" trước', 'error');
+                 return;
+             }
+
+             const qrName = document.getElementById('qrName').value.trim();
+             const duration = document.getElementById('duration').value;
+
+             try {
+                 const token = getToken();
+                 const res = await fetch(`${API_BASE}/attendances/generate-qr`, {
+                     method: 'POST',
+                     headers: {
+                         'Authorization': `Bearer ${token}`,
+                         'Content-Type': 'application/json'
+                     },
+                     body: JSON.stringify({
+                         activity_id: activityId,
+                         qr_name: qrName || `QR #${new Date().toLocaleTimeString()}`,
+                         duration_minutes: duration ? parseInt(duration) : null,
+                         // 🆕 GEOFENCE: Send location with QR
+                         location: capturedLocation
+                     })
+                 });
+
+                 if (!res.ok) {
+                     const err = await res.json();
+                     throw new Error(err.message || 'Failed to generate QR');
+                 }
+
+                 showMessage('generateMessage', '✅ QR Generated!', 'success');
+                 document.getElementById('qrName').value = '';
+                 document.getElementById('duration').value = '';
+                 capturedLocation = null;
+                 document.getElementById('locationStatus').textContent = 'Chưa lấy vị trí';
+                 document.getElementById('locationCoords').textContent = '';
+                 
+                 setTimeout(() => loadActivity(), 1000);
+             } catch (err) {
+                 showMessage('generateMessage', `❌ ${err.message}`, 'error');
+             }
+         }
 
         // ===== COPY QR DATA =====
         function copyQRData() {

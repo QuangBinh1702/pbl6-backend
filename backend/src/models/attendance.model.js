@@ -122,7 +122,26 @@ const attendanceSchema = new mongoose.Schema({
     enum: ['pending', 'accepted', 'rejected'],
     default: null
   },
-  feedback_verified_at: Date
+  feedback_verified_at: Date,
+  
+  // 🆕 GEOFENCE TRACKING: Location where attendance was scanned
+  scan_location: {
+    latitude: Number,
+    longitude: Number,
+    accuracy_m: Number  // GPS accuracy in meters
+  },
+  
+  // 🆕 GEOFENCE VERIFICATION: Distance and geofence status
+  distance_from_qr_m: Number,
+  within_geofence: {
+    type: Boolean,
+    default: false
+  },
+  location_status: {
+    type: String,
+    enum: ['OK', 'OUT_OF_RANGE', 'LOCATION_DENIED', 'NO_GPS'],
+    default: 'OK'
+  }
 }, { timestamps: false });
 
 // ❌ DISABLED: total_point now calculated by Evidence post-save hook
