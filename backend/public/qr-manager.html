@@ -319,9 +319,9 @@
 
                  <!-- 🆕 GEOFENCE: Radius Input -->
                  <div class="form-group">
-                     <label>Geofence Radius (Meters) - Distance for location check</label>
-                     <input type="number" id="geofenceRadius" placeholder="80" min="10" max="500" value="80" required>
-                     <small style="color: #666; display: block; margin-top: 5px;">Bán kính tối thiểu 10m, tối đa 500m</small>
+                     <label>Geofence Radius (Meters) - Distance for location check (Optional)</label>
+                     <input type="number" id="geofenceRadius" placeholder="80" min="1" value="">
+                     <small style="color: #666; display: block; margin-top: 5px;">Để trống nếu không muốn giới hạn khoảng cách. Nếu có, phải là số dương.</small>
                  </div>
 
                  <!-- 🆕 GEOFENCE: Accuracy Mode Option -->
@@ -687,16 +687,18 @@
                  return;
              }
 
-             // 🆕 GEOFENCE: Get radius from input
+             // 🆕 GEOFENCE: Get radius from input (optional)
              const radiusInput = document.getElementById('geofenceRadius').value.trim();
-             if (!radiusInput || isNaN(radiusInput) || radiusInput < 10 || radiusInput > 500) {
-                 showMessage('generateMessage', '❌ Geofence radius phải từ 10-500 meters', 'error');
+             
+             // Nếu có điền radius → validate phải là số dương
+             if (radiusInput && (isNaN(radiusInput) || parseFloat(radiusInput) <= 0)) {
+                 showMessage('generateMessage', '❌ Geofence radius phải là số dương', 'error');
                  return;
              }
 
              const qrName = document.getElementById('qrName').value.trim();
              const duration = document.getElementById('duration').value;
-             const geofenceRadius = parseInt(radiusInput);
+             const geofenceRadius = radiusInput ? parseFloat(radiusInput) : null;
 
              try {
                  const token = getToken();
@@ -726,7 +728,7 @@
                  showMessage('generateMessage', '✅ QR Generated!', 'success');
                  document.getElementById('qrName').value = '';
                  document.getElementById('duration').value = '';
-                 document.getElementById('geofenceRadius').value = '80';
+                 document.getElementById('geofenceRadius').value = '';
                  capturedLocation = null;
                  document.getElementById('locationStatus').textContent = 'Chưa lấy vị trí';
                  document.getElementById('locationStatus').style.color = '#666';

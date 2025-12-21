@@ -1428,13 +1428,13 @@ module.exports = {
       const qrCodeImage = await QRCode.toDataURL(formUrl);
 
       // 🆕 GEOFENCE: Validate geofence_radius_m from frontend (OPTIONAL)
-      // Nếu có geofence_radius_m → phải trong khoảng 10-500m
+      // Nếu có geofence_radius_m → chỉ validate phải là số dương
       // Nếu không có → cho phép (không bắt buộc, quét được ở bất kỳ đâu)
       if (location?.geofence_radius_m != null && location?.geofence_radius_m !== undefined) {
-        if (location.geofence_radius_m < 10 || location.geofence_radius_m > 500) {
+        if (isNaN(location.geofence_radius_m) || location.geofence_radius_m <= 0) {
           return res.status(400).json({ 
             success: false, 
-            message: '❌ Geofence radius phải trong khoảng 10-500 meters' 
+            message: '❌ Geofence radius phải là số dương' 
           });
         }
       }
