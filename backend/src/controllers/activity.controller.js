@@ -13,22 +13,22 @@ const { validateDate } = require('../utils/date.util');
 
 // Mapping status từ tiếng Anh (database) sang tiếng Việt (response)
 const statusMapping = {
-  'pending': 'chờ duyệt',
-  'approved': 'chưa tổ chức',
-  'in_progress': 'đang tổ chức',
-  'completed': 'đã tổ chức',
-  'rejected': 'từ chối',
-  'cancelled': 'hủy hoạt động'
+  'pending': 'Chờ duyệt',
+  'approved': 'Chưa tổ chức',
+  'in_progress': 'Đang tổ chức',
+  'completed': 'Đã tổ chức',
+  'rejected': 'Từ chối',
+  'cancelled': 'Hủy hoạt động'
 };
 
 // Reverse mapping: từ tiếng Việt sang tiếng Anh (cho query)
 const statusReverseMapping = {
-  'chờ duyệt': 'pending',
-  'chưa tổ chức': 'approved',
-  'đang tổ chức': 'in_progress',
-  'đã tổ chức': 'completed',
-  'từ chối': 'rejected',
-  'hủy hoạt động': 'cancelled'
+  'Chờ duyệt': 'pending',
+  'Chưa tổ chức': 'approved',
+  'Đang tổ chức': 'in_progress',
+  'Đã tổ chức': 'completed',
+  'Từ chối': 'rejected',
+  'Hủy hoạt động': 'cancelled'
 };
 
 // Helper function to get Vietnamese status
@@ -1903,17 +1903,20 @@ module.exports = {
         rejectionMap.set(rej.activity_id.toString(), rej);
       });
 
-      // Get all posts if post_status filter is applied
-      let postMap = new Map();
-      if (postStatusFilter !== null) {
-        const Post = require('../models/post.model');
-        const posts = await Post.find({
-          activity_id: { $in: Array.from(activityIds) }
-        });
-        posts.forEach(post => {
-          postMap.set(post.activity_id.toString(), post.status);
-        });
-      }
+      // Get all posts for student's activities (always query to set post_status correctly)
+      const Post = require('../models/post.model');
+      const posts = await Post.find({
+        activity_id: { $in: Array.from(activityIds) }
+      });
+      const postMap = new Map();
+      posts.forEach(post => {
+        // Store post status for each activity
+        // If multiple posts exist for same activity, use the latest one (status = true takes priority)
+        const activityId = post.activity_id.toString();
+        if (!postMap.has(activityId) || post.status === true) {
+          postMap.set(activityId, post.status);
+        }
+      });
 
       const activities = [];
       const activityMap = new Map();
@@ -1945,6 +1948,10 @@ module.exports = {
           
           // Convert status to Vietnamese
           activityData.status = getStatusVi(activityData.status);
+          
+          // Add post status info
+          activityData.post_status = postMap.get(activityData._id.toString()) || false;
+          
           activityMap.set(activityData._id.toString(), {
             ...activityData,
             registration: {
@@ -2002,6 +2009,10 @@ module.exports = {
             
             // Convert status to Vietnamese
             activityData.status = getStatusVi(activityData.status);
+            
+            // Add post status info
+            activityData.post_status = postMap.get(activityId) || false;
+            
             activityMap.set(activityId, {
               ...activityData,
               registration: null,
@@ -2049,7 +2060,9 @@ module.exports = {
       }
 
       if (postStatusFilter !== null) {
+        const beforeCount = filtered.length;
         filtered = filtered.filter(act => act.post_status === postStatusFilter);
+        console.log(`[Filter Student Activities] Post status filter (${postStatusFilter}): ${beforeCount} -> ${filtered.length} activities`);
       }
 
       if (field_id) {
@@ -2119,15 +2132,20 @@ module.exports = {
         rejectionMap.set(rej.activity_id.toString(), rej);
       });
 
-      // Get all posts if post_status filter is applied
-      let postMap = new Map();
-      if (postStatusFilter !== null) {
-        const Post = require('../models/post.model');
-        const posts = await Post.find();
-        posts.forEach(post => {
-          postMap.set(post.activity_id.toString(), post.status);
-        });
-      }
+      // Get all posts (always query to set post_status correctly)
+      const Post = require('../models/post.model');
+      const posts = await Post.find();
+      const postMap = new Map();
+      posts.forEach(post => {
+        // Store post status for each activity
+        // If multiple posts exist for same activity, use the latest one (status = true takes priority)
+        const activityId = post.activity_id.toString();
+        if (!postMap.has(activityId) || post.status === true) {
+          postMap.set(activityId, post.status);
+        }
+      });
+      console.log(`[Filter Activities] Found ${posts.length} posts, ${postMap.size} unique activities with posts`);
+      console.log(`[Filter Activities] Posts with status=true: ${posts.filter(p => p.status === true).length}`);
 
       // Process all activities
       const processedActivities = activities.map(act => {
@@ -2171,7 +2189,9 @@ module.exports = {
       }
 
       if (postStatusFilter !== null) {
+        const beforeCount = filtered.length;
         filtered = filtered.filter(act => act.post_status === postStatusFilter);
+        console.log(`[Filter Activities] Post status filter (${postStatusFilter}): ${beforeCount} -> ${filtered.length} activities`);
       }
 
       if (field_id) {
