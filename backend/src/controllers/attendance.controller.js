@@ -617,7 +617,7 @@ module.exports = {
         const responseData = {
           ...stats,
           attendance_id: stats.last_attendance_id,  // 🆕 Add attendance_id (latest)
-          total_points: maxPoints,  // 🆕 Final points = max points from all scans
+          points: maxPoints,  // 🆕 Final points = max points from all scans
           attendance_rate: Math.min(attendanceRate, 1.0)  // Cap at 1.0
         };
         
