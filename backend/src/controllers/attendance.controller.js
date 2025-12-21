@@ -628,10 +628,10 @@ module.exports = {
   // Hệ thống QR mới sử dụng submitAttendance thay thế
 
   // ===== PHASE 2.5: scanQRCodeV2 - New on-demand QR scanning (replaces old scanQRCode) =====
-  // Note: Geofence check is done in submitAttendanceForm, not here
+  // 🆕 NOW WITH GEOFENCE CHECK: Validates location BEFORE showing form
   async scanQRCodeV2(req, res) {
     try {
-      const { qrData } = req.body;
+      const { qrData, scan_location } = req.body;  // 🆕 NOW REQUIRES scan_location
       const userId = req.user._id;
       
       if (!qrData) {
@@ -716,8 +716,50 @@ module.exports = {
         });
       }
 
-      // Note: Geofence check is done in submitAttendanceForm, not here
-      // This endpoint just validates QR and creates a temporary attendance record
+      // 🆕 GEOFENCE CHECK BEFORE SHOWING FORM - REQUIRED
+      let geofenceResult = { passed: true };
+      
+      if (qrRecord && qrRecord.location && scan_location && scan_location.latitude && scan_location.longitude) {
+        const distance = this.calculateDistance(
+          qrRecord.location.latitude,
+          qrRecord.location.longitude,
+          scan_location.latitude,
+          scan_location.longitude
+        );
+
+        geofenceResult.distance_m = Math.round(distance);
+        geofenceResult.has_geofence = qrRecord.geofence_radius_m != null && qrRecord.geofence_radius_m !== undefined;
+        
+        if (geofenceResult.has_geofence) {
+          const withinGeofence = distance <= qrRecord.geofence_radius_m;
+          geofenceResult.required_distance_m = qrRecord.geofence_radius_m;
+          geofenceResult.passed = withinGeofence;
+
+          if (!withinGeofence) {
+            console.warn(`❌ GEOFENCE FAILED: Student ${studentProfile._id} tried to scan ${distance.toFixed(0)}m away (limit: ${qrRecord.geofence_radius_m}m)`);
+            return res.status(400).json({
+              success: false,
+              message: `❌ Quá xa điểm danh: ${Math.round(distance)}m (cho phép ${qrRecord.geofence_radius_m}m). Vui lòng di chuyển đến gần điểm danh hơn.`,
+              data: {
+                distance_m: Math.round(distance),
+                required_distance_m: qrRecord.geofence_radius_m,
+                location_status: 'OUT_OF_RANGE'
+              }
+            });
+          }
+        }
+      } else if (qrRecord && qrRecord.geofence_radius_m != null && qrRecord.geofence_radius_m !== undefined) {
+        // ❌ QR HAS GEOFENCE but NO LOCATION PROVIDED = ERROR
+        if (!scan_location || !scan_location.latitude || !scan_location.longitude) {
+          return res.status(400).json({
+            success: false,
+            message: '❌ QR này yêu cầu xác minh vị trí. Vui lòng cho phép truy cập GPS và thử lại.',
+            data: {
+              location_status: 'LOCATION_DENIED'
+            }
+          });
+        }
+      }
 
       // ===== Create temporary attendance record =====
       // This is just to record the QR scan
@@ -727,7 +769,16 @@ module.exports = {
         activity_id: activityId,
         qr_code_id: qrId,  // Track which QR
         status: 'present',  // Mark as present when QR is scanned
-        scanned_at: new Date()
+        scanned_at: new Date(),
+        // 🆕 Store location data from scan
+        scan_location: scan_location ? {
+          latitude: scan_location.latitude,
+          longitude: scan_location.longitude,
+          accuracy_m: scan_location.accuracy || null
+        } : undefined,
+        distance_from_qr_m: geofenceResult.distance_m,
+        within_geofence: geofenceResult.passed,
+        location_status: geofenceResult.passed ? 'OK' : 'OUT_OF_RANGE'
       });
 
       await attendance.save();
@@ -749,7 +800,7 @@ module.exports = {
 
       res.status(201).json({
         success: true,
-        message: `✅ QR scanned! Now fill in your information below.`,
+        message: `✅ QR quét thành công! Vị trí kiểm tra thành công. Vui lòng điền thông tin bên dưới.`,
         data: {
           attendance,
           activity: {
@@ -759,6 +810,12 @@ module.exports = {
           qr_info: {
             qr_id: qrId,
             qr_name: qrName
+          },
+          // 🆕 Return geofence info
+          location_data: {
+            distance_m: geofenceResult.distance_m || null,
+            required_distance_m: geofenceResult.required_distance_m || null,
+            passed: geofenceResult.passed
           }
         }
       });

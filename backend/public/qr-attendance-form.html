@@ -192,6 +192,52 @@
             display: none !important;
         }
 
+        .gps-status {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .gps-status.loading {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            color: #1565c0;
+        }
+
+        .gps-status.ok {
+            background: #e8f5e9;
+            border: 1px solid #81c784;
+            color: #2e7d32;
+        }
+
+        .gps-status.error {
+            background: #ffebee;
+            border: 1px solid #ef9a9a;
+            color: #c62828;
+        }
+
+        .gps-icon {
+            font-size: 18px;
+        }
+
+        .gps-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #90caf9;
+            border-top-color: #1565c0;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 20px;
@@ -214,13 +260,21 @@
             <p>Vui lòng điền đầy đủ thông tin</p>
         </div>
 
+        <!-- 🆕 GPS Status Display -->
+        <div id="gpsStatus" class="gps-status loading">
+            <span class="gps-icon">📍</span>
+            <span>Đang yêu cầu quyền truy cập vị trí GPS...</span>
+        </div>
+
         <div id="errorMsg" class="alert error" style="display: none;"></div>
         <div id="successMsg" class="alert success" style="display: none;"></div>
 
         <!-- Warning notice -->
         <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 12px; margin-bottom: 20px; font-size: 13px; color: #856404;">
             <strong>⚠️ Lưu ý quan trọng:</strong><br>
-            Vui lòng điền đầy đủ và chính xác thông tin. Nếu ghi sai hoặc thiếu thông tin (không có dấu <span class="required">*</span>), bạn sẽ <strong>không được tính điểm</strong> cho hoạt động này.
+            Vui lòng điền đầy đủ và chính xác thông tin. Nếu ghi sai hoặc thiếu thông tin (không có dấu <span class="required">*</span>), bạn sẽ <strong>không được tính điểm</strong> cho hoạt động này.<br>
+            <br>
+            <strong>📍 Yêu cầu xác minh vị trí:</strong> Hoạt động này yêu cầu xác minh vị trí GPS. Vui lòng cho phép truy cập vị trí khi yêu cầu.
         </div>
 
         <form id="attendanceForm">
@@ -291,6 +345,7 @@
         const API_BASE_URL = 'https://pbl6-backend-iy5q.onrender.com/api';
         let allClasses = [];
         let allFaculties = [];
+        let storedLocation = null;  // 🆕 Store location from page load
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async () => {
@@ -299,6 +354,8 @@
             await loadMasterData();
             parseURLParams();
             setupEventListeners();
+            // 🆕 Request GPS location immediately when page loads
+            requestGPSLocationOnLoad();
         });
 
         // Remove test/debug input fields with colored backgrounds
@@ -533,6 +590,64 @@
             classSelect.disabled = false;
         }
 
+        // 🆕 Request GPS location immediately when page loads
+        async function requestGPSLocationOnLoad() {
+            const gpsStatus = document.getElementById('gpsStatus');
+            
+            try {
+                // Show loading state
+                gpsStatus.className = 'gps-status loading';
+                gpsStatus.innerHTML = '<span class="gps-icon">📍</span><span><span class="gps-spinner"></span> Đang yêu cầu quyền truy cập vị trí GPS...</span>';
+                
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(
+                        resolve,
+                        reject,
+                        {
+                            enableHighAccuracy: true,
+                            timeout: 15000,
+                            maximumAge: 0
+                        }
+                    );
+                });
+                
+                // Success - store location
+                storedLocation = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy
+                };
+                
+                console.log('✅ GPS Location obtained:', storedLocation);
+                
+                // Update status display
+                gpsStatus.className = 'gps-status ok';
+                gpsStatus.innerHTML = `<span class="gps-icon">✅</span><span>Vị trí xác minh thành công (Độ chính xác: ${Math.round(storedLocation.accuracy)}m)</span>`;
+                
+            } catch (error) {
+                console.error('GPS Error:', error);
+                
+                // Show error state
+                let errorMsg = '❌ Không thể lấy vị trí. ';
+                
+                if (error.code === 1) {
+                    // Permission denied
+                    errorMsg = '❌ Bạn đã từ chối truy cập GPS. Vui lòng bật quyền vị trí trong cài đặt trình duyệt để tiếp tục.';
+                } else if (error.code === 2) {
+                    // Position unavailable
+                    errorMsg = '❌ Không thể xác định vị trí. Kiểm tra GPS/Internet và thử lại.';
+                } else if (error.code === 3) {
+                    // Timeout
+                    errorMsg = '❌ Timeout khi lấy vị trí. Thử lại hoặc di chuyển ra ngoài trời.';
+                } else {
+                    errorMsg += error.message || 'Vui lòng thử lại.';
+                }
+                
+                gpsStatus.className = 'gps-status error';
+                gpsStatus.innerHTML = `<span class="gps-icon">⚠️</span><span>${errorMsg}</span>`;
+            }
+        }
+
         // Handle form submission
         async function handleSubmit(e) {
             e.preventDefault();
@@ -557,60 +672,22 @@
             // Disable submit button and show loading
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
-            submitBtn.textContent = '📍 Đang lấy vị trí GPS...';
+            submitBtn.textContent = '⏳ Đang gửi...';
             document.getElementById('loading').style.display = 'block';
 
-            // 🆕 GEOFENCE: BẮT BUỘC lấy location TRƯỚC KHI submit
-            let scanLocation = null;
-            try {
-                // Hiển thị thông báo info (dùng successMsg với style khác)
-                const infoEl = document.getElementById('successMsg');
-                infoEl.style.background = '#dbeafe';
-                infoEl.style.borderColor = '#3b82f6';
-                infoEl.style.color = '#1e40af';
-                infoEl.textContent = '📍 Đang lấy vị trí GPS của bạn... Vui lòng cho phép truy cập vị trí.';
-                infoEl.style.display = 'block';
-                
-                const position = await new Promise((resolve, reject) => {
-                    navigator.geolocation.getCurrentPosition(
-                        resolve,
-                        reject,
-                        { 
-                            enableHighAccuracy: true, // High accuracy để check geofence chính xác
-                            timeout: 15000, // 15 giây
-                            maximumAge: 0 // Không dùng cache, lấy vị trí mới nhất
-                        }
-                    );
-                });
-                
-                scanLocation = {
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                    accuracy: position.coords.accuracy
-                };
-                console.log('📍 Location obtained:', scanLocation);
-                clearMessages();
-            } catch (error) {
-                // Error codes: 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
-                let errorMsg = '❌ Không thể lấy vị trí. ';
-                if (error.code === 1) {
-                    errorMsg += 'Vui lòng bật quyền truy cập vị trí trong trình duyệt và thử lại.';
-                } else if (error.code === 2) {
-                    errorMsg += 'Vui lòng kiểm tra GPS/Internet và thử lại.';
-                } else if (error.code === 3) {
-                    errorMsg += 'Timeout lấy vị trí. Vui lòng thử lại hoặc di chuyển ra ngoài trời.';
-                } else {
-                    errorMsg += error.message || 'Vui lòng thử lại.';
-                }
-                
-                showError(errorMsg);
+            // 🆕 GEOFENCE: Kiểm tra location đã được lấy từ page load
+            let scanLocation = storedLocation;
+            
+            // ❌ Nếu không có location → KHÔNG submit
+            if (!scanLocation || !scanLocation.latitude || !scanLocation.longitude) {
+                showError('❌ Không thể xác minh vị trí GPS. Vui lòng bật quyền truy cập GPS trong cài đặt trình duyệt và tải lại trang.');
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Nộp Điểm Danh';
                 document.getElementById('loading').style.display = 'none';
                 return;
             }
 
-            submitBtn.textContent = '⏳ Đang gửi...';
+            console.log('✅ Using stored location for submission:', scanLocation);
 
             console.log('Submitting attendance...', {
                 activity_id: document.getElementById('activity_id').value,
@@ -666,7 +743,16 @@
                         window.location.href = '/';
                     }, 5000);
                 } else {
-                    showError(result.message || 'Lỗi nộp điểm danh');
+                    // Handle geofence failure specifically
+                    let errorMsg = result.message || 'Lỗi nộp điểm danh';
+                    
+                    if (result.data?.location_status === 'OUT_OF_RANGE') {
+                        errorMsg = `❌ Quá xa điểm danh!\n\n📍 Khoảng cách: ${result.data?.distance_m || '?'}m\n✅ Cho phép: ${result.data?.required_distance_m || '?'}m\n\nVui lòng di chuyển gần điểm danh hơn và thử lại.`;
+                    } else if (result.data?.location_status === 'LOCATION_DENIED') {
+                        errorMsg = '❌ Chứng thực vị trí thất bại. Vui lòng bật GPS và thử lại.';
+                    }
+                    
+                    showError(errorMsg);
                 }
             } catch (error) {
                 console.error('Submit error:', error);
@@ -687,7 +773,8 @@
 
         function showError(message) {
             const errorEl = document.getElementById('errorMsg');
-            errorEl.textContent = message;
+            // Support line breaks in error messages
+            errorEl.innerHTML = message.replace(/\n/g, '<br>');
             errorEl.style.display = 'block';
         }
 

@@ -457,11 +457,21 @@
                     return;
                 }
 
-                // 🆕 GEOFENCE: Gọi API scanQRCodeV2 với location để check geofence TRƯỚC
+                // 🆕 GEOFENCE: Gọi API scanQRCodeV2 với location để check geofence TRƯỚC (REQUIRED)
                 updateScannerStatus('🔍 Đang kiểm tra vị trí...');
                 const token = localStorage.getItem('testToken') || '';
                 
                 try {
+                    // 🆕 VERIFY: scan_location MUST have latitude and longitude
+                    if (!scanLocation || !scanLocation.latitude || !scanLocation.longitude) {
+                        showMessage('scannerMessage', '❌ Không thể lấy vị trí GPS. Vui lòng bật GPS và thử lại.', 'error');
+                        updateScannerStatus('❌ Lỗi GPS');
+                        scanQRCode();
+                        return;
+                    }
+
+                    console.log('✅ Location obtained, sending to server for geofence check:', scanLocation);
+                    
                     const scanRes = await fetch(`${API_BASE}/attendances/scan-qr-v2`, {
                         method: 'POST',
                         headers: {
@@ -470,7 +480,7 @@
                         },
                         body: JSON.stringify({
                             qrData: qrDataStr,
-                            scan_location: scanLocation // 🆕 Gửi location để check geofence
+                            scan_location: scanLocation // 🆕 REQUIRED: location để check geofence
                         })
                     });
 
@@ -478,8 +488,17 @@
                     
                     if (!scanRes.ok) {
                         // Geofence check failed hoặc lỗi khác
-                        showMessage('scannerMessage', scanResult.message || '❌ Không thể quét QR', 'error');
-                        updateScannerStatus('❌ ' + (scanResult.message || 'Quét QR thất bại'));
+                        let errorMsg = scanResult.message || '❌ Không thể quét QR';
+                        
+                        // 🆕 Detailed error for geofence failures
+                        if (scanResult.data?.location_status === 'OUT_OF_RANGE') {
+                            errorMsg = `❌ Quá xa điểm danh: ${scanResult.data?.distance_m || '?'}m (cho phép ${scanResult.data?.required_distance_m || '?'}m). Di chuyển đến gần hơn và quét lại.`;
+                        } else if (scanResult.data?.location_status === 'LOCATION_DENIED') {
+                            errorMsg = '❌ QR này yêu cầu xác minh vị trí. Vui lòng bật quyền GPS và thử lại.';
+                        }
+                        
+                        showMessage('scannerMessage', errorMsg, 'error');
+                        updateScannerStatus('❌ ' + errorMsg);
                         // Continue scanning để thử lại
                         scanQRCode();
                         return;
