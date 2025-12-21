@@ -26,6 +26,7 @@ const RESOURCES_ACTIONS = {
     description: 'Quản lý các hoạt động cộng đồng',
     actions: [
       { code: 'CREATE', name: 'Tạo hoạt động', description: 'Tạo hoạt động mới' },
+      { code: 'SUGGEST', name: 'Đề xuất hoạt động', description: 'Đề xuất hoạt động (status = pending, chờ duyệt)' },
       { code: 'READ', name: 'Xem hoạt động', description: 'Xem danh sách và chi tiết hoạt động' },
       { code: 'UPDATE', name: 'Cập nhật hoạt động', description: 'Chỉnh sửa thông tin hoạt động' },
       { code: 'DELETE', name: 'Xóa hoạt động', description: 'Xóa hoạt động' },

@@ -64,6 +64,7 @@ router.post('/',
 
 router.post('/suggest', 
   auth, 
+  checkPermission('activity', 'SUGGEST'), 
   activityController.suggestActivity
 );
 

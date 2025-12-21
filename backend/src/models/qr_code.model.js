@@ -63,12 +63,10 @@ const qrCodeSchema = new mongoose.Schema({
     created_at: Date
   },
   
-  // 🆕 GEOFENCE SETTING: Radius for geofence check (default 80m)
+  // 🆕 GEOFENCE SETTING: Radius for geofence check (from frontend)
   geofence_radius_m: {
     type: Number,
-    default: 80,
-    min: 10,
-    max: 500
+    required: false,
   }
 });
 

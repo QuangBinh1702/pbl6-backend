@@ -86,6 +86,17 @@
             font-size: 0.95em;
         }
 
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        button:disabled:hover {
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -306,15 +317,41 @@
                      <input type="number" id="duration" placeholder="60" min="1">
                  </div>
 
+                 <!-- 🆕 GEOFENCE: Radius Input -->
+                 <div class="form-group">
+                     <label>Geofence Radius (Meters) - Distance for location check</label>
+                     <input type="number" id="geofenceRadius" placeholder="80" min="10" max="500" value="80" required>
+                     <small style="color: #666; display: block; margin-top: 5px;">Bán kính tối thiểu 10m, tối đa 500m</small>
+                 </div>
+
+                 <!-- 🆕 GEOFENCE: Accuracy Mode Option -->
+                 <div class="form-group" style="background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                         <input type="checkbox" id="highAccuracyMode" style="width: auto; cursor: pointer;">
+                         <span>🎯 Chế độ chính xác cao (có thể chậm hơn, dễ timeout)</span>
+                     </label>
+                     <small style="color: #666; display: block; margin-top: 5px;">Bỏ chọn để lấy vị trí nhanh hơn (khuyến nghị)</small>
+                 </div>
+
                  <!-- 🆕 GEOFENCE: Location Info Display -->
                  <div class="form-group" id="locationInfo" style="background: #f0fdf4; padding: 10px; border-radius: 6px; border: 1px solid #86efac;">
                      <label style="color: #166534; font-weight: 600;">📍 Vị trí Tạo QR</label>
                      <p id="locationStatus" style="margin: 5px 0; color: #666; font-size: 0.9em;">Chưa lấy vị trí</p>
                      <p id="locationCoords" style="margin: 5px 0; color: #666; font-size: 0.85em; font-family: monospace;"></p>
+                     <div id="accuracyTips" style="margin-top: 10px; font-size: 0.85em; color: #666; display: none;">
+                         <strong>💡 Mẹo cải thiện độ chính xác:</strong>
+                         <ul style="margin: 5px 0 0 20px; padding: 0;">
+                             <li>Di chuyển ra ngoài trời (tránh trong nhà)</li>
+                             <li>Bật GPS trên thiết bị</li>
+                             <li>Đợi vài giây để GPS ổn định</li>
+                             <li>Tránh khu vực có nhiều tòa nhà cao</li>
+                         </ul>
+                     </div>
                  </div>
 
                  <div class="button-group">
                      <button type="button" class="btn-success" onclick="captureLocationForQR()">📍 Lấy GPS Hiện Tại</button>
+                     <button type="button" id="retryLocationBtn" class="btn-success" onclick="captureLocationForQR()" style="display: none;">🔄 Thử Lại (Cải Thiện Độ Chính Xác)</button>
                      <button type="button" class="btn-primary" onclick="generateNewQR()">🎯 Tạo QR tại vị trí này</button>
                  </div>
                  <div id="generateMessage" class="message" style="margin-top: 15px;"></div>
@@ -336,8 +373,9 @@
     <script>
         const API_BASE = 'http://localhost:5000/api';
         
-        // 🆕 GEOFENCE: Store captured location
+        // 🆕 GEOFENCE: Store captured location and radius
         let capturedLocation = null;
+        let capturedGeofenceRadius = null;
 
         // ===== TOKEN MANAGEMENT =====
         function getToken() {
@@ -475,18 +513,51 @@
             }
         }
 
-        // 🆕 GEOFENCE: Capture location for QR creation
+         // 🆕 GEOFENCE: Capture location for QR creation
          async function captureLocationForQR() {
+             // Disable buttons and show loading
+             const buttons = document.querySelectorAll('.button-group button');
+             const getLocationBtn = Array.from(buttons).find(btn => btn.textContent.includes('Lấy GPS'));
+             const retryBtn = document.getElementById('retryLocationBtn');
+             const generateBtn = Array.from(buttons).find(btn => btn.textContent.includes('Tạo QR'));
+             
+             if (getLocationBtn) getLocationBtn.disabled = true;
+             if (retryBtn) retryBtn.disabled = true;
+             if (generateBtn) generateBtn.disabled = true;
+             
+             document.getElementById('locationStatus').textContent = '⏳ Đang lấy vị trí... (Vui lòng đợi, có thể mất 10-20 giây)';
+             document.getElementById('locationStatus').style.color = '#3b82f6';
+             document.getElementById('locationInfo').style.background = '#eff6ff';
+             document.getElementById('locationInfo').style.borderColor = '#93c5fd';
+             showMessage('generateMessage', '⏳ Đang lấy vị trí GPS... Vui lòng đợi và đảm bảo bạn đã cho phép truy cập vị trí.', 'info');
+             
+             // Kiểm tra xem geolocation có available không
+             if (!navigator.geolocation) {
+                 throw new Error('Geolocation không được hỗ trợ trên trình duyệt này');
+             }
+             
              try {
+                 // Kiểm tra user có chọn high accuracy mode không
+                 const highAccuracyMode = document.getElementById('highAccuracyMode').checked;
+                 
+                 // Cấu hình dựa trên mode
+                 const geoOptions = highAccuracyMode 
+                     ? {
+                         enableHighAccuracy: true,
+                         timeout: 15000, // 15 giây cho high accuracy
+                         maximumAge: 60000 // Cache 1 phút
+                     }
+                     : {
+                         enableHighAccuracy: false, // Normal accuracy - nhanh hơn, ít timeout
+                         timeout: 8000, // 8 giây - đủ cho normal accuracy
+                         maximumAge: 600000 // Cho phép dùng cache trong 10 phút (nhanh hơn nhiều)
+                     };
+                 
                  const position = await new Promise((resolve, reject) => {
                      navigator.geolocation.getCurrentPosition(
                          resolve,
                          reject,
-                         { 
-                             enableHighAccuracy: true, 
-                             timeout: 15000,
-                             maximumAge: 0
-                         }
+                         geoOptions
                      );
                  });
 
@@ -496,25 +567,113 @@
                      accuracy: position.coords.accuracy
                  };
 
-                 // Update UI
-                 document.getElementById('locationStatus').textContent = `✅ Đã lấy vị trí (độ chính xác: ±${Math.round(capturedLocation.accuracy)}m)`;
-                 document.getElementById('locationCoords').textContent = `Lat: ${capturedLocation.latitude.toFixed(6)}, Lng: ${capturedLocation.longitude.toFixed(6)}`;
-                 document.getElementById('locationInfo').style.background = '#f0fdf4';
-                 document.getElementById('locationInfo').style.borderColor = '#86efac';
-
-                 showMessage('generateMessage', '✅ Đã lấy vị trí thành công! Bây giờ bấm "🎯 Tạo QR tại vị trí này"', 'success');
-             } catch (error) {
-                 if (error.code === error.PERMISSION_DENIED) {
-                     showMessage('generateMessage', '❌ Cần bật Permission vị trí để tạo QR', 'error');
-                 } else if (error.code === error.TIMEOUT) {
-                     showMessage('generateMessage', '❌ Timeout lấy vị trí. Vui lòng thử lại', 'error');
+                 const accuracyMeters = Math.round(capturedLocation.accuracy);
+                 
+                 // Update UI based on accuracy
+                 if (accuracyMeters > 200) {
+                     // Low accuracy warning
+                     document.getElementById('locationStatus').textContent = `⚠️ Độ chính xác THẤP: ±${accuracyMeters}m (Khuyến nghị: <50m)`;
+                     document.getElementById('locationStatus').style.color = '#f59e0b';
+                     document.getElementById('locationInfo').style.background = '#fffbeb';
+                     document.getElementById('locationInfo').style.borderColor = '#fcd34d';
+                     document.getElementById('accuracyTips').style.display = 'block';
+                     document.getElementById('retryLocationBtn').style.display = 'inline-block';
+                     showMessage('generateMessage', `⚠️ Cảnh báo: Độ chính xác ±${accuracyMeters}m rất thấp! Geofence có thể không hoạt động tốt. Khuyến nghị: Di chuyển ra ngoài trời, bật GPS, hoặc thử lại.`, 'error');
+                 } else if (accuracyMeters > 50) {
+                     // Medium accuracy
+                     document.getElementById('locationStatus').textContent = `⚠️ Độ chính xác TRUNG BÌNH: ±${accuracyMeters}m (Khuyến nghị: <50m)`;
+                     document.getElementById('locationStatus').style.color = '#f59e0b';
+                     document.getElementById('locationInfo').style.background = '#fffbeb';
+                     document.getElementById('locationInfo').style.borderColor = '#fcd34d';
+                     document.getElementById('accuracyTips').style.display = 'block';
+                     document.getElementById('retryLocationBtn').style.display = 'inline-block';
+                     showMessage('generateMessage', `⚠️ Độ chính xác ±${accuracyMeters}m ở mức trung bình. Để geofence hoạt động tốt hơn, hãy di chuyển ra ngoài trời hoặc bật GPS.`, 'error');
                  } else {
-                     showMessage('generateMessage', `❌ Lỗi: ${error.message}`, 'error');
+                     // Good accuracy
+                     document.getElementById('locationStatus').textContent = `✅ Đã lấy vị trí (độ chính xác: ±${accuracyMeters}m)`;
+                     document.getElementById('locationStatus').style.color = '#166534';
+                     document.getElementById('locationInfo').style.background = '#f0fdf4';
+                     document.getElementById('locationInfo').style.borderColor = '#86efac';
+                     document.getElementById('accuracyTips').style.display = 'none';
+                     document.getElementById('retryLocationBtn').style.display = 'none';
+                     showMessage('generateMessage', '✅ Đã lấy vị trí thành công! Bây giờ bấm "🎯 Tạo QR tại vị trí này"', 'success');
                  }
+                 
+                 document.getElementById('locationCoords').textContent = `Lat: ${capturedLocation.latitude.toFixed(6)}, Lng: ${capturedLocation.longitude.toFixed(6)}`;
+                 
+                 // Re-enable buttons
+                 if (getLocationBtn) getLocationBtn.disabled = false;
+                 if (retryBtn) retryBtn.disabled = false;
+                 if (generateBtn) generateBtn.disabled = false;
+             } catch (error) {
+                 // Re-enable buttons on error
+                 if (getLocationBtn) getLocationBtn.disabled = false;
+                 if (retryBtn) retryBtn.disabled = false;
+                 if (generateBtn) generateBtn.disabled = false;
+                 
+                 // Error codes: 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
+                 if (error.code === 1) {
+                     showMessage('generateMessage', '❌ User denied Geolocation. Vui lòng bật quyền truy cập vị trí trong trình duyệt và thử lại.', 'error');
+                     document.getElementById('locationStatus').textContent = '❌ Bị từ chối quyền truy cập vị trí';
+                     document.getElementById('locationStatus').style.color = '#dc2626';
+                     document.getElementById('locationInfo').style.background = '#fef2f2';
+                     document.getElementById('locationInfo').style.borderColor = '#fca5a5';
+                 } else if (error.code === 2) {
+                     showMessage('generateMessage', '❌ Không thể lấy vị trí. Vui lòng kiểm tra GPS/Internet và thử lại.', 'error');
+                     document.getElementById('locationStatus').textContent = '❌ Không thể lấy vị trí';
+                     document.getElementById('locationStatus').style.color = '#dc2626';
+                 } else if (error.code === 3) {
+                     showMessage('generateMessage', '❌ Timeout lấy vị trí. Vui lòng thử lại (có thể cần di chuyển ra ngoài trời)', 'error');
+                     document.getElementById('locationStatus').textContent = '❌ Timeout - Vui lòng thử lại';
+                     document.getElementById('locationStatus').style.color = '#dc2626';
+                 } else {
+                     showMessage('generateMessage', `❌ Lỗi: ${error.message || 'Không thể lấy vị trí'}`, 'error');
+                     document.getElementById('locationStatus').textContent = '❌ Lỗi lấy vị trí';
+                     document.getElementById('locationStatus').style.color = '#dc2626';
+                 }
+                 document.getElementById('accuracyTips').style.display = 'block';
+                 document.getElementById('retryLocationBtn').style.display = 'inline-block';
              }
          }
 
          // ===== GENERATE NEW QR =====
+         /**
+          * 📋 THAM SỐ CẦN GỬI TỪ FRONTEND (POST /api/attendances/generate-qr):
+          * 
+          * Request Body:
+          * {
+          *   activity_id: string (REQUIRED) 
+          *   qr_name: string (OPTIONAL) 
+          *   duration_minutes: number (OPTIONAL) 
+          *   location: { (REQUIRED OBJECT)
+          *     latitude: number (REQUIRED) 
+          *     longitude: number (REQUIRED) 
+          *     accuracy: number (OPTIONAL) 
+          *     geofence_radius_m: number (REQUIRED) 
+          *   }
+          * }
+          * 
+          * Headers:
+          * - Authorization: Bearer <token> (REQUIRED)
+          * - Content-Type: application/json
+          * 
+          * Response:
+          * {
+          *   success: boolean,
+          *   message: string,
+          *   data: {
+          *     qr_id: string,
+          *     qr_name: string,
+          *     qr_code: string (Base64 image),
+          *     created_at: Date,
+          *     expires_at: Date | null,
+          *     scans_count: number,
+          *     location: { latitude, longitude, accuracy_m },
+          *     geofence_radius_m: number,
+          *     total_qr_created: number
+          *   }
+          * }
+          */
          async function generateNewQR() {
              const activityId = document.getElementById('activitySelect').value;
              if (!activityId) {
@@ -528,8 +687,16 @@
                  return;
              }
 
+             // 🆕 GEOFENCE: Get radius from input
+             const radiusInput = document.getElementById('geofenceRadius').value.trim();
+             if (!radiusInput || isNaN(radiusInput) || radiusInput < 10 || radiusInput > 500) {
+                 showMessage('generateMessage', '❌ Geofence radius phải từ 10-500 meters', 'error');
+                 return;
+             }
+
              const qrName = document.getElementById('qrName').value.trim();
              const duration = document.getElementById('duration').value;
+             const geofenceRadius = parseInt(radiusInput);
 
              try {
                  const token = getToken();
@@ -543,8 +710,11 @@
                          activity_id: activityId,
                          qr_name: qrName || `QR #${new Date().toLocaleTimeString()}`,
                          duration_minutes: duration ? parseInt(duration) : null,
-                         // 🆕 GEOFENCE: Send location with QR
-                         location: capturedLocation
+                         // 🆕 GEOFENCE: Send location with radius
+                         location: {
+                             ...capturedLocation,
+                             geofence_radius_m: geofenceRadius
+                         }
                      })
                  });
 
@@ -556,9 +726,13 @@
                  showMessage('generateMessage', '✅ QR Generated!', 'success');
                  document.getElementById('qrName').value = '';
                  document.getElementById('duration').value = '';
+                 document.getElementById('geofenceRadius').value = '80';
                  capturedLocation = null;
                  document.getElementById('locationStatus').textContent = 'Chưa lấy vị trí';
+                 document.getElementById('locationStatus').style.color = '#666';
                  document.getElementById('locationCoords').textContent = '';
+                 document.getElementById('accuracyTips').style.display = 'none';
+                 document.getElementById('retryLocationBtn').style.display = 'none';
                  
                  setTimeout(() => loadActivity(), 1000);
              } catch (err) {

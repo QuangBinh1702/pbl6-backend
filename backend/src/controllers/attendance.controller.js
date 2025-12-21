@@ -879,7 +879,7 @@ module.exports = {
             });
           }
 
-          // 🆕 GEOFENCE: Check if student is within geofence radius
+          // 🆕 GEOFENCE: Check if student is within geofence radius (ONLY if geofence_radius_m is set)
           if (scan_location && scan_location.latitude && scan_location.longitude) {
             const distance = this.calculateDistance(
               qrRecord.location.latitude,
@@ -888,29 +888,46 @@ module.exports = {
               scan_location.longitude
             );
 
-            const withinGeofence = distance <= qrRecord.geofence_radius_m;
+            // ✅ CHỈ KIỂM TRA KHOẢNG CÁCH NẾU CÓ geofence_radius_m
+            // Nếu không có geofence_radius_m → cho phép quét ở bất kỳ đâu
+            if (qrRecord.geofence_radius_m != null && qrRecord.geofence_radius_m !== undefined) {
+              const withinGeofence = distance <= qrRecord.geofence_radius_m;
 
-            if (!withinGeofence) {
-              return res.status(400).json({
-                success: false,
-                message: `❌ Quá xa điểm danh: ${Math.round(distance)}m (cho phép ${qrRecord.geofence_radius_m}m). Vui lòng di chuyển đến gần điểm danh hơn.`,
-                data: {
-                  distance_m: Math.round(distance),
-                  required_distance_m: qrRecord.geofence_radius_m
-                }
-              });
-            }
-
-            // Store location info in attendance
-            qrRecord.scanLocationData = {
-              distance: Math.round(distance),
-              withinGeofence: withinGeofence,
-              scanCoords: {
-                latitude: scan_location.latitude,
-                longitude: scan_location.longitude,
-                accuracy_m: scan_location.accuracy || null
+              if (!withinGeofence) {
+                return res.status(400).json({
+                  success: false,
+                  message: `❌ Quá xa điểm danh: ${Math.round(distance)}m (cho phép ${qrRecord.geofence_radius_m}m). Vui lòng di chuyển đến gần điểm danh hơn.`,
+                  data: {
+                    distance_m: Math.round(distance),
+                    required_distance_m: qrRecord.geofence_radius_m
+                  }
+                });
               }
-            };
+
+              // Store location info in attendance (with geofence check)
+              qrRecord.scanLocationData = {
+                distance: Math.round(distance),
+                withinGeofence: withinGeofence,
+                scanCoords: {
+                  latitude: scan_location.latitude,
+                  longitude: scan_location.longitude,
+                  accuracy_m: scan_location.accuracy || null
+                }
+              };
+            } else {
+              // ✅ KHÔNG CÓ geofence_radius_m → KHÔNG KIỂM TRA KHOẢNG CÁCH
+              // Chỉ lưu thông tin vị trí để tracking, nhưng không reject
+              qrRecord.scanLocationData = {
+                distance: Math.round(distance),
+                withinGeofence: true, // Không có geofence → coi như trong phạm vi
+                scanCoords: {
+                  latitude: scan_location.latitude,
+                  longitude: scan_location.longitude,
+                  accuracy_m: scan_location.accuracy || null
+                },
+                geofence_enabled: false // Đánh dấu là không có geofence
+              };
+            }
           }
         }
 
@@ -1044,8 +1061,9 @@ module.exports = {
           // 🆕 GEOFENCE: Return location verification info
           location_data: qrRecord.scanLocationData ? {
             distance_m: qrRecord.scanLocationData.distance,
-            required_distance_m: qrRecord.geofence_radius_m,
-            within_geofence: qrRecord.scanLocationData.withinGeofence
+            required_distance_m: qrRecord.geofence_radius_m || null,
+            within_geofence: qrRecord.scanLocationData.withinGeofence,
+            geofence_enabled: qrRecord.geofence_radius_m != null && qrRecord.geofence_radius_m !== undefined
           } : null
         },
         warnings: classMismatch ? {
@@ -1377,6 +1395,19 @@ module.exports = {
       // Generate QR code image (Base64) - encode form URL
       const qrCodeImage = await QRCode.toDataURL(formUrl);
 
+      // 🆕 GEOFENCE: Validate geofence_radius_m from frontend (OPTIONAL)
+      // Nếu có geofence_radius_m → phải trong khoảng 10-500m
+      // Nếu không có → cho phép (không bắt buộc, quét được ở bất kỳ đâu)
+      if (location.geofence_radius_m != null && location.geofence_radius_m !== undefined) {
+        if (location.geofence_radius_m < 10 || location.geofence_radius_m > 500) {
+          return res.status(400).json({ 
+            success: false, 
+            message: '❌ Geofence radius phải trong khoảng 10-500 meters' 
+          });
+        }
+      }
+      // Nếu không có geofence_radius_m → OK, không cần validate
+
       // 🆕 GEOFENCE: Save location with QR
       const qrRecord = new QRCodeModel({
         _id: qrId,
@@ -1397,7 +1428,7 @@ module.exports = {
           accuracy_m: location.accuracy || null,
           created_at: new Date()
         },
-        geofence_radius_m: location.geofence_radius_m || 80
+        geofence_radius_m: location.geofence_radius_m
       });
 
       await qrRecord.save();

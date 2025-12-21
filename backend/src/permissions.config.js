@@ -6,8 +6,11 @@ module.exports = {
   // ============================================
   admin: [
     // Activity - Quản lý hoạt động
+    // - create: Tạo hoạt động với status = approved (tự động duyệt)
+    // - suggest: Đề xuất hoạt động với status = pending (chờ duyệt)
     'activity:create', 'activity:read', 'activity:update', 'activity:delete', 
     'activity:approve', 'activity:reject', 'activity:complete', 'activity:export',
+    'activity:suggest',
     
     // User - Quản lý người dùng
     'user:create', 'user:read', 'user:update', 'user:delete', 
@@ -91,7 +94,10 @@ module.exports = {
   // ============================================
   staff: [
     // Activity - BASIC: Quản lý hoạt động cơ bản
+    // - create: Tạo hoạt động với status = approved (tự động duyệt)
+    // - suggest: Đề xuất hoạt động với status = pending (chờ duyệt) - dùng cho CLB, Hội SV, Liên chi đoàn
     'activity:create', 'activity:read', 'activity:update', 
+    // 'activity:suggest',
     // OPTIONAL (admin grant): 'activity:approve', 'activity:reject', 'activity:export',
     
     // User - BASIC: Chỉ xem
