@@ -51,8 +51,9 @@ function isNotificationVisible(notification, userId, userType) {
   
   // If target_audience is 'specific', show only to users in target_user_ids
   if (target_audience === 'specific') {
+    if (!userId) return false;
     const userIdStr = userId.toString();
-    return target_user_ids && target_user_ids.some(id => id.toString() === userIdStr);
+    return target_user_ids && target_user_ids.some(id => id && id.toString() === userIdStr);
   }
   
   // Admin can see all notifications
@@ -87,10 +88,10 @@ async function getUnreadCountInternal(userId, userType = null) {
       user_id: userId
     });
     
-    const readNotificationIds = new Set(readRecords.map(r => r.notification_id.toString()));
+    const readNotificationIds = new Set(readRecords.filter(r => r.notification_id).map(r => r.notification_id.toString()));
     
     // Count unread notifications
-    const unreadCount = notificationIds.filter(id => !readNotificationIds.has(id.toString())).length;
+    const unreadCount = notificationIds.filter(id => id && !readNotificationIds.has(id.toString())).length;
     
     return unreadCount;
   } catch (err) {
@@ -104,7 +105,7 @@ module.exports = {
   async getAllNotifications(req, res) {
     try {
       const userId = req.user.id;
-      const { page = 1, limit = 10, read_status, notification_type } = req.query;
+      const { page = 1, limit = 1000, read_status, notification_type } = req.query;
       
       // Get user type
       const userType = await getUserType(userId);
@@ -141,13 +142,15 @@ module.exports = {
       // Create a map of read status
       const readMap = new Map();
       readRecords.forEach(record => {
-        readMap.set(record.notification_id.toString(), true);
+        if (record.notification_id) {
+          readMap.set(record.notification_id.toString(), true);
+        }
       });
       
       // Combine notifications with read status
       let notificationsWithReadStatus = paginatedNotifications.map(notification => {
         const notificationObj = notification.toObject();
-        notificationObj.is_read = readMap.has(notification._id.toString());
+        notificationObj.is_read = notification._id ? readMap.has(notification._id.toString()) : false;
         return notificationObj;
       });
       
@@ -413,11 +416,11 @@ module.exports = {
         user_id: userId
       });
       
-      const readNotificationIds = new Set(readRecords.map(r => r.notification_id.toString()));
+      const readNotificationIds = new Set(readRecords.filter(r => r.notification_id).map(r => r.notification_id.toString()));
       
       // Find unread notifications (only visible ones)
       const unreadNotifications = notificationIds.filter(
-        id => !readNotificationIds.has(id.toString())
+        id => id && !readNotificationIds.has(id.toString())
       );
       
       // Create read records for unread notifications

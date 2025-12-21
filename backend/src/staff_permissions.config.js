@@ -13,10 +13,10 @@ module.exports = {
    */
   basic: [
     // Activity - Quản lý hoạt động cơ bản
-    'activity:create',
+    // 'activity:create',
     'activity:read',
     'activity:update',
-    
+    'activity:suggest',
     // User - Chỉ xem
     'user:read',
     
@@ -67,6 +67,7 @@ module.exports = {
    */
   optional: [
     // Duyệt hoạt động (Phòng CTSV, Đoàn trường)
+     'activity:create',
     'activity:approve',
     'activity:reject',
     'activity:export',

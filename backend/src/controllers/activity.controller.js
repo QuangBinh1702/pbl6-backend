@@ -1092,6 +1092,64 @@ module.exports = {
         });
       }
       
+      // ========== VALIDATE REQUIREMENTS ==========
+      // Get activity requirements
+      const requirements = await ActivityEligibility.find({ activity_id: req.params.id });
+      
+      if (requirements && requirements.length > 0) {
+        // Get student profile with class populated to get faculty and cohort
+        const studentProfile = await StudentProfile.findById(studentIdToUse)
+          .populate({
+            path: 'class_id',
+            populate: [
+              { path: 'falcuty_id' },
+              { path: 'cohort_id' }
+            ]
+          });
+        
+        if (!studentProfile) {
+          return res.status(404).json({ 
+            success: false, 
+            message: 'Student profile not found' 
+          });
+        }
+        
+        // Get student's faculty and cohort IDs
+        const studentFacultyId = studentProfile.class_id?.falcuty_id?._id?.toString();
+        const studentCohortId = studentProfile.class_id?.cohort_id?._id?.toString();
+        
+        // Check ALL requirements (AND logic - must meet all)
+        const unmetRequirements = [];
+        
+        for (const req of requirements) {
+          const reqRefId = req.reference_id?.toString();
+          
+          if (req.type === 'faculty') {
+            if (studentFacultyId !== reqRefId) {
+              // Get faculty name for error message
+              const faculty = await Falcuty.findById(req.reference_id);
+              unmetRequirements.push(`Khoa: ${faculty?.name || req.reference_id}`);
+            }
+          } else if (req.type === 'cohort') {
+            if (studentCohortId !== reqRefId) {
+              // Get cohort name for error message
+              const cohort = await Cohort.findById(req.reference_id);
+              unmetRequirements.push(`Khóa: ${cohort?.name || req.reference_id}`);
+            }
+          }
+        }
+        
+        // If any requirements are not met, reject registration
+        if (unmetRequirements.length > 0) {
+          return res.status(403).json({ 
+            success: false, 
+            message: `Bạn không đủ điều kiện đăng ký hoạt động này. Yêu cầu: ${unmetRequirements.join(', ')}`,
+            requirements_not_met: unmetRequirements
+          });
+        }
+      }
+      // ========== END VALIDATE REQUIREMENTS ==========
+      
       if (activity.capacity > 0) {
         const registrationCount = await ActivityRegistration.countDocuments({ 
           activity_id: req.params.id,
