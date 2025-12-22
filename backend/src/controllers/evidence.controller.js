@@ -124,10 +124,18 @@ module.exports = {
         });
       }
 
+      // Validate file_url (required by model)
+      if (!file_url || file_url.trim() === '') {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'File URL is required' 
+        });
+      }
+
       const evidence = new Evidence({
         student_id,
         title,
-        file_url,
+        file_url: file_url.trim(),
         self_point: self_point || 0,
         class_point: class_point || 0,
         faculty_point: faculty_point || 0,
@@ -135,7 +143,20 @@ module.exports = {
         status: 'pending'
       });
       
-      await evidence.save();
+      try {
+        await evidence.save();
+      } catch (saveError) {
+        // Handle Mongoose validation errors
+        if (saveError.name === 'ValidationError') {
+          const errors = Object.values(saveError.errors).map(err => err.message).join(', ');
+          return res.status(400).json({ 
+            success: false, 
+            message: `Validation error: ${errors}` 
+          });
+        }
+        throw saveError;
+      }
+      
       await evidence.populate('student_id');
 
       // Send notification to staff of the same faculty when new evidence is submitted
@@ -149,7 +170,10 @@ module.exports = {
         
         if (!student) {
           console.error(`Student profile not found for student_id: ${student_id}`);
-          return res.status(400).json({ success: false, message: 'Student not found' });
+          if (!res.headersSent) {
+            return res.status(400).json({ success: false, message: 'Student not found' });
+          }
+          return;
         }
 
         // Get faculty_id from student's class
@@ -157,11 +181,13 @@ module.exports = {
         if (!facultyId) {
           console.error(`Faculty not found for student ${student_id}`);
           // Continue without sending notification if faculty not found
-          res.status(201).json({ 
-            success: true, 
-            data: evidence,
-            warning: 'Notification not sent: Faculty information not found'
-          });
+          if (!res.headersSent) {
+            return res.status(201).json({ 
+              success: true, 
+              data: evidence,
+              warning: 'Notification not sent: Faculty information not found'
+            });
+          }
           return;
         }
 
@@ -172,11 +198,13 @@ module.exports = {
 
         if (staffMembers.length === 0) {
           console.warn(`No staff members found for faculty: ${facultyId}`);
-          res.status(201).json({ 
-            success: true, 
-            data: evidence,
-            warning: 'Notification not sent: No staff members in this faculty'
-          });
+          if (!res.headersSent) {
+            return res.status(201).json({ 
+              success: true, 
+              data: evidence,
+              warning: 'Notification not sent: No staff members in this faculty'
+            });
+          }
           return;
         }
 
@@ -187,11 +215,13 @@ module.exports = {
 
         if (userIds.length === 0) {
           console.warn(`No valid user IDs found for staff in faculty: ${facultyId}`);
-          res.status(201).json({ 
-            success: true, 
-            data: evidence,
-            warning: 'Notification not sent: No valid user accounts for staff'
-          });
+          if (!res.headersSent) {
+            return res.status(201).json({ 
+              success: true, 
+              data: evidence,
+              warning: 'Notification not sent: No valid user accounts for staff'
+            });
+          }
           return;
         }
 
@@ -212,10 +242,16 @@ module.exports = {
         });
 
         console.log(`Notification created for ${userIds.length} staff members in faculty ${facultyId} about new evidence submission`);
-        res.status(201).json({ success: true, data: evidence });
+        if (!res.headersSent) {
+          res.status(201).json({ success: true, data: evidence });
+        }
       } catch (notifErr) {
         console.error('Error creating evidence submission notification:', notifErr);
         // Don't fail the submission if notification fails
+        // Don't fail the submission if notification fails
+        if (res.headersSent) {
+          return; // Response already sent, don't send again
+        }
         res.status(201).json({ 
           success: true, 
           data: evidence,
@@ -223,7 +259,15 @@ module.exports = {
         });
       }
     } catch (err) {
-      res.status(400).json({ success: false, message: err.message });
+      console.error('Error creating evidence:', err);
+      // Ensure response is always valid JSON
+      if (res.headersSent) {
+        return; // Response already sent, don't send again
+      }
+      res.status(400).json({ 
+        success: false, 
+        message: err.message || 'Error creating evidence' 
+      });
     }
   },
 

@@ -363,9 +363,9 @@ module.exports = {
   async getUserEvidences(req, res) {
     try {
       const evidences = await Evidence.find({ user: req.params.id });
-      res.json(evidences);
+      res.json({ success: true, data: evidences });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      res.status(500).json({ success: false, message: err.message });
     }
   },
 
