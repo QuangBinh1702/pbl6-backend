@@ -52,4 +52,11 @@ router.delete('/:id',
   pvcdRecordController.deletePvcdRecord
 );
 
+// 🆕 Recalculate all PVCD total_point from existing evidences (admin only)
+router.post('/admin/recalculate-all', 
+  auth, 
+  checkPermission('pvcd_record', 'UPDATE'),
+  pvcdRecordController.recalculateAllPvcdPoints
+);
+
 module.exports = router;

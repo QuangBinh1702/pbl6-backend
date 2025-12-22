@@ -299,22 +299,18 @@ module.exports = {
       
       if (!evidence) return res.status(404).json({ success: false, message: 'Evidence not found' });
 
-      const updateData = { 
-        status: 'approved', 
-        verified_at: new Date() 
-      };
-
+      // Update evidence with status and optional faculty_point
+      evidence.status = 'approved';
+      evidence.verified_at = new Date();
+      
       // Add optional faculty_point if provided
       if (req.body.faculty_point !== undefined) {
-        updateData.faculty_point = req.body.faculty_point;
+        evidence.faculty_point = req.body.faculty_point;
       }
 
-      const updatedEvidence = await Evidence.findByIdAndUpdate(
-        req.params.id,
-        updateData,
-        { new: true }
-      )
-        .populate('student_id');
+      // ✅ Use .save() to trigger post-save hook for pvcd_record auto-update
+      const updatedEvidence = await evidence.save();
+      await updatedEvidence.populate('student_id');
       
       // Send notification to student when evidence is approved
       try {
